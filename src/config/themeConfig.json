@@ -1,0 +1,9 @@
+{
+  "sidebarBg": "#1a202c",
+  "sidebarColor": "#fff",
+  "sidebarActiveBg": "#2d3748",
+  "sidebarActiveColor": "#63b3ed",
+  "sidebarCollapsedWidth": "60px",
+  "sidebarExpandedWidth": "220px",
+  "fontFamily": "'Inter', sans-serif"
+}

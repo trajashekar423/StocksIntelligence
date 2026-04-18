@@ -1,0 +1,9 @@
+[
+     { "label": "Dashboard", "path": "/dashboard", "icon": "hamburger" },
+  { "label": "Customers", "path": "/customers", "icon": "users" },
+  { "label": "Rewards", "path": "/rewards", "icon": "gift" },
+  { "label": "Transactions", "path": "/transactions", "icon": "credit-card" },
+    { "label": "Reports", "path": "/reports", "icon": "Reports" },
+      { "label": "Invoices", "path": "/Invoices", "icon": "Invoices" },
+  { "label": "Settings", "path": "/settings", "icon": "settings" }
+]
