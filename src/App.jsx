@@ -1,7 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import Login          from './pages/Login';
 import DashboardLayout from './components/DashboardLayout';
-import ProtectedRoute  from './components/ProtectedRoute';
+import PrivateRoute  from './routes/PrivateRoute';
 import DashboardHome   from './pages/Dashboard';
 import Customers       from './pages/Customers';
 import Rewards         from './pages/Rewards';
@@ -21,9 +21,9 @@ export default function App() {
       {/* Protected — all dashboard routes share the layout */}
       <Route
         element={
-          <ProtectedRoute>
+          <PrivateRoute>
             <DashboardLayout />
-          </ProtectedRoute>
+          </PrivateRoute>
         }
       >
         <Route path="/dashboard"    element={<DashboardHome />} />

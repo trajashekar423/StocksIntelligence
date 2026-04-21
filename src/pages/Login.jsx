@@ -1,10 +1,7 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import useAuth from '../hooks/useAuth';
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-const VALID_EMAIL    = 'owner@business.com';
-const VALID_PASSWORD = 'owner123';
 
 function EyeIcon({ open }) {
   return open ? (
@@ -22,7 +19,7 @@ function EyeIcon({ open }) {
 }
 
 function LoginForm({ onForgotPassword }) {
-  const navigate = useNavigate();
+  const { login } = useAuth();
   const [form, setForm]       = useState({ email: '', password: '' });
   const [errors, setErrors]   = useState({});
   const [loginError, setLoginError] = useState('');
@@ -36,24 +33,26 @@ function LoginForm({ onForgotPassword }) {
     return e;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const errs = validate();
     if (Object.keys(errs).length) return setErrors(errs);
     setErrors({});
     setLoginError('');
     setLoading(true);
-
-    // Simulate a brief loading state then check hardcoded credentials
-    setTimeout(() => {
-      if (form.email === VALID_EMAIL && form.password === VALID_PASSWORD) {
-        localStorage.setItem('authToken', 'demo-token');
-        navigate('/dashboard');
-      } else {
+    try {
+      await login(form);
+    } catch (err) {
+      const status = err.response?.status;
+      if (status === 401 || status === 400) {
         setLoginError('Invalid email or password. Please try again.');
-        setLoading(false);
+      } else if (!err.response) {
+        setLoginError('Network error. Please check your connection.');
+      } else {
+        setLoginError('Something went wrong. Please try again.');
       }
-    }, 800);
+      setLoading(false);
+    }
   };
 
   const handleChange = (e) => {

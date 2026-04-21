@@ -1,5 +1,6 @@
-import { NavLink, useNavigate, useLocation } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import useAuth from '../hooks/useAuth';
 import sidebarConfig from '../config/sidebarConfig.json';
 import themeConfig from '../config/themeConfig.json';
 import * as Icons from 'react-icons/fi';
@@ -18,20 +19,15 @@ function getIcon(iconName) {
 }
 
 export default function Sidebar({ collapsed, onToggle }) {
-  const navigate = useNavigate();
   const location = useLocation();
   const [navItems, setNavItems] = useState([]);
   const [theme, setTheme] = useState({});
+  const { logout } = useAuth();
 
   useEffect(() => {
     setNavItems(sidebarConfig);
     setTheme(themeConfig);
   }, []);
-
-  const handleLogout = () => {
-    localStorage.removeItem('authToken');
-    navigate('/login');
-  };
 
   return (
     <>
@@ -98,7 +94,7 @@ export default function Sidebar({ collapsed, onToggle }) {
 
         {/* Logout */}
         <div className="sb-footer">
-          <button className="sb-nav-item sb-logout w-100" onClick={handleLogout}>
+          <button className="sb-nav-item sb-logout w-100" onClick={logout}>
             <span className="sb-icon"><Icons.FiLogOut size={18} /></span>
             {!collapsed && <span className="sb-label">Logout</span>}
           </button>
