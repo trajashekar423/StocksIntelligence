@@ -70,7 +70,9 @@ export default function Rewards() {
       <div className="rw-header">
         <div>
           <h5 className="rw-page-title">Manage Rewards</h5>
-          <p className="pg-sub">Configure and track your loyalty rewards.</p>
+          <p className="pg-sub">
+            {rewards.length} rewards · {rewards.reduce((s, r) => s + (r.redeemedCount || 0), 0)} total redemptions
+          </p>
         </div>
         <button className="rw-add-btn" onClick={handleAddClick}>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
@@ -81,18 +83,12 @@ export default function Rewards() {
         </button>
       </div>
 
-      {/* Main card */}
-      <div className="pg-card">
-        <div className="pg-card-header">
-          <span className="pg-card-title">Reward Programs</span>
-          <span className="rw-count">{rewards.length} rewards</span>
-        </div>
-        <RewardsTable
-          rewards={rewards}
-          onEdit={handleEditClick}
-          onDelete={handleDeleteClick}
-        />
-      </div>
+      {/* Card list */}
+      <RewardsTable
+        rewards={rewards}
+        onEdit={handleEditClick}
+        onDelete={handleDeleteClick}
+      />
 
       {/* Add / Edit Modal */}
       {isModalOpen && (

@@ -2,7 +2,7 @@ import ProgressBar from './ProgressBar';
 import ActionButtons from './ActionButtons';
 
 export default function RewardRow({ reward, onEdit, onDelete }) {
-  const { title, description, points, redeemed, popularity } = reward;
+  const { title, description, points, redeemedCount, popularity } = reward;
   return (
     <tr className="rw-tr">
       {/* Reward */}
@@ -35,7 +35,7 @@ export default function RewardRow({ reward, onEdit, onDelete }) {
       </td>
 
       {/* Redeemed */}
-      <td className="rw-td rw-redeemed">{redeemed} times</td>
+      <td className="rw-td rw-redeemed">{redeemedCount} times</td>
 
       {/* Popularity */}
       <td className="rw-td">
