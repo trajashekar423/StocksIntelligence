@@ -31,13 +31,13 @@ export default function PasswordSettings() {
   ];
 
   return (
-    <div className="st-sections">
+    <div className="st-sections st-sections--flat">
       <div className="st-card">
-        <div className="st-card-header">Change Password</div>
+        <div className="st-card-header">Change password</div>
         <div className="st-card-body">
           {success && <div className="rn-success-alert" style={{ marginBottom: '1rem' }}>Password updated successfully.</div>}
           <form onSubmit={handleSubmit} noValidate>
-            <div style={{ maxWidth: 420, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div className="st-password-fields">
               {fields.map(([label, key, ph]) => (
                 <div className="st-field" key={key}>
                   <label className="st-label">{label}</label>

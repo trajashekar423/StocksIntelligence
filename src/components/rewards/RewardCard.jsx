@@ -1,55 +1,94 @@
-import ProgressBar from './ProgressBar';
-import ActionButtons from './ActionButtons';
-import Badge from './Badge';
+function getStores(reward) {
+  const stores = reward.stores ?? reward.store_names ?? reward.business_names;
+  if (stores === 'ALL' || reward.applyToAll) return ['All stores'];
+  if (Array.isArray(stores)) return stores;
+  if (typeof stores === 'string' && stores.trim()) return stores.split(',').map((store) => store.trim());
+  return ['All stores'];
+}
+
+function GiftIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="20 12 20 22 4 22 4 12" />
+      <rect x="2" y="7" width="20" height="5" />
+      <line x1="12" y1="22" x2="12" y2="7" />
+      <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z" />
+      <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" />
+    </svg>
+  );
+}
+
+function TrashIcon() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+      <path d="M10 11v6M14 11v6" />
+      <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+    </svg>
+  );
+}
+
+function StorePills({ stores }) {
+  const visibleStores = stores.slice(0, 3);
+  const hiddenCount = Math.max(stores.length - visibleStores.length, 0);
+
+  return (
+    <div className="rw-store-pills">
+      {visibleStores.map((store) => (
+        <span key={store} className={`rw-store-pill${store === 'All stores' ? ' rw-store-pill--all' : ''}`}>
+          {store}
+        </span>
+      ))}
+      {hiddenCount > 0 && <span className="rw-store-pill rw-store-pill--more">+{hiddenCount}</span>}
+    </div>
+  );
+}
 
 export default function RewardCard({ reward, onEdit, onDelete }) {
-  const { title, description, points, redeemedCount, popularity, isHot } = reward;
+  const rewardId = reward.id ?? reward.reward_id ?? reward.catalog_id;
+  const rewardName = reward.reward_name ?? reward.title ?? 'Untitled reward';
+  const description = reward.reward_description ?? reward.description ?? '';
+  const pointsCost = reward.points_cost ?? reward.points ?? 0;
+  const redeemedCount = reward.redeemed_count ?? reward.redeemedCount ?? 0;
+  const isActive = reward.is_active ?? reward.isHot ?? false;
+
   return (
-    <div className="rw-card">
-      {/* Left */}
-      <div className="rw-card-left">
+    <article className={`rw-card${isActive ? '' : ' rw-card--inactive'}`}>
+      <div className="rw-card-top">
         <div className="rw-icon-box">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="20 12 20 22 4 22 4 12" />
-            <rect x="2" y="7" width="20" height="5" />
-            <line x1="12" y1="22" x2="12" y2="7" />
-            <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z" />
-            <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" />
-          </svg>
+          <GiftIcon />
         </div>
-        <div className="rw-card-info">
-          <div className="rw-card-title-row">
-            <span className="rw-title">{title}</span>
-            {isHot && <Badge />}
-          </div>
-          <div className="rw-desc">{description}</div>
-        </div>
+        <span className={`rw-switch${isActive ? ' rw-switch--on' : ''}`} aria-label={isActive ? 'Active' : 'Inactive'}>
+          <span />
+        </span>
       </div>
 
-      {/* Middle */}
-      <div className="rw-card-middle">
-        <div className="rw-points">
-          <svg width="13" height="13" fill="#f59e0b" viewBox="0 0 24 24">
-            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-          </svg>
-          {points}
-        </div>
-        <div className="rw-redeemed">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
-            <polyline points="17 6 23 6 23 12" />
-          </svg>
-          {redeemedCount} times
-        </div>
+      <div className="rw-card-copy">
+        <h6 className="rw-title">{rewardName}</h6>
+        <p className="rw-desc">{description}</p>
       </div>
 
-      {/* Right */}
-      <div className="rw-card-right">
-        <ProgressBar value={popularity} />
+      <div className="rw-card-meta">
+        <span className="rw-points"><span aria-hidden="true">★</span>{pointsCost} pts</span>
+        <span className="rw-redeemed">{redeemedCount} redeemed</span>
       </div>
 
-      {/* Actions */}
-      <ActionButtons onEdit={() => onEdit(reward)} onDelete={() => onDelete(reward.id)} />
-    </div>
+      <div className="rw-card-divider" />
+
+      <div className="rw-card-stores">
+        <span className="rw-store-label">AT:</span>
+        <StorePills stores={getStores(reward)} />
+      </div>
+
+      <div className="rw-card-footer">
+        <button className="rw-card-edit" onClick={() => onEdit(reward)}>
+          Edit
+        </button>
+        <button className="rw-card-delete" onClick={() => onDelete(rewardId)} title="Delete" aria-label="Delete reward">
+          <TrashIcon />
+        </button>
+      </div>
+    </article>
   );
 }

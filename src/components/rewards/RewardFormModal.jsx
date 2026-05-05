@@ -4,6 +4,7 @@ import TextArea from './TextArea';
 import PreviewCard from './PreviewCard';
 import Button from './Button';
 
+
 const STORE_OPTIONS = ['Downtown', 'Uptown', 'Airport'];
 
 const EMPTY = {
@@ -23,10 +24,12 @@ export default function RewardFormModal({ isEditMode, initialData, onSubmit, onC
     if (isEditMode && initialData) {
       setForm({
         ...EMPTY,
-        ...initialData,
-        points: String(initialData.points ?? ''),
-        applyToAll: initialData.stores === 'ALL',
-        stores: initialData.stores === 'ALL' ? STORE_OPTIONS : (initialData.stores ?? []),
+        title: initialData.reward_name ?? '',
+        description: initialData.reward_description ?? '',
+        points: String(initialData.points_cost ?? ''),
+        maxRedemptions: initialData.max_redemptions_per_customer ?? '',
+        applyToAll: false,
+        stores: [],
       });
     } else {
       setForm(EMPTY);
@@ -70,15 +73,14 @@ export default function RewardFormModal({ isEditMode, initialData, onSubmit, onC
     if (!isValid) return;
 
     onSubmit({
-      id: initialData?.id,
-      title: form.title.trim(),
-      description: form.description.trim(),
-      points: Number(form.points),
-      maxRedemptions: form.maxRedemptions || null,
-      popularity: initialData?.popularity ?? 0,
-      redeemedCount: initialData?.redeemedCount ?? 0,
-      isHot: initialData?.isHot ?? false,
-      stores: form.applyToAll ? 'ALL' : form.stores,
+      id:                           initialData?.id,
+      reward_name:                  form.title.trim(),
+      reward_description:           form.description.trim(),
+      points_cost:                  Number(form.points),
+      max_redemptions_per_customer: form.maxRedemptions ? Number(form.maxRedemptions) : null,
+      clients_merchant_id:          20001,
+      business_ids:                 [201],
+      program_id:                   1,
     });
   }
 

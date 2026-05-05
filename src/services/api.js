@@ -15,6 +15,7 @@ api.interceptors.response.use(
   (res) => res,
   (error) => {
     if (error.response?.status === 401) {
+      console.warn('401 on:', error.config?.url, '— token:', getToken());
       removeToken();
       window.location.href = '/login';
     }

@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { stores as MOCK } from '../../mock/storesMock';
-import InfoBanner   from './InfoBanner';
 import StoreCard    from './StoreCard';
 import ToggleSwitch from './ToggleSwitch';
 
@@ -45,31 +44,34 @@ export default function StoresSettings() {
     </div>
   );
 
+  const visibleStores = stores.filter(s => bannerToggle ? s.status === 'ACTIVE' : s.status !== 'ACTIVE');
+
   return (
     <div className="st-sections">
-      <InfoBanner
-        title="Manager Login & Permissions"
-        description="Each store can have a dedicated manager login. Managers can access the POS system, view transactions, and manage customer loyalty points for their assigned store. Enable or disable manager access per store using the toggle on each store card."
-        toggle={<ToggleSwitch checked={bannerToggle} onChange={setBannerToggle} />}
-      />
-
       <div className="st-card">
         <div className="st-card-header">
           <div>
-            <div style={{ fontWeight: 600, color: '#111827', fontSize: '0.875rem' }}>Store Locations</div>
-            <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.15rem' }}>Manage your store locations and their status</div>
+            <div className="st-section-title">Store locations</div>
+            <div className="st-section-subtitle">Manage each location, its details, media and managers.</div>
           </div>
-          <button className="rn-btn-primary" style={{ fontSize: '0.8rem', padding: '0.45rem 1rem' }} onClick={openAdd}>
-            + Add Store
-          </button>
+          <div className="st-store-tools">
+            <div className="st-filter-toggle">
+              <span className={`st-filter-dot ${bannerToggle ? 'st-filter-dot--active' : ''}`} />
+              <span>{bannerToggle ? 'Active' : 'Inactive'}</span>
+              <ToggleSwitch checked={bannerToggle} onChange={setBannerToggle} />
+            </div>
+            <button className="rn-btn-primary st-add-store-btn" onClick={openAdd}>
+              + Add Store
+            </button>
+          </div>
         </div>
 
         <div className="st-card-body">
-          {stores.length === 0
+          {visibleStores.length === 0
             ? <p style={{ textAlign: 'center', color: '#9ca3af', padding: '2rem 0' }}>No stores yet.</p>
             : (
               <div className="scard-grid">
-                {stores.map(s => (
+                {visibleStores.map(s => (
                   <StoreCard
                     key={s.id}
                     store={s}

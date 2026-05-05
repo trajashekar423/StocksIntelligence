@@ -19,3 +19,32 @@ body {
   display: flex;
   flex-direction: column;
 }
+
+.rw-loading {
+  padding: 48px;
+  text-align: center;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.rw-error-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+.rw-error-banner button {
+  background: none;
+  border: none;
+  color: #dc2626;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 0 4px;
+}

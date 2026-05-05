@@ -1,19 +1,12 @@
 import StatusChip  from './StatusChip';
-import ToggleSwitch from './ToggleSwitch';
 
 export default function StoreCard({ store, onEdit, onToggleStatus, onToggleLogin }) {
-  const isActive = store.status === 'ACTIVE';
+  void onToggleStatus;
+  void onToggleLogin;
 
   return (
     <div className="scard">
-      {/* Top */}
       <div className="scard-top">
-        <div className="scard-icon">
-          <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-            <polyline points="9 22 9 12 15 12 15 22" />
-          </svg>
-        </div>
         <div className="scard-title-wrap">
           <span className="scard-name">{store.name}</span>
           <span className="scard-city">{store.city}</span>
@@ -21,12 +14,11 @@ export default function StoreCard({ store, onEdit, onToggleStatus, onToggleLogin
         <StatusChip status={store.status} />
       </div>
 
-      {/* Details */}
       <div className="scard-details">
         {[
           [addressIcon(), store.address],
           [phoneIcon(),   store.phone],
-          [personIcon(),  store.manager],
+          [personIcon(),  store.manager ? '1 manager' : '0 managers'],
         ].map(([icon, val], i) => (
           <div className="scard-detail-row" key={i}>
             <span className="scard-detail-icon">{icon}</span>
@@ -38,28 +30,8 @@ export default function StoreCard({ store, onEdit, onToggleStatus, onToggleLogin
         )}
       </div>
 
-      <div className="scard-divider" />
-
-      {/* Manager Login */}
-      <div className="scard-login-row">
-        <span className="scard-login-label">Manager Login</span>
-        <div className="scard-login-controls">
-          <ToggleSwitch checked={store.managerLogin} onChange={() => onToggleLogin(store.id)} />
-          <button className="scard-manage-link" onClick={() => onEdit(store)}>Manage Access</button>
-        </div>
-      </div>
-
-      <div className="scard-divider" />
-
-      {/* Actions */}
       <div className="scard-actions">
-        <button className="scard-btn scard-btn--edit" onClick={() => onEdit(store)}>Edit</button>
-        <button
-          className={`scard-btn ${isActive ? 'scard-btn--deactivate' : 'scard-btn--activate'}`}
-          onClick={() => onToggleStatus(store.id)}
-        >
-          {isActive ? 'Deactivate' : 'Activate'}
-        </button>
+        <button className="scard-btn scard-btn--manage" onClick={() => onEdit(store)}>Manage</button>
       </div>
     </div>
   );

@@ -1,9 +1,9 @@
 {
-  "sidebarBg": "#1a202c",
-  "sidebarColor": "#fff",
-  "sidebarActiveBg": "#2d3748",
-  "sidebarActiveColor": "#63b3ed",
-  "sidebarCollapsedWidth": "60px",
-  "sidebarExpandedWidth": "220px",
+  "sidebarBg": "#1a0906",
+  "sidebarColor": "#f5e6dc",
+  "sidebarActiveBg": "rgba(255, 140, 66, 0.15)",
+  "sidebarActiveColor": "#fff",
+  "sidebarCollapsedWidth": "72px",
+  "sidebarExpandedWidth": "260px",
   "fontFamily": "'Inter', sans-serif"
 }

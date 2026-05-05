@@ -37,16 +37,15 @@ export default function Sidebar({ collapsed, onToggle }) {
       )}
 
       <aside
-        className={`sb-sidebar ${collapsed ? 'sb-collapsed' : ''}`}
+        className={`sidebar sb-sidebar d-flex flex-column p-3 ${collapsed ? 'sb-collapsed' : ''}`}
         style={{
-          background: theme.sidebarBg,
           color: theme.sidebarColor,
           width: collapsed ? theme.sidebarCollapsedWidth : theme.sidebarExpandedWidth,
           fontFamily: theme.fontFamily,
         }}
       >
         {/* Brand */}
-        <div className="sb-brand">
+        <div className="sb-brand d-flex align-items-center gap-3">
           <div className="sb-logo">
             <span className="sb-logo-r">R</span>
           </div>
@@ -56,7 +55,7 @@ export default function Sidebar({ collapsed, onToggle }) {
               <span className="sb-brand-sub">Merchant Portal</span>
             </div>
           )}
-          <button className="sb-toggle d-none d-md-flex" onClick={onToggle} aria-label="Toggle sidebar">
+          <button className="sb-toggle d-none d-md-flex align-items-center justify-content-center rounded-3" onClick={onToggle} aria-label="Toggle sidebar">
             <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               {collapsed
                 ? <path d="M9 18l6-6-6-6" />
@@ -67,34 +66,39 @@ export default function Sidebar({ collapsed, onToggle }) {
         </div>
 
         {/* Nav */}
-        <nav className="sb-nav">
-          <p className="sb-section-label">{!collapsed && 'MAIN MENU'}</p>
+        <nav className="sb-nav d-flex flex-column gap-2">
+          <p className="sb-section-label text-muted small fw-bold">{!collapsed && 'MAIN MENU'}</p>
           {navItems.filter(item => item.visibility !== false).map(({ label, path, icon, color }) => {
             const Icon = getIcon(icon);
             const isActive = location.pathname === path;
             return (
-              <NavLink
-                key={path}
-                to={path}
-                className={({ isActive: navActive }) =>
-                  `sb-nav-item ${navActive || isActive ? 'sb-active' : ''}`
-                }
-                style={isActive ? {
-                  background: theme.sidebarActiveBg,
-                  color: theme.sidebarActiveColor,
-                  ...(color ? { color } : {}),
-                } : (color ? { color } : {})}
-              >
-                <span className="sb-icon"><Icon size={18} /></span>
-                {!collapsed && <span className="sb-label">{label}</span>}
-              </NavLink>
+              <div key={path} className={label === 'Settings' ? 'sb-admin-group' : undefined}>
+                {label === 'Settings' && (
+                  <p className="sb-section-label sb-admin-label text-muted small fw-bold">
+                    {!collapsed && 'ADMIN'}
+                  </p>
+                )}
+                <NavLink
+                  to={path}
+                  className={({ isActive: navActive }) =>
+                    `sidebar-item sb-nav-item d-flex align-items-center gap-2 rounded-3 fw-semibold ${navActive || isActive ? 'active sb-active' : ''}`
+                  }
+                  style={isActive ? {
+                    color: theme.sidebarActiveColor,
+                    ...(color ? { color } : {}),
+                  } : (color ? { color } : {})}
+                >
+                  <span className="sb-icon"><Icon size={18} /></span>
+                  {!collapsed && <span className="sb-label">{label}</span>}
+                </NavLink>
+              </div>
             );
           })}
         </nav>
 
         {/* Logout */}
-        <div className="sb-footer">
-          <button className="sb-nav-item sb-logout w-100" onClick={logout}>
+        <div className="sb-footer mt-auto">
+          <button className="sidebar-item sb-nav-item sb-logout d-flex align-items-center gap-2 rounded-3 fw-semibold w-100" onClick={logout}>
             <span className="sb-icon"><Icons.FiLogOut size={18} /></span>
             {!collapsed && <span className="sb-label">Logout</span>}
           </button>

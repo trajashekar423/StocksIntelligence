@@ -1,22 +1,52 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { fetchRewards, createReward, updateReward, deleteReward } from '../services/rewardsService';
 import RewardsTable from '../components/rewards/RewardsTable';
+import RewardCard from '../components/rewards/RewardCard';
 import RewardFormModal from '../components/rewards/RewardFormModal';
 import ConfirmDialog from '../components/rewards/ConfirmDialog';
 
-// TODO: Add loading and error handling
-export default function Rewards() {
-  const [rewards, setRewards]           = useState([]);
-  const [isModalOpen, setIsModalOpen]   = useState(false);
-  const [isEditMode, setIsEditMode]     = useState(false);
-  const [selectedReward, setSelectedReward] = useState(null);
-  const [deleteTarget, setDeleteTarget] = useState(null);
+function formatApiError(data, fallback) {
+  if (!data) return fallback;
+  if (typeof data.detail === 'string') return data.detail;
+  if (typeof data.message === 'string') return data.message;
+  const validation = data.message && typeof data.message === 'object' ? data.message : data;
+  if (validation && typeof validation === 'object') {
+    return Object.entries(validation)
+      .map(([field, messages]) => `${field}: ${Array.isArray(messages) ? messages.join(', ') : messages}`)
+      .join(' ');
+  }
+  return fallback;
+}
 
-  useEffect(() => {
-    // TODO: Replace mock GET API with real endpoint
-    // axios.get('/api/rewards').then(res => setRewards(res.data));
-    fetchRewards().then(setRewards);
+function hasRewardContext(formData) {
+  return Array.isArray(formData.business_ids) && formData.business_ids.length > 0 && formData.program_id;
+}
+
+export default function Rewards() {
+  const [rewards, setRewards]               = useState([]);
+  const [loading, setLoading]               = useState(false);
+  const [error, setError]                   = useState(null);
+  const [isModalOpen, setIsModalOpen]       = useState(false);
+  const [isEditMode, setIsEditMode]         = useState(false);
+  const [selectedReward, setSelectedReward] = useState(null);
+  const [deleteTarget, setDeleteTarget]     = useState(null);
+  const [submitting, setSubmitting]         = useState(false);
+  const [viewMode, setViewMode]             = useState('list');
+
+  const loadRewards = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await fetchRewards();
+      setRewards(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setError(formatApiError(err.response?.data, 'Failed to load rewards.'));
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => { loadRewards(); }, [loadRewards]);
 
   // ── Add ──────────────────────────────────────────
   function handleAddClick() {
@@ -25,13 +55,22 @@ export default function Rewards() {
     setIsModalOpen(true);
   }
 
-  function handleAddReward(newReward) {
-    // TODO: Replace POST API for adding reward
-    // axios.post('/api/rewards', newReward).then(res => setRewards(prev => [...prev, res.data]));
-    createReward(newReward).then((created) =>
-      setRewards((prev) => [...prev, created])
-    );
-    setIsModalOpen(false);
+  async function handleAddReward(formData) {
+    if (!hasRewardContext(formData)) {
+      setError('Missing business or loyalty program for this account. Please sign out and sign in again, then try creating the reward.');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await createReward(formData);
+      setIsModalOpen(false);
+      await loadRewards();
+    } catch (err) {
+      setError(formatApiError(err.response?.data, 'Failed to create reward.'));
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   // ── Edit ─────────────────────────────────────────
@@ -41,71 +80,122 @@ export default function Rewards() {
     setIsModalOpen(true);
   }
 
-  function handleUpdateReward(updatedReward) {
-    // TODO: Replace PUT/PATCH API for updating reward
-    // axios.put(`/api/rewards/${updatedReward.id}`, updatedReward).then(...);
-    updateReward(updatedReward).then((updated) =>
-      setRewards((prev) => prev.map((r) => (r.id === updated.id ? updated : r)))
-    );
-    setIsModalOpen(false);
+  async function handleUpdateReward(formData) {
+    if (!hasRewardContext(formData)) {
+      setError('Missing business or loyalty program for this account. Please sign out and sign in again, then try updating the reward.');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await updateReward(formData.id, formData);
+      setIsModalOpen(false);
+      await loadRewards();
+    } catch (err) {
+      setError(formatApiError(err.response?.data, 'Failed to update reward.'));
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   // ── Delete ───────────────────────────────────────
-  function handleDeleteClick(id) {
-    setDeleteTarget(id);
+  function handleDeleteClick(id) { setDeleteTarget(id); }
+
+  async function handleConfirmDelete() {
+    setSubmitting(true);
+    try {
+      await deleteReward(deleteTarget);
+      setDeleteTarget(null);
+      await loadRewards();
+    } catch (err) {
+      setError(formatApiError(err.response?.data, 'Failed to delete reward.'));
+      setDeleteTarget(null);
+    } finally {
+      setSubmitting(false);
+    }
   }
 
-  function handleConfirmDelete() {
-    // TODO: Replace DELETE API for removing reward
-    // axios.delete(`/api/rewards/${deleteTarget}`).then(...);
-    deleteReward(deleteTarget).then(() =>
-      setRewards((prev) => prev.filter((r) => r.id !== deleteTarget))
-    );
-    setDeleteTarget(null);
-  }
+  const activeCount = rewards.filter((reward) => reward.is_active ?? reward.isHot ?? false).length;
+  const inactiveCount = rewards.length - activeCount;
 
   return (
-    <div>
-      {/* Header */}
+    <div className="rw-page">
       <div className="rw-header">
         <div>
-          <h5 className="rw-page-title">Manage Rewards</h5>
+          <h5 className="rw-page-title">Rewards catalog</h5>
           <p className="pg-sub">
-            {rewards.length} rewards · {rewards.reduce((s, r) => s + (r.redeemedCount || 0), 0)} total redemptions
+            Manage what customers can redeem their points for. {activeCount} active · {inactiveCount} inactive
           </p>
         </div>
-        <button className="rw-add-btn" onClick={handleAddClick}>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-            <line x1="12" y1="5" x2="12" y2="19" />
-            <line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
-          Add Reward
-        </button>
+        <div className="rw-header-controls">
+          <div className="rw-view-toggle" aria-label="Rewards view mode">
+            <button
+              type="button"
+              className={`rw-view-btn${viewMode === 'cards' ? ' rw-view-btn--active' : ''}`}
+              onClick={() => setViewMode('cards')}
+            >
+              Cards
+            </button>
+            <button
+              type="button"
+              className={`rw-view-btn${viewMode === 'list' ? ' rw-view-btn--active' : ''}`}
+              onClick={() => setViewMode('list')}
+            >
+              List
+            </button>
+          </div>
+          <button className="rw-add-btn" onClick={handleAddClick} disabled={loading}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            New reward
+          </button>
+        </div>
       </div>
 
-      {/* Card list */}
-      <RewardsTable
-        rewards={rewards}
-        onEdit={handleEditClick}
-        onDelete={handleDeleteClick}
-      />
+      {error && (
+        <div className="rw-error-banner">
+          {error}
+          <button onClick={() => setError(null)} aria-label="Dismiss">✕</button>
+        </div>
+      )}
 
-      {/* Add / Edit Modal */}
+      {loading ? (
+        <div className="rw-loading">Loading rewards…</div>
+      ) : viewMode === 'list' ? (
+        <RewardsTable rewards={rewards} onEdit={handleEditClick} onDelete={handleDeleteClick} />
+      ) : (
+        <div className="rw-card-grid">
+          {rewards.length ? rewards.map((reward, index) => (
+            <RewardCard
+              key={reward.id ?? reward.reward_id ?? reward.rewardId ?? `${reward.reward_name ?? 'reward'}-${index}`}
+              reward={reward}
+              onEdit={handleEditClick}
+              onDelete={handleDeleteClick}
+            />
+          )) : (
+            <div className="rw-empty">No rewards found.</div>
+          )}
+        </div>
+      )}
+
       {isModalOpen && (
         <RewardFormModal
           isEditMode={isEditMode}
           initialData={selectedReward}
           onSubmit={isEditMode ? handleUpdateReward : handleAddReward}
-          onClose={() => setIsModalOpen(false)}
+          onClose={() => !submitting && setIsModalOpen(false)}
+          submitting={submitting}
         />
       )}
 
-      {/* Delete Confirmation */}
       {deleteTarget !== null && (
         <ConfirmDialog
           message="Are you sure you want to delete this reward? This action cannot be undone."
           onConfirm={handleConfirmDelete}
-          onCancel={() => setDeleteTarget(null)}
+          onCancel={() => !submitting && setDeleteTarget(null)}
+          submitting={submitting}
         />
       )}
     </div>

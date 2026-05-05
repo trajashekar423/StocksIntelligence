@@ -1,4 +1,4 @@
-export default function ConfirmDialog({ message, onConfirm, onCancel }) {
+export default function ConfirmDialog({ message, onConfirm, onCancel, submitting }) {
   return (
     <div className="rw-overlay" onClick={onCancel}>
       <div className="rw-confirm" onClick={(e) => e.stopPropagation()}>
@@ -16,8 +16,10 @@ export default function ConfirmDialog({ message, onConfirm, onCancel }) {
         <p className="rw-confirm-msg">{message}</p>
 
         <div className="rw-confirm-actions">
-          <button className="rw-btn-ghost" onClick={onCancel}>Cancel</button>
-          <button className="rw-btn-danger" onClick={onConfirm}>Delete</button>
+          <button className="rw-btn-ghost" onClick={onCancel} disabled={submitting}>Cancel</button>
+          <button className="rw-btn-danger" onClick={onConfirm} disabled={submitting}>
+            {submitting ? 'Deleting…' : 'Delete'}
+          </button>
         </div>
       </div>
     </div>
