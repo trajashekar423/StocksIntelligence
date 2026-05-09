@@ -13,9 +13,16 @@ function normalizeUser(data) {
     loyalty_program_id: user.loyalty_program_id ?? responseData.loyalty_program_id,
     business: user.business ?? responseData.business,
     businesses: user.businesses ?? responseData.businesses,
+    stores: user.stores ?? responseData.stores,
+    locations: user.locations ?? responseData.locations,
     program: user.program ?? responseData.program,
     loyalty_program: user.loyalty_program ?? responseData.loyalty_program,
     merchant: user.merchant ?? responseData.merchant,
+    role: user.role ?? responseData.role,
+    profile: user.profile ?? responseData.profile,
+    permissions: user.permissions ?? responseData.permissions,
+    client: user.client ?? responseData.client,
+    business_ids: user.business_ids ?? responseData.business_ids,
   };
 }
 

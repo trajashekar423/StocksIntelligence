@@ -3,9 +3,11 @@ import StatusChip  from './StatusChip';
 export default function StoreCard({ store, onEdit, onToggleStatus, onToggleLogin }) {
   void onToggleStatus;
   void onToggleLogin;
+  const managerCount = Number(store.managerCount ?? (store.manager ? 1 : 0));
+  const isInactive = store.status === 'INACTIVE' || store.status === 'PENDING' || store.is_active === false;
 
   return (
-    <div className="scard">
+    <div className={`scard ${isInactive ? 'inactive-store-card' : ''}`}>
       <div className="scard-top">
         <div className="scard-title-wrap">
           <span className="scard-name">{store.name}</span>
@@ -18,20 +20,26 @@ export default function StoreCard({ store, onEdit, onToggleStatus, onToggleLogin
         {[
           [addressIcon(), store.address],
           [phoneIcon(),   store.phone],
-          [personIcon(),  store.manager ? '1 manager' : '0 managers'],
+          [personIcon(),  `${managerCount} ${managerCount === 1 ? 'manager' : 'managers'}`],
         ].map(([icon, val], i) => (
           <div className="scard-detail-row" key={i}>
             <span className="scard-detail-icon">{icon}</span>
             <span className="scard-detail-val">{val}</span>
           </div>
         ))}
-        {store.managerLogin && (
-          <span className="scard-login-badge">Login Active</span>
-        )}
       </div>
 
       <div className="scard-actions">
-        <button className="scard-btn scard-btn--manage" onClick={() => onEdit(store)}>Manage</button>
+        <span className={`scard-login-badge ${store.managerLogin && !isInactive ? '' : 'scard-login-badge--off'}`}>
+          {store.managerLogin && !isInactive ? 'Login Active' : 'Login Inactive'}
+        </span>
+        <button
+          className="scard-btn scard-btn--manage"
+          onClick={() => onEdit(store)}
+          disabled={isInactive}
+        >
+          Manage
+        </button>
       </div>
     </div>
   );

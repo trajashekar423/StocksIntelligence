@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { fetchRewards, createReward, updateReward, deleteReward } from '../services/rewardsService';
 import RewardsTable from '../components/rewards/RewardsTable';
-import RewardCard from '../components/rewards/RewardCard';
 import RewardFormModal from '../components/rewards/RewardFormModal';
 import ConfirmDialog from '../components/rewards/ConfirmDialog';
 
@@ -31,7 +30,7 @@ export default function Rewards() {
   const [selectedReward, setSelectedReward] = useState(null);
   const [deleteTarget, setDeleteTarget]     = useState(null);
   const [submitting, setSubmitting]         = useState(false);
-  const [viewMode, setViewMode]             = useState('list');
+
 
   const loadRewards = useCallback(async () => {
     setLoading(true);
@@ -115,37 +114,37 @@ export default function Rewards() {
     }
   }
 
+
   const activeCount = rewards.filter((reward) => reward.is_active ?? reward.isHot ?? false).length;
   const inactiveCount = rewards.length - activeCount;
 
   return (
     <div className="rw-page">
       <div className="rw-header">
-        <div>
+        <div className="rw-header-left">
           <h5 className="rw-page-title">Rewards catalog</h5>
-          <p className="pg-sub">
-            Manage what customers can redeem their points for. {activeCount} active · {inactiveCount} inactive
-          </p>
+          <p className="pg-sub">Manage what customers can redeem their points for.</p>
+          <div className="rw-counts">{activeCount} active · {inactiveCount} inactive</div>
         </div>
-        <div className="rw-header-controls">
-          <div className="rw-view-toggle" aria-label="Rewards view mode">
-            <button
-              type="button"
-              className={`rw-view-btn${viewMode === 'cards' ? ' rw-view-btn--active' : ''}`}
-              onClick={() => setViewMode('cards')}
-            >
-              Cards
-            </button>
-            <button
-              type="button"
-              className={`rw-view-btn${viewMode === 'list' ? ' rw-view-btn--active' : ''}`}
-              onClick={() => setViewMode('list')}
-            >
-              List
-            </button>
-          </div>
-          <button className="rw-add-btn" onClick={handleAddClick} disabled={loading}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+        <div className="rw-header-right">
+          <button
+            className="rw-add-btn rw-add-btn--orange"
+            onClick={handleAddClick}
+            disabled={loading}
+            style={{
+              background: '#ff8800',
+              color: '#fff',
+              borderRadius: '999px',
+              boxShadow: '0 2px 8px 0 rgba(255,136,0,0.10)',
+              fontWeight: 600,
+              fontSize: 16,
+              padding: '0.5em 1.5em',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+            }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
               <line x1="12" y1="5" x2="12" y2="19" />
               <line x1="5" y1="12" x2="19" y2="12" />
             </svg>
@@ -163,21 +162,8 @@ export default function Rewards() {
 
       {loading ? (
         <div className="rw-loading">Loading rewards…</div>
-      ) : viewMode === 'list' ? (
-        <RewardsTable rewards={rewards} onEdit={handleEditClick} onDelete={handleDeleteClick} />
       ) : (
-        <div className="rw-card-grid">
-          {rewards.length ? rewards.map((reward, index) => (
-            <RewardCard
-              key={reward.id ?? reward.reward_id ?? reward.rewardId ?? `${reward.reward_name ?? 'reward'}-${index}`}
-              reward={reward}
-              onEdit={handleEditClick}
-              onDelete={handleDeleteClick}
-            />
-          )) : (
-            <div className="rw-empty">No rewards found.</div>
-          )}
-        </div>
+        <RewardsTable rewards={rewards} onEdit={handleEditClick} onDelete={handleDeleteClick} />
       )}
 
       {isModalOpen && (
