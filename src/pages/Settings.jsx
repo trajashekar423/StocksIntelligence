@@ -13,10 +13,11 @@ const TABS = [
 ];
 
 export default function Settings() {
-  const [active, setActive] = useState('stores');
-  const [stores, setStores] = useState([]);
+  const [active, setActive]           = useState('stores');
+  const [stores, setStores]           = useState([]);
   const [storesLoading, setStoresLoading] = useState(true);
   const [storesError, setStoresError] = useState('');
+  const [storesFilter, setStoresFilter] = useState('ACTIVE');
 
   useEffect(() => {
     let mounted = true;
@@ -50,6 +51,7 @@ export default function Settings() {
         stores={stores}
         loading={storesLoading}
         error={storesError}
+        statusFilter={storesFilter}
       />
     ),
     rewards: <PointsSettings />,
@@ -83,6 +85,33 @@ export default function Settings() {
             </button>
           ))}
         </div>
+
+        {active === 'stores' && (
+          <div className="st-stores-header-bar">
+            <div>
+              <div className="st-section-title">Store locations</div>
+              <div className="st-section-subtitle">Manage each location, its details, media and managers.</div>
+            </div>
+            <div className="st-store-tools">
+              <div className="st-status-tabs" aria-label="Store status filter">
+                <button
+                  className={`st-status-tab ${storesFilter === 'ACTIVE' ? 'st-status-tab--active' : ''}`}
+                  type="button"
+                  onClick={() => setStoresFilter('ACTIVE')}
+                >
+                  <span>Active</span>
+                </button>
+                <button
+                  className={`st-status-tab ${storesFilter === 'INACTIVE' ? 'st-status-tab--active' : ''}`}
+                  type="button"
+                  onClick={() => setStoresFilter('INACTIVE')}
+                >
+                  <span>Inactive</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="st-tab-content">
           {views[active]}

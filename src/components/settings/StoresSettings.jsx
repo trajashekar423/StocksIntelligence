@@ -4,14 +4,13 @@ import { getStoreStatusCounts } from '../../services/settingsService';
 
 const EMPTY_FORM = { name: '', city: '', address: '', phone: '', manager: '', status: 'ACTIVE' };
 
-export default function StoresSettings({ stores = [], loading = false, error = '' }) {
+export default function StoresSettings({ stores = [], loading = false, error = '', statusFilter = 'ACTIVE' }) {
   const [localStores, setLocalStores] = useState(stores);
-  const [modal, setModal]             = useState(null); // null | { mode, id? }
+  const [modal, setModal]             = useState(null);
   const [form, setForm]               = useState(EMPTY_FORM);
-  const [statusFilter, setStatusFilter] = useState('ACTIVE');
   const [activeTab, setActiveTab]     = useState('details');
   const [managers, setManagers]       = useState([]);
-  const [mgrModal, setMgrModal]       = useState(null); // null | { mode: 'add'|'edit', mgr? }
+  const [mgrModal, setMgrModal]       = useState(null);
   const [mgrForm, setMgrForm]         = useState({ name: '', email: '', password: '', deviceLogin: false, websiteAccess: false });
 
   const EMPTY_MGR = { name: '', email: '', password: '', deviceLogin: false, websiteAccess: false };
@@ -84,33 +83,6 @@ export default function StoresSettings({ stores = [], loading = false, error = '
   return (
     <div className="st-sections">
       <div className="st-card">
-        <div className="st-card-header">
-          <div>
-            <div className="st-section-title">Store locations</div>
-            <div className="st-section-subtitle">Manage each location, its details, media and managers.</div>
-          </div>
-          <div className="st-store-tools">
-            <div className="st-status-tabs" aria-label="Store status filter">
-              <button
-                className={`st-status-tab ${statusFilter === 'ACTIVE' ? 'st-status-tab--active' : ''}`}
-                type="button"
-                onClick={() => setStatusFilter('ACTIVE')}
-              >
-                <span>Active</span>
-                <strong>({storeCounts.active})</strong>
-              </button>
-              <button
-                className={`st-status-tab ${statusFilter === 'INACTIVE' ? 'st-status-tab--active' : ''}`}
-                type="button"
-                onClick={() => setStatusFilter('INACTIVE')}
-              >
-                <span>Inactive</span>
-                <strong>({storeCounts.inactive})</strong>
-              </button>
-            </div>
-          </div>
-        </div>
-
         <div className="st-card-body">
           {error && <div className="st-error-alert">{error}</div>}
 

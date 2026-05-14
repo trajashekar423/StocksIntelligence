@@ -1,6 +1,9 @@
 import api from './api';
 import { getUser } from '../utils/authStorage';
 
+export const fetchLoyaltyProgram  = ()     => api.get('/api/v1/merchant/loyalty-program/').then(r => r.data?.data);
+export const updateLoyaltyProgram = (body) => api.put('/api/v1/merchant/loyalty-program/', body).then(r => r.data);
+
 export function getStoreStatusCounts(stores = []) {
   return stores.reduce((acc, s) => {
     s.status === 'ACTIVE' ? acc.active++ : acc.inactive++;
