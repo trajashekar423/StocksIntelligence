@@ -1,6 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import useAuth from '../hooks/useAuth';
 import sidebarConfig from '../config/sidebarConfig.json';
 import themeConfig from '../config/themeConfig.json';
 import * as Icons from 'react-icons/fi';
@@ -22,7 +21,6 @@ export default function Sidebar({ collapsed, mobileOpen = false, onToggle, onClo
   const location = useLocation();
   const [navItems, setNavItems] = useState([]);
   const [theme, setTheme] = useState({});
-  const { logout } = useAuth();
 
   useEffect(() => {
     setNavItems(sidebarConfig);
@@ -90,14 +88,6 @@ export default function Sidebar({ collapsed, mobileOpen = false, onToggle, onClo
             );
           })}
         </nav>
-
-        {/* Logout */}
-        <div className="sb-footer mt-auto">
-          <button className="sidebar-item sb-nav-item sb-logout d-flex align-items-center gap-2 rounded-3 fw-semibold w-100" onClick={logout}>
-            <span className="sb-icon"><Icons.FiLogOut size={18} /></span>
-            {!collapsed && <span className="sb-label">Logout</span>}
-          </button>
-        </div>
       </aside>
     </>
   );
