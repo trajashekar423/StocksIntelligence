@@ -23,9 +23,15 @@ export default function Transactions() {
   const [searchTerm,   setSearchTerm]   = useState('');
   const [activeType,   setActiveType]   = useState('ALL');
   const [store,        setStore]        = useState('All Stores');
+  const [modalOpen,    setModalOpen]    = useState(false);
+  const [txError,      setTxError]      = useState(false);
+
+  const { draft, applied, set, reset, apply, cancel, clearOne } = useTransactionFilters();
 
   useEffect(() => {
-    getTransactions().then(setTransactions);
+    getTransactions()
+      .then(setTransactions)
+      .catch(() => setTxError(true));
   }, []);
 
   const stores = useMemo(() => {
@@ -134,8 +140,17 @@ export default function Transactions() {
         </div>
       </div>
 
-      <div className="tx-table-card">
-        <TransactionsTable transactions={filtered} onSavePoints={handleSavePoints} />
+      <div className="pg-card">
+        <div className="pg-card-header">
+          <span className="pg-card-title">
+            Transactions
+            <span className="tx-count">{filtered.length}</span>
+          </span>
+          {hasActiveFilters && (
+            <span className="tx-active-filter-badge">Filters active</span>
+          )}
+        </div>
+        <TransactionsTable transactions={filtered} />
       </div>
     </div>
   );

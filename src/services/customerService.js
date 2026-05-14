@@ -1,7 +1,6 @@
-import customersMock from '../mock/customersMock';
+import api from './api';
 
-// Replace this function body with a real API call when ready:
-// e.g. const res = await fetch('/api/customers'); return res.json();
 export async function fetchCustomers() {
-  return customersMock;
+  const { data } = await api.get('/api/v1/customers/');
+  return data?.results ?? data ?? [];
 }

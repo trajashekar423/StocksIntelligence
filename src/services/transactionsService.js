@@ -1,10 +1,12 @@
-import { transactions } from '../mock/transactionsMock';
+import api from './api';
 
 export async function getTransactions() {
-  return transactions;
+  const { data } = await api.get('/api/v1/transactions/');
+  return data?.results ?? data ?? [];
 }
 
 export async function filterTransactions({ store, type } = {}) {
+  const transactions = await getTransactions();
   return transactions.filter((t) => {
     if (store && store !== 'All Stores' && t.location !== store) return false;
     if (type  && type  !== 'all'        && t.type     !== type)  return false;

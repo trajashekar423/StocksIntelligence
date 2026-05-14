@@ -1,5 +1,6 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import useAuth from '../hooks/useAuth';
 import sidebarConfig from '../config/sidebarConfig.json';
 import themeConfig from '../config/themeConfig.json';
 import * as Icons from 'react-icons/fi';
@@ -17,10 +18,11 @@ function getIcon(iconName) {
   return map[iconName] || Icons.FiCircle;
 }
 
-export default function Sidebar({ collapsed, onToggle }) {
+export default function Sidebar({ collapsed, mobileOpen = false, onToggle, onClose }) {
   const location = useLocation();
   const [navItems, setNavItems] = useState([]);
   const [theme, setTheme] = useState({});
+  const { logout } = useAuth();
 
   useEffect(() => {
     setNavItems(sidebarConfig);
@@ -30,12 +32,13 @@ export default function Sidebar({ collapsed, onToggle }) {
   return (
     <>
       {/* Mobile overlay */}
-      {!collapsed && (
-        <div className="sb-overlay d-md-none" onClick={onToggle} />
+      {mobileOpen && (
+        <div className="sb-overlay" onClick={onClose} aria-hidden="true" />
       )}
 
       <aside
-        className={`sidebar sb-sidebar d-flex flex-column p-3 ${collapsed ? 'sb-collapsed' : ''}`}
+        id="dashboard-sidebar"
+        className={`sidebar sb-sidebar d-flex flex-column p-3 ${collapsed ? 'sb-collapsed' : ''} ${mobileOpen ? 'sb-mobile-open' : ''}`}
         style={{
           color: theme.sidebarColor,
           width: collapsed ? theme.sidebarCollapsedWidth : theme.sidebarExpandedWidth,
@@ -53,14 +56,7 @@ export default function Sidebar({ collapsed, onToggle }) {
               <span className="sb-brand-sub">Merchant Portal</span>
             </div>
           )}
-          <button className="sb-toggle d-none d-md-flex align-items-center justify-content-center rounded-3" onClick={onToggle} aria-label="Toggle sidebar">
-            <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              {collapsed
-                ? <path d="M9 18l6-6-6-6" />
-                : <path d="M15 18l-6-6 6-6" />
-              }
-            </svg>
-          </button>
+          
         </div>
 
         {/* Nav */}
@@ -78,6 +74,7 @@ export default function Sidebar({ collapsed, onToggle }) {
                 )}
                 <NavLink
                   to={path}
+                  onClick={onClose}
                   className={({ isActive: navActive }) =>
                     `sidebar-item sb-nav-item d-flex align-items-center gap-2 rounded-3 fw-semibold ${navActive || isActive ? 'active sb-active' : ''}`
                   }
@@ -93,6 +90,14 @@ export default function Sidebar({ collapsed, onToggle }) {
             );
           })}
         </nav>
+
+        {/* Logout */}
+        <div className="sb-footer mt-auto">
+          <button className="sidebar-item sb-nav-item sb-logout d-flex align-items-center gap-2 rounded-3 fw-semibold w-100" onClick={logout}>
+            <span className="sb-icon"><Icons.FiLogOut size={18} /></span>
+            {!collapsed && <span className="sb-label">Logout</span>}
+          </button>
+        </div>
       </aside>
     </>
   );

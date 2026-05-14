@@ -27,12 +27,10 @@ export default function StoreCard({ store, onEdit, onToggleStatus, onToggleLogin
             <span className="scard-detail-val">{val}</span>
           </div>
         ))}
+        <hr className="scard-details-divider" />
       </div>
 
       <div className="scard-actions">
-        <span className={`scard-login-badge ${store.managerLogin && !isInactive ? '' : 'scard-login-badge--off'}`}>
-          {store.managerLogin && !isInactive ? 'Login Active' : 'Login Inactive'}
-        </span>
         <button
           className="scard-btn scard-btn--manage"
           onClick={() => onEdit(store)}

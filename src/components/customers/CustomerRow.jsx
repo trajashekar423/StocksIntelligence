@@ -11,14 +11,17 @@ const AVATAR_COLOR = {
 };
 
 export default function CustomerRow({ customer }) {
-  const { name, email, phone, visits, points, lastVisit, tier } = customer;
+  const {
+    name = '', email = '', phone = '', visits = 0,
+    points = 0, lastVisit = '—', tier = 'Silver'
+  } = customer ?? {};
   return (
     <tr className="cm-tr">
       {/* Customer */}
       <td className="cm-td">
         <div className="cm-customer-cell">
-          <div className="cm-avatar" style={{ background: AVATAR_COLOR[tier] }}>
-            {name.charAt(0)}
+          <div className="cm-avatar" style={{ background: AVATAR_COLOR[tier] ?? '#6b7280' }}>
+            {name.charAt(0) || '?'}
           </div>
           <div>
             <div className="cm-name">{name}</div>
