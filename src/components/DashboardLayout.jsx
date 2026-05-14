@@ -4,11 +4,16 @@ import Sidebar from './Sidebar';
 
 export default function DashboardLayout() {
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+
+  const toggleSidebar = () => {
+    setCollapsed((c) => !c);
+  };
 
   return (
     <div className="dl-wrapper">
       <Sidebar
-        collapsed={isDrawerMode ? false : collapsed}
+        collapsed={mobileSidebarOpen ? false : collapsed}
         mobileOpen={mobileSidebarOpen}
         onToggle={toggleSidebar}
         onClose={() => setMobileSidebarOpen(false)}
@@ -17,7 +22,7 @@ export default function DashboardLayout() {
         <header className="dl-topbar">
           <button
             className="sb-toggle d-flex d-md-none"
-            onClick={() => setCollapsed((c) => !c)}
+            onClick={() => setMobileSidebarOpen(true)}
             aria-label="Open menu"
           >
             <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
