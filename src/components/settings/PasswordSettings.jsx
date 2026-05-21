@@ -32,7 +32,7 @@ export default function PasswordSettings() {
 
   return (
     <div className="st-sections st-sections--flat">
-      <div className="st-card">
+      <div className="st-card st-account-card">
         <div className="st-card-header">Change password</div>
         <div className="st-card-body">
           {success && <div className="rn-success-alert" style={{ marginBottom: '1rem' }}>Password updated successfully.</div>}

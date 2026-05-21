@@ -21,6 +21,26 @@ function hasRewardContext(formData) {
   return Array.isArray(formData.business_ids) && formData.business_ids.length > 0 && formData.program_id;
 }
 
+function getRewardId(reward) {
+  return reward.id ?? reward.reward_id ?? reward.catalog_id;
+}
+
+function isRewardActive(reward) {
+  return reward.is_active ?? reward.isHot ?? false;
+}
+
+function withRewardActiveState(reward, active) {
+  if (Object.prototype.hasOwnProperty.call(reward, 'is_active')) {
+    return { ...reward, is_active: active };
+  }
+
+  if (Object.prototype.hasOwnProperty.call(reward, 'isHot')) {
+    return { ...reward, isHot: active };
+  }
+
+  return { ...reward, is_active: active };
+}
+
 export default function Rewards() {
   const [rewards, setRewards]               = useState([]);
   const [loading, setLoading]               = useState(false);
@@ -30,6 +50,7 @@ export default function Rewards() {
   const [selectedReward, setSelectedReward] = useState(null);
   const [deleteTarget, setDeleteTarget]     = useState(null);
   const [submitting, setSubmitting]         = useState(false);
+  const [toast, setToast]                   = useState('');
 
 
   const loadRewards = useCallback(async () => {
@@ -98,6 +119,28 @@ export default function Rewards() {
   }
 
   // ── Delete ───────────────────────────────────────
+  async function handleToggleReward(reward) {
+    const rewardId = getRewardId(reward);
+    if (!rewardId) return;
+
+    const nextActive = !isRewardActive(reward);
+    const updatedReward = withRewardActiveState(reward, nextActive);
+    const previousRewards = rewards;
+
+    setRewards((current) => current.map((item) => (
+      getRewardId(item) === rewardId ? withRewardActiveState(item, nextActive) : item
+    )));
+
+    try {
+      await updateReward(rewardId, updatedReward);
+      setToast('Reward updated');
+      window.setTimeout(() => setToast(''), 2200);
+    } catch (err) {
+      setRewards(previousRewards);
+      setError(formatApiError(err.response?.data, 'Failed to update reward.'));
+    }
+  }
+
   function handleDeleteClick(id) { setDeleteTarget(id); }
 
   async function handleConfirmDelete() {
@@ -115,7 +158,7 @@ export default function Rewards() {
   }
 
 
-  const activeCount = rewards.filter((reward) => reward.is_active ?? reward.isHot ?? false).length;
+  const activeCount = rewards.filter((reward) => isRewardActive(reward)).length;
   const inactiveCount = rewards.length - activeCount;
 
   return (
@@ -160,10 +203,17 @@ export default function Rewards() {
         </div>
       )}
 
+      {toast && <div className="rw-toast">{toast}</div>}
+
       {loading ? (
         <div className="rw-loading">Loading rewards…</div>
       ) : (
-        <RewardsTable rewards={rewards} onEdit={handleEditClick} onDelete={handleDeleteClick} />
+        <RewardsTable
+          rewards={rewards}
+          onEdit={handleEditClick}
+          onDelete={handleDeleteClick}
+          onToggle={handleToggleReward}
+        />
       )}
 
       {isModalOpen && (

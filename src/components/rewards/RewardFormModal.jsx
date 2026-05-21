@@ -1,41 +1,46 @@
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import InputField from './InputField';
 import TextArea from './TextArea';
-import PreviewCard from './PreviewCard';
 import Button from './Button';
 
 
 const STORE_OPTIONS = ['Downtown', 'Uptown', 'Airport'];
+const STORE_DETAILS = {
+  Downtown: '123 Main Street, Downtown',
+  Uptown: '48 Market Avenue, Uptown',
+  Airport: 'Terminal 2, Airport Road',
+};
 
 const EMPTY = {
   title: '',
   description: '',
   points: '',
   maxRedemptions: '',
+  status: 'Active',
   applyToAll: false,
   stores: [],
 };
 
-export default function RewardFormModal({ isEditMode, initialData, onSubmit, onClose }) {
-  const [form, setForm] = useState(EMPTY);
-  const [touched, setTouched] = useState({});
+function getInitialForm(isEditMode, initialData) {
+  if (!isEditMode || !initialData) return EMPTY;
 
-  useEffect(() => {
-    if (isEditMode && initialData) {
-      setForm({
-        ...EMPTY,
-        title: initialData.reward_name ?? '',
-        description: initialData.reward_description ?? '',
-        points: String(initialData.points_cost ?? ''),
-        maxRedemptions: initialData.max_redemptions_per_customer ?? '',
-        applyToAll: false,
-        stores: [],
-      });
-    } else {
-      setForm(EMPTY);
-      setTouched({});
-    }
-  }, [isEditMode, initialData]);
+  return {
+    ...EMPTY,
+    title: initialData.reward_name ?? '',
+    description: initialData.reward_description ?? '',
+    points: String(initialData.points_cost ?? ''),
+    maxRedemptions: initialData.max_redemptions_per_customer ?? '',
+    status: (initialData.is_active ?? initialData.isHot ?? true) ? 'Active' : 'Inactive',
+    applyToAll: false,
+    stores: [],
+  };
+}
+
+export default function RewardFormModal({ isEditMode, initialData, onSubmit, onClose, submitting = false }) {
+  const [form, setForm] = useState(() => getInitialForm(isEditMode, initialData));
+  const [touched, setTouched] = useState({});
+  const [activeTab, setActiveTab] = useState('details');
+  const [storeSearch, setStoreSearch] = useState('');
 
   const errors = {
     title: !form.title.trim() ? 'Reward name is required.' : null,
@@ -43,6 +48,17 @@ export default function RewardFormModal({ isEditMode, initialData, onSubmit, onC
   };
   const isValid = !errors.title && !errors.points;
   const storeValid = form.applyToAll || form.stores.length > 0;
+  const allStoresSelected = form.applyToAll || form.stores.length === STORE_OPTIONS.length;
+
+  const filteredStores = useMemo(() => {
+    const query = storeSearch.trim().toLowerCase();
+    if (!query) return STORE_OPTIONS;
+
+    return STORE_OPTIONS.filter((store) => {
+      const address = STORE_DETAILS[store] ?? '';
+      return store.toLowerCase().includes(query) || address.toLowerCase().includes(query);
+    });
+  }, [storeSearch]);
 
   function handleChange(e) {
     const { name, value } = e.target;
@@ -61,10 +77,15 @@ export default function RewardFormModal({ isEditMode, initialData, onSubmit, onC
   function handleStoreChange(store) {
     setForm((prev) => ({
       ...prev,
+      applyToAll: false,
       stores: prev.stores.includes(store)
         ? prev.stores.filter((s) => s !== store)
         : [...prev.stores, store],
     }));
+  }
+
+  function handleClearStores() {
+    setForm((prev) => ({ ...prev, applyToAll: false, stores: [] }));
   }
 
   function handleSubmit(e) {
@@ -88,23 +109,7 @@ export default function RewardFormModal({ isEditMode, initialData, onSubmit, onC
     <div className="rw-overlay" onClick={onClose}>
       <div className="mf-modal" onClick={(e) => e.stopPropagation()}>
         <div className="mf-header">
-          <div className="mf-header-left">
-            <div className="mf-header-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="20 12 20 22 4 22 4 12" />
-                <rect x="2" y="7" width="20" height="5" />
-                <line x1="12" y1="22" x2="12" y2="7" />
-                <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z" />
-                <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" />
-              </svg>
-            </div>
-            <div>
-              <div className="mf-title">{isEditMode ? 'Edit Reward' : 'Add Reward'}</div>
-              <div className="mf-subtitle">
-                {isEditMode ? 'Update the details of this reward.' : 'Create a new reward for customers'}
-              </div>
-            </div>
-          </div>
+          <div className="mf-title">New reward</div>
           <button className="mf-close" onClick={onClose} aria-label="Close">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
               <line x1="18" y1="6" x2="6" y2="18" />
@@ -114,111 +119,145 @@ export default function RewardFormModal({ isEditMode, initialData, onSubmit, onC
         </div>
 
         <form onSubmit={handleSubmit}>
+          <div className="mf-tabs" role="tablist" aria-label="Reward sections">
+            <button
+              type="button"
+              className={`mf-tab${activeTab === 'details' ? ' mf-tab--active' : ''}`}
+              onClick={() => setActiveTab('details')}
+              role="tab"
+              aria-selected={activeTab === 'details'}
+            >
+              Details
+            </button>
+            <button
+              type="button"
+              className={`mf-tab${activeTab === 'stores' ? ' mf-tab--active' : ''}`}
+              onClick={() => setActiveTab('stores')}
+              role="tab"
+              aria-selected={activeTab === 'stores'}
+            >
+              Stores
+              {allStoresSelected && <span className="mf-tab-badge">All</span>}
+            </button>
+          </div>
+
           <div className="mf-body">
-            <div className="mf-section-block">
-              <InputField
-                label="Reward Name"
-                required
-                error={touched.title ? errors.title : null}
-              >
-                <input
-                  className={`mf-input${touched.title && errors.title ? ' mf-input--error' : ''}`}
-                  name="title"
-                  placeholder="e.g. Free Coffee"
-                  value={form.title}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                />
-              </InputField>
-            </div>
-
-            <div className="mf-section-block">
-              <TextArea
-                label="Description"
-                name="description"
-                placeholder="e.g. Get a free coffee of any size"
-                value={form.description}
-                onChange={handleChange}
-                rows={3}
-              />
-            </div>
-
-            <div className="mf-section-block">
-              <div className="mf-row">
+            {activeTab === 'details' && (
+              <div className="mf-tab-panel">
                 <InputField
-                  label="Points Required"
+                  label="Reward Name"
                   required
-                  suffix="pts"
-                  error={touched.points ? errors.points : null}
+                  error={touched.title ? errors.title : null}
                 >
                   <input
-                    className={`mf-input mf-input--suffix${touched.points && errors.points ? ' mf-input--error' : ''}`}
-                    name="points"
-                    type="number"
-                    min="1"
-                    placeholder="e.g. 100"
-                    value={form.points}
+                    className={`mf-input${touched.title && errors.title ? ' mf-input--error' : ''}`}
+                    name="title"
+                    placeholder="e.g. Free Coffee"
+                    value={form.title}
                     onChange={handleChange}
                     onBlur={handleBlur}
                   />
                 </InputField>
 
-                <InputField label="Max Redemptions">
-                  <input
-                    className="mf-input"
-                    name="maxRedemptions"
-                    placeholder="Unlimited"
-                    value={form.maxRedemptions}
-                    onChange={handleChange}
-                  />
-                </InputField>
-              </div>
-            </div>
+                <div className="mf-row">
+                  <InputField
+                    label="Points Required"
+                    required
+                    suffix="pts"
+                    error={touched.points ? errors.points : null}
+                  >
+                    <input
+                      className={`mf-input mf-input--suffix${touched.points && errors.points ? ' mf-input--error' : ''}`}
+                      name="points"
+                      type="number"
+                      min="1"
+                      placeholder="e.g. 100"
+                      value={form.points}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                    />
+                  </InputField>
 
-            <div className="mf-section-block">
-              <div className="mf-field">
-                <label className="mf-label">
-                  Apply to Stores <span className="mf-required">*</span>
-                </label>
-                <div className="rw-stores-box">
-                  <label className="rw-checkbox-row rw-checkbox-master">
-                    <input type="checkbox" className="rw-checkbox" checked={form.applyToAll} onChange={handleApplyAllChange} />
-                    <span className="rw-checkbox-label">Apply to all stores</span>
-                  </label>
-                  <div className="rw-stores-divider" />
-                  {STORE_OPTIONS.map((store) => (
-                    <label key={store} className={`rw-checkbox-row${form.applyToAll ? ' rw-checkbox-disabled' : ''}`}>
-                      <input
-                        type="checkbox"
-                        className="rw-checkbox"
-                        checked={form.stores.includes(store)}
-                        onChange={() => handleStoreChange(store)}
-                        disabled={form.applyToAll}
-                      />
-                      <span className="rw-checkbox-label">{store}</span>
-                    </label>
-                  ))}
+                  <InputField label="Status">
+                    <select className="mf-input mf-select" name="status" value={form.status} onChange={handleChange}>
+                      <option>Active</option>
+                      <option>Inactive</option>
+                    </select>
+                  </InputField>
                 </div>
+
+                <TextArea
+                  label="Description"
+                  name="description"
+                  placeholder="Short description for customers"
+                  value={form.description}
+                  onChange={handleChange}
+                  rows={4}
+                />
+
+              </div>
+            )}
+
+            {activeTab === 'stores' && (
+              <div className="mf-tab-panel">
+                <div className="mf-stores-head">
+                  <div>
+                    <div className="mf-section-heading">Available at stores</div>
+                    <div className="mf-selection-count">
+                      {form.stores.length} selected of {STORE_OPTIONS.length}
+                    </div>
+                  </div>
+                  <button type="button" className="mf-clear-btn" onClick={handleClearStores}>
+                    Clear all
+                  </button>
+                </div>
+
+                <label className="rw-checkbox-row rw-checkbox-master mf-all-stores-row">
+                  <input type="checkbox" className="rw-checkbox" checked={allStoresSelected} onChange={handleApplyAllChange} />
+                  <span className="rw-checkbox-label">Apply to all stores</span>
+                </label>
+
+                <input
+                  className="mf-input mf-search-input"
+                  placeholder="Search stores by name or address"
+                  value={storeSearch}
+                  onChange={(e) => setStoreSearch(e.target.value)}
+                />
+
+                <div className="mf-store-list">
+                  {filteredStores.map((store) => {
+                    const selected = form.stores.includes(store);
+
+                    return (
+                      <label key={store} className={`mf-store-item${selected ? ' mf-store-item--selected' : ''}`}>
+                        <input
+                          type="checkbox"
+                          className="rw-checkbox"
+                          checked={selected}
+                          onChange={() => handleStoreChange(store)}
+                        />
+                        <span className="mf-store-copy">
+                          <span className="mf-store-name">{store}</span>
+                          <span className="mf-store-address">{STORE_DETAILS[store]}</span>
+                        </span>
+                      </label>
+                    );
+                  })}
+
+                  {filteredStores.length === 0 && (
+                    <div className="mf-store-empty">No stores match your search.</div>
+                  )}
+                </div>
+
                 {!storeValid && <span className="mf-error">Select at least one store.</span>}
               </div>
-            </div>
-
-            <div className="mf-section-block">
-              <div className="mf-preview-section">
-                <div className="mf-preview-label">Customer Preview</div>
-                <PreviewCard
-                  title={form.title}
-                  description={form.description}
-                  points={form.points}
-                />
-              </div>
-            </div>
+            )}
           </div>
 
           <div className="mf-footer">
             <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
-            <Button type="submit" disabled={!isValid}>
-              {isEditMode ? 'Save Changes' : 'Add Reward'}
+            <Button type="submit" disabled={!isValid || submitting}>
+              {submitting ? 'Saving...' : 'Save reward'}
             </Button>
           </div>
         </form>

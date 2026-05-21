@@ -132,7 +132,7 @@ export default function PointsSettings() {
       <div className="st-sections">
         <div className="st-rewards-grid">
           {[1, 2, 3].map(i => (
-            <div key={i} className="st-card">
+            <div key={i} className="st-card st-rewards-card">
               <div className="st-card-header">Loading…</div>
               <div className="st-card-body">
                 <div className="ps-skeleton" />
@@ -154,7 +154,7 @@ export default function PointsSettings() {
       <div className="st-rewards-grid">
 
         {/* Card 1 — Points Configuration */}
-        <div className="st-card">
+        <div className="st-card st-rewards-card">
           <div className="st-card-header">Points configuration</div>
           <div className="st-card-body">
 
@@ -213,7 +213,7 @@ export default function PointsSettings() {
         </div>
 
         {/* Card 2 — Bonus Points */}
-        <div className="st-card">
+        <div className="st-card st-rewards-card">
           <div className="st-card-header">Bonus points</div>
           <div className="st-card-body">
 
@@ -245,7 +245,7 @@ export default function PointsSettings() {
         </div>
 
         {/* Card 3 — Points Expiration */}
-        <div className="st-card">
+        <div className="st-card st-rewards-card">
           <div className="st-card-header">Points expiration</div>
           <div className="st-card-body">
 

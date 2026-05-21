@@ -13,7 +13,7 @@ export default function BrandingSettings() {
 
   return (
     <div className="st-sections st-sections--flat">
-      <div className="st-card">
+      <div className="st-card st-account-card">
         <div className="st-card-header">Brand image</div>
         <div className="st-card-body">
           <div className="st-field">

@@ -10,23 +10,12 @@ const FILTER_TABS = [
   { value: 'REDEEMED', label: 'Redeemed' },
 ];
 
-function getTransactionHistory(transaction) {
-  return transaction.history
-    || transaction.editHistory
-    || transaction.pointsHistory
-    || transaction.pointHistory
-    || [];
-}
-
 export default function Transactions() {
   const [transactions, setTransactions] = useState([]);
   const [searchTerm,   setSearchTerm]   = useState('');
   const [activeType,   setActiveType]   = useState('ALL');
   const [store,        setStore]        = useState('All Stores');
-  const [modalOpen,    setModalOpen]    = useState(false);
   const [txError,      setTxError]      = useState(false);
-
-  const { draft, applied, set, reset, apply, cancel, clearOne } = useTransactionFilters();
 
   useEffect(() => {
     getTransactions()
@@ -57,28 +46,7 @@ export default function Transactions() {
     });
   }, [transactions, searchTerm, activeType, store]);
 
-  const handleSavePoints = ({ transactionId, newPoints, reason }) => {
-    setTransactions((current) => current.map((transaction) => {
-      if (transaction.id !== transactionId) return transaction;
-
-      const history = getTransactionHistory(transaction);
-      const historyEntry = {
-        id: `${transaction.id}-${Date.now()}`,
-        oldPoints: transaction.points,
-        newPoints,
-        reason,
-        editor: 'Store Manager',
-        timestamp: 'Just now',
-      };
-
-      return {
-        ...transaction,
-        points: newPoints,
-        edited: true,
-        history: [historyEntry, ...history],
-      };
-    }));
-  };
+  const hasActiveFilters = Boolean(searchTerm.trim()) || activeType !== 'ALL' || store !== 'All Stores';
 
   return (
     <div className="tx-page">
@@ -91,6 +59,13 @@ export default function Transactions() {
           <ExportButton onClick={() => exportTransactions(filtered)} />
         </div>
       </div>
+
+      {txError && (
+        <div className="rw-error-banner">
+          Failed to load transactions.
+          <button onClick={() => setTxError(false)} aria-label="Dismiss">x</button>
+        </div>
+      )}
 
       <div className="tx-toolbar">
         <div className="tx-toolbar-left">

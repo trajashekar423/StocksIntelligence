@@ -82,7 +82,7 @@ function StorePills({ stores }) {
   );
 }
 
-export default function RewardsTable({ rewards, onEdit, onDelete }) {
+export default function RewardsTable({ rewards, onEdit, onDelete, onToggle }) {
   if (!rewards.length) {
     return <div className="rw-empty">No rewards found.</div>;
   }
@@ -108,7 +108,10 @@ export default function RewardsTable({ rewards, onEdit, onDelete }) {
               const isActive = isRewardActive(reward);
 
               return (
-                <tr key={getRewardKey(reward, index)}>
+                <tr
+                  key={getRewardKey(reward, index)}
+                  className={`reward-row ${isActive ? 'reward-row--active' : 'reward-row--inactive'}`}
+                >
                   <td>
                     <div className="rw-reward-cell">
                       <div className="rw-icon-box">
@@ -127,13 +130,32 @@ export default function RewardsTable({ rewards, onEdit, onDelete }) {
                   </td>
                   <td className="rw-redeemed">{getRedeemed(reward)} times</td>
                   <td>
-                    <span className={`rw-switch${isActive ? ' rw-switch--on' : ''}`} aria-label={isActive ? 'Active' : 'Inactive'}>
+                    <span
+                      className={`rw-switch ${isActive ? 'rw-switch--on' : 'rw-switch--off'}`}
+                      aria-label={isActive ? 'Active' : 'Inactive'}
+                      role="switch"
+                      aria-checked={isActive}
+                      tabIndex={0}
+                      onClick={() => onToggle?.(reward)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          onToggle?.(reward);
+                        }
+                      }}
+                    >
                       <span />
                     </span>
                   </td>
                   <td>
                     <div className="rw-actions">
-                      <button className="rw-action-btn rw-action-edit" onClick={() => onEdit(reward)} title="Edit">
+                      <button
+                        className="rw-action-btn rw-action-edit"
+                        onClick={() => onEdit(reward)}
+                        title={isActive ? 'Edit' : 'Inactive rewards cannot be edited'}
+                        disabled={!isActive}
+                        aria-disabled={!isActive}
+                      >
                         <EditIcon />
                         <span>Edit</span>
                       </button>

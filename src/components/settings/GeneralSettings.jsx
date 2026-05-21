@@ -6,7 +6,7 @@ export default function GeneralSettings() {
 
   return (
     <div className="st-sections st-sections--flat">
-      <div className="st-card">
+      <div className="st-card st-account-card">
         <div className="st-card-header">Account info</div>
         <div className="st-card-body">
           <div className="st-account-card-head">
