@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { fetchRewards, createReward, updateReward, deleteReward } from '../services/rewardsService';
+import { fetchStoreSettings } from '../services/settingsService';
 import RewardsTable from '../components/rewards/RewardsTable';
 import RewardFormModal from '../components/rewards/RewardFormModal';
 import ConfirmDialog from '../components/rewards/ConfirmDialog';
@@ -43,6 +44,7 @@ function withRewardActiveState(reward, active) {
 
 export default function Rewards() {
   const [rewards, setRewards]               = useState([]);
+  const [activeStores, setActiveStores]     = useState([]);
   const [loading, setLoading]               = useState(false);
   const [error, setError]                   = useState(null);
   const [isModalOpen, setIsModalOpen]       = useState(false);
@@ -66,7 +68,17 @@ export default function Rewards() {
     }
   }, []);
 
+  const loadStores = useCallback(async () => {
+    try {
+      const stores = await fetchStoreSettings();
+      setActiveStores(stores.filter((store) => store.is_active));
+    } catch (err) {
+      setError(formatApiError(err.response?.data, 'Failed to load stores.'));
+    }
+  }, []);
+
   useEffect(() => { loadRewards(); }, [loadRewards]);
+  useEffect(() => { loadStores(); }, [loadStores]);
 
   // ── Add ──────────────────────────────────────────
   function handleAddClick() {
@@ -166,8 +178,10 @@ export default function Rewards() {
       <div className="rw-header">
         <div className="rw-header-left">
           <h5 className="rw-page-title">Rewards catalog</h5>
-          <p className="pg-sub">Manage what customers can redeem their points for.</p>
-          <div className="rw-counts">{activeCount} active · {inactiveCount} inactive</div>
+          <div className="rw-header-meta">
+            <p className="pg-sub">Manage what customers can redeem their points for.</p>
+            <div className="rw-counts">{activeCount} active · {inactiveCount} inactive</div>
+          </div>
         </div>
         <div className="rw-header-right">
           <button
@@ -210,6 +224,7 @@ export default function Rewards() {
       ) : (
         <RewardsTable
           rewards={rewards}
+          activeStores={activeStores}
           onEdit={handleEditClick}
           onDelete={handleDeleteClick}
           onToggle={handleToggleReward}
@@ -220,6 +235,7 @@ export default function Rewards() {
         <RewardFormModal
           isEditMode={isEditMode}
           initialData={selectedReward}
+          activeStores={activeStores}
           onSubmit={isEditMode ? handleUpdateReward : handleAddReward}
           onClose={() => !submitting && setIsModalOpen(false)}
           submitting={submitting}

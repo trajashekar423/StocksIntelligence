@@ -4,13 +4,6 @@ import TextArea from './TextArea';
 import Button from './Button';
 
 
-const STORE_OPTIONS = ['Downtown', 'Uptown', 'Airport'];
-const STORE_DETAILS = {
-  Downtown: '123 Main Street, Downtown',
-  Uptown: '48 Market Avenue, Uptown',
-  Airport: 'Terminal 2, Airport Road',
-};
-
 const EMPTY = {
   title: '',
   description: '',
@@ -21,8 +14,39 @@ const EMPTY = {
   stores: [],
 };
 
-function getInitialForm(isEditMode, initialData) {
+function getStoreId(store) {
+  return store.business_id ?? store.id;
+}
+
+function getStoreName(store) {
+  return store.business_name ?? store.name ?? 'Unnamed';
+}
+
+function getStoreAddress(store) {
+  return store.fullAddress ?? store.full_address ?? store.address ?? '';
+}
+
+function getAssignedStoreIds(initialData, activeStores) {
+  const activeIds = new Set(activeStores.map((store) => String(getStoreId(store))));
+  const byName = new Map(activeStores.map((store) => [getStoreName(store).toLowerCase(), getStoreId(store)]));
+  const assignments = initialData?.business_ids ?? initialData?.businessIds ?? initialData?.stores ?? initialData?.store_names ?? initialData?.business_names;
+
+  if (assignments === 'ALL' || initialData?.applyToAll) return activeStores.map(getStoreId);
+  if (!Array.isArray(assignments)) return [];
+
+  return assignments
+    .map((item) => {
+      if (typeof item === 'object' && item !== null) return item.business_id ?? item.id;
+      const itemKey = String(item);
+      return activeIds.has(itemKey) ? item : byName.get(itemKey.toLowerCase());
+    })
+    .filter((id) => id !== undefined && activeIds.has(String(id)));
+}
+
+function getInitialForm(isEditMode, initialData, activeStores) {
   if (!isEditMode || !initialData) return EMPTY;
+
+  const selectedStores = getAssignedStoreIds(initialData, activeStores);
 
   return {
     ...EMPTY,
@@ -31,13 +55,13 @@ function getInitialForm(isEditMode, initialData) {
     points: String(initialData.points_cost ?? ''),
     maxRedemptions: initialData.max_redemptions_per_customer ?? '',
     status: (initialData.is_active ?? initialData.isHot ?? true) ? 'Active' : 'Inactive',
-    applyToAll: false,
-    stores: [],
+    applyToAll: activeStores.length > 0 && selectedStores.length === activeStores.length,
+    stores: selectedStores,
   };
 }
 
-export default function RewardFormModal({ isEditMode, initialData, onSubmit, onClose, submitting = false }) {
-  const [form, setForm] = useState(() => getInitialForm(isEditMode, initialData));
+export default function RewardFormModal({ isEditMode, initialData, activeStores = [], onSubmit, onClose, submitting = false }) {
+  const [form, setForm] = useState(() => getInitialForm(isEditMode, initialData, activeStores));
   const [touched, setTouched] = useState({});
   const [activeTab, setActiveTab] = useState('details');
   const [storeSearch, setStoreSearch] = useState('');
@@ -48,17 +72,24 @@ export default function RewardFormModal({ isEditMode, initialData, onSubmit, onC
   };
   const isValid = !errors.title && !errors.points;
   const storeValid = form.applyToAll || form.stores.length > 0;
-  const allStoresSelected = form.applyToAll || form.stores.length === STORE_OPTIONS.length;
+  const allStoresSelected = activeStores.length > 0 && (form.applyToAll || form.stores.length === activeStores.length);
 
   const filteredStores = useMemo(() => {
     const query = storeSearch.trim().toLowerCase();
-    if (!query) return STORE_OPTIONS;
+    if (!query) return activeStores;
 
-    return STORE_OPTIONS.filter((store) => {
-      const address = STORE_DETAILS[store] ?? '';
-      return store.toLowerCase().includes(query) || address.toLowerCase().includes(query);
+    return activeStores.filter((store) => {
+      const searchable = [
+        getStoreName(store),
+        store.address,
+        getStoreAddress(store),
+        store.city,
+        store.state,
+      ].filter(Boolean).join(' ').toLowerCase();
+
+      return searchable.includes(query);
     });
-  }, [storeSearch]);
+  }, [activeStores, storeSearch]);
 
   function handleChange(e) {
     const { name, value } = e.target;
@@ -71,16 +102,16 @@ export default function RewardFormModal({ isEditMode, initialData, onSubmit, onC
 
   function handleApplyAllChange(e) {
     const checked = e.target.checked;
-    setForm((prev) => ({ ...prev, applyToAll: checked, stores: checked ? STORE_OPTIONS : [] }));
+    setForm((prev) => ({ ...prev, applyToAll: checked, stores: checked ? activeStores.map(getStoreId) : [] }));
   }
 
-  function handleStoreChange(store) {
+  function handleStoreChange(storeId) {
     setForm((prev) => ({
       ...prev,
       applyToAll: false,
-      stores: prev.stores.includes(store)
-        ? prev.stores.filter((s) => s !== store)
-        : [...prev.stores, store],
+      stores: prev.stores.some((id) => String(id) === String(storeId))
+        ? prev.stores.filter((id) => String(id) !== String(storeId))
+        : [...prev.stores, storeId],
     }));
   }
 
@@ -93,6 +124,8 @@ export default function RewardFormModal({ isEditMode, initialData, onSubmit, onC
     setTouched({ title: true, points: true });
     if (!isValid) return;
 
+    const businessIds = allStoresSelected ? activeStores.map(getStoreId) : form.stores;
+
     onSubmit({
       id:                           initialData?.id,
       reward_name:                  form.title.trim(),
@@ -100,7 +133,7 @@ export default function RewardFormModal({ isEditMode, initialData, onSubmit, onC
       points_cost:                  Number(form.points),
       max_redemptions_per_customer: form.maxRedemptions ? Number(form.maxRedemptions) : null,
       clients_merchant_id:          20001,
-      business_ids:                 [201],
+      business_ids:                 businessIds,
       program_id:                   1,
     });
   }
@@ -159,32 +192,23 @@ export default function RewardFormModal({ isEditMode, initialData, onSubmit, onC
                   />
                 </InputField>
 
-                <div className="mf-row">
-                  <InputField
-                    label="Points Required"
-                    required
-                    suffix="pts"
-                    error={touched.points ? errors.points : null}
-                  >
-                    <input
-                      className={`mf-input mf-input--suffix${touched.points && errors.points ? ' mf-input--error' : ''}`}
-                      name="points"
-                      type="number"
-                      min="1"
-                      placeholder="e.g. 100"
-                      value={form.points}
-                      onChange={handleChange}
-                      onBlur={handleBlur}
-                    />
-                  </InputField>
-
-                  <InputField label="Status">
-                    <select className="mf-input mf-select" name="status" value={form.status} onChange={handleChange}>
-                      <option>Active</option>
-                      <option>Inactive</option>
-                    </select>
-                  </InputField>
-                </div>
+                <InputField
+                  label="Points Required"
+                  required
+                  suffix="pts"
+                  error={touched.points ? errors.points : null}
+                >
+                  <input
+                    className={`mf-input mf-input--suffix${touched.points && errors.points ? ' mf-input--error' : ''}`}
+                    name="points"
+                    type="number"
+                    min="1"
+                    placeholder="e.g. 100"
+                    value={form.points}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                  />
+                </InputField>
 
                 <TextArea
                   label="Description"
@@ -204,7 +228,7 @@ export default function RewardFormModal({ isEditMode, initialData, onSubmit, onC
                   <div>
                     <div className="mf-section-heading">Available at stores</div>
                     <div className="mf-selection-count">
-                      {form.stores.length} selected of {STORE_OPTIONS.length}
+                      {form.stores.length} selected of {activeStores.length}
                     </div>
                   </div>
                   <button type="button" className="mf-clear-btn" onClick={handleClearStores}>
@@ -213,7 +237,7 @@ export default function RewardFormModal({ isEditMode, initialData, onSubmit, onC
                 </div>
 
                 <label className="rw-checkbox-row rw-checkbox-master mf-all-stores-row">
-                  <input type="checkbox" className="rw-checkbox" checked={allStoresSelected} onChange={handleApplyAllChange} />
+                  <input type="checkbox" className="rw-checkbox" checked={allStoresSelected} onChange={handleApplyAllChange} disabled={!activeStores.length} />
                   <span className="rw-checkbox-label">Apply to all stores</span>
                 </label>
 
@@ -226,19 +250,20 @@ export default function RewardFormModal({ isEditMode, initialData, onSubmit, onC
 
                 <div className="mf-store-list">
                   {filteredStores.map((store) => {
-                    const selected = form.stores.includes(store);
+                    const storeId = getStoreId(store);
+                    const selected = form.stores.some((id) => String(id) === String(storeId));
 
                     return (
-                      <label key={store} className={`mf-store-item${selected ? ' mf-store-item--selected' : ''}`}>
+                      <label key={storeId} className={`mf-store-item${selected ? ' mf-store-item--selected' : ''}`}>
                         <input
                           type="checkbox"
                           className="rw-checkbox"
                           checked={selected}
-                          onChange={() => handleStoreChange(store)}
+                          onChange={() => handleStoreChange(storeId)}
                         />
                         <span className="mf-store-copy">
-                          <span className="mf-store-name">{store}</span>
-                          <span className="mf-store-address">{STORE_DETAILS[store]}</span>
+                          <span className="mf-store-name">{getStoreName(store)}</span>
+                          <span className="mf-store-address">{getStoreAddress(store)}</span>
                         </span>
                       </label>
                     );

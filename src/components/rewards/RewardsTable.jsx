@@ -1,3 +1,5 @@
+import { useState } from 'react';
+
 function getRewardKey(reward, index) {
   return reward.id ?? reward.reward_id ?? reward.rewardId ?? `${reward.reward_name ?? 'reward'}-${index}`;
 }
@@ -22,12 +24,58 @@ function getRedeemed(reward) {
   return reward.redeemed_count ?? reward.redeemedCount ?? 0;
 }
 
-function getStores(reward) {
-  const stores = reward.stores ?? reward.store_names ?? reward.business_names;
-  if (stores === 'ALL' || reward.applyToAll) return ['All stores'];
-  if (Array.isArray(stores)) return stores;
-  if (typeof stores === 'string' && stores.trim()) return stores.split(',').map((store) => store.trim());
-  return ['All stores'];
+function getStoreId(store) {
+  return store.business_id ?? store.id;
+}
+
+function getStoreName(store) {
+  return store.business_name ?? store.name ?? 'Unnamed';
+}
+
+function getStoreAddress(store) {
+  return store.fullAddress ?? store.full_address ?? store.address ?? '';
+}
+
+function normalizeAssignments(value) {
+  if (Array.isArray(value)) return value;
+  if (typeof value === 'string' && value.trim()) return value.split(',').map((store) => store.trim());
+  return [];
+}
+
+function getStores(reward, activeStores) {
+  const assignments = reward.business_ids ?? reward.businessIds ?? reward.stores ?? reward.store_names ?? reward.business_names;
+  const activeIds = new Set(activeStores.map((store) => String(getStoreId(store))));
+  const activeByName = new Map(activeStores.map((store) => [getStoreName(store).toLowerCase(), store]));
+
+  if (assignments === 'ALL' || reward.applyToAll) return [{ id: 'all', name: 'All stores', isAll: true }];
+
+  const selectedStores = normalizeAssignments(assignments)
+    .map((item) => {
+      if (typeof item === 'object' && item !== null) {
+        const itemId = item.business_id ?? item.id;
+        if (activeIds.has(String(itemId))) return activeStores.find((store) => String(getStoreId(store)) === String(itemId));
+        return activeByName.get(getStoreName(item).toLowerCase());
+      }
+
+      const itemKey = String(item);
+      if (activeIds.has(itemKey)) return activeStores.find((store) => String(getStoreId(store)) === itemKey);
+      return activeByName.get(itemKey.toLowerCase());
+    })
+    .filter(Boolean);
+
+  if (activeStores.length > 0 && selectedStores.length === activeStores.length) {
+    return [{ id: 'all', name: 'All stores', isAll: true }];
+  }
+
+  if (selectedStores.length > 0) {
+    return selectedStores.map((store) => ({
+      id: getStoreId(store),
+      name: getStoreName(store),
+      address: getStoreAddress(store),
+    }));
+  }
+
+  return [{ id: 'all', name: 'All stores', isAll: true }];
 }
 
 function isRewardActive(reward) {
@@ -67,22 +115,46 @@ function TrashIcon() {
 }
 
 function StorePills({ stores }) {
+  const [popoverOpen, setPopoverOpen] = useState(false);
   const visibleStores = stores.slice(0, 2);
   const hiddenCount = Math.max(stores.length - visibleStores.length, 0);
+  const hiddenStores = stores.slice(2);
 
   return (
     <div className="rw-store-pills">
       {visibleStores.map((store) => (
-        <span key={store} className={`rw-store-pill${store === 'All stores' ? ' rw-store-pill--all' : ''}`}>
-          {store}
+        <span key={store.id ?? store.name} className={`rw-store-pill${store.isAll ? ' rw-store-pill--all' : ''}`}>
+          <span className="rw-store-pill-name">{store.name}</span>
+          {store.address && <span className="rw-store-pill-address">{store.address}</span>}
         </span>
       ))}
-      {hiddenCount > 0 && <span className="rw-store-pill rw-store-pill--more">+{hiddenCount}</span>}
+      {hiddenCount > 0 && (
+        <span className="rw-store-more-wrap">
+          <button
+            type="button"
+            className="rw-store-pill rw-store-pill--more"
+            onClick={() => setPopoverOpen((open) => !open)}
+            aria-expanded={popoverOpen}
+          >
+            +{hiddenCount}
+          </button>
+          {popoverOpen && (
+            <div className="rw-store-popover">
+              {hiddenStores.map((store) => (
+                <div key={store.id ?? store.name} className="rw-store-popover-item">
+                  <div className="rw-store-popover-name">{store.name}</div>
+                  <div className="rw-store-popover-address">{store.address}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </span>
+      )}
     </div>
   );
 }
 
-export default function RewardsTable({ rewards, onEdit, onDelete, onToggle }) {
+export default function RewardsTable({ rewards, activeStores = [], onEdit, onDelete, onToggle }) {
   if (!rewards.length) {
     return <div className="rw-empty">No rewards found.</div>;
   }
@@ -124,7 +196,7 @@ export default function RewardsTable({ rewards, onEdit, onDelete, onToggle }) {
                     </div>
                   </td>
                   <td className="rw-table-desc">{getDescription(reward)}</td>
-                  <td><StorePills stores={getStores(reward)} /></td>
+                  <td><StorePills stores={getStores(reward, activeStores)} /></td>
                   <td>
                     <span className="rw-points"><span aria-hidden="true">★</span>{getPoints(reward)} pts</span>
                   </td>
