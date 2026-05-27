@@ -4279,6 +4279,29 @@
   color: #ff6a3d;
   font-size: 1.2rem;
   font-weight: 700;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.st-avatar-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+}
+
+.st-avatar--skeleton {
+  background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+  background-size: 200% 100%;
+  animation: ps-shimmer 1.4s infinite;
+}
+
+.st-account-summary {
+  width: min(260px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 .st-account-name {
@@ -4291,6 +4314,36 @@
   margin-top: 0.2rem;
   color: #6b7280;
   font-size: 0.78rem;
+}
+
+.st-brand-logo-preview {
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: #fff4ef;
+  color: #ff6a3d;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.st-brand-logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.ps-skeleton--label {
+  width: 92px;
+  height: 13px;
+  border-radius: 999px;
+}
+
+.st-skeleton-line {
+  width: 45%;
 }
 
 .st-password-fields {
