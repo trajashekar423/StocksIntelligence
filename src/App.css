@@ -264,6 +264,17 @@
 }
 
 /* ── Input group fix ── */
+.login-error-message {
+  margin-bottom: 1rem;
+  border: 1px solid rgba(220, 38, 38, 0.28);
+  border-radius: 12px;
+  background: #fef2f2;
+  color: #dc2626;
+  padding: 0.7rem 0.85rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
 .input-group .rn-input {
   border-radius: 11px 0 0 11px !important;
 }
@@ -4350,6 +4361,95 @@
   display: flex;
   flex-direction: column;
   gap: 1rem;
+}
+
+.st-password-alert {
+  margin-bottom: 1rem;
+}
+
+.st-password-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.st-password-input {
+  width: 100%;
+  min-height: 44px;
+  border-radius: 999px;
+  padding-right: 2.75rem;
+}
+
+.st-password-toggle {
+  position: absolute;
+  right: 0.45rem;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  color: #6b7280;
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+
+.st-password-toggle:hover {
+  background: #f1f3f6;
+  color: #111827;
+}
+
+.st-password-toggle:focus-visible {
+  outline: 3px solid rgba(255, 106, 61, 0.22);
+  outline-offset: 2px;
+}
+
+.st-password-save-row {
+  margin-top: 0.35rem;
+}
+
+.st-password-submit {
+  min-height: 42px;
+  border: 0;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0 1.35rem;
+  background: #ff6a3d;
+  color: #fff;
+  font-size: 0.84rem;
+  font-weight: 700;
+  font-family: 'Poppins', sans-serif;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(255, 106, 61, 0.22);
+  transition: background 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
+}
+
+.st-password-submit:hover:not(:disabled) {
+  background: #ef5b2f;
+  box-shadow: 0 12px 28px rgba(255, 106, 61, 0.28);
+}
+
+.st-password-submit:disabled {
+  cursor: not-allowed;
+  opacity: 0.72;
+  box-shadow: none;
+}
+
+.st-password-spinner {
+  width: 15px;
+  height: 15px;
+  border: 2px solid rgba(255, 255, 255, 0.45);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: st-spin 0.7s linear infinite;
+}
+
+@keyframes st-spin {
+  to { transform: rotate(360deg); }
 }
 
 .st-logo-upload {

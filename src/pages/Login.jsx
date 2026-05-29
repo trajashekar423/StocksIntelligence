@@ -3,6 +3,17 @@ import useAuth from '../hooks/useAuth';
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+function getBackendMessage(err) {
+  const data = err?.response?.data;
+
+  if (typeof data === 'string') return data;
+  if (typeof data?.message === 'string') return data.message;
+  if (typeof data?.detail === 'string') return data.detail;
+  if (typeof data?.error === 'string') return data.error;
+
+  return '';
+}
+
 function EyeIcon({ open }) {
   return open ? (
     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
@@ -44,12 +55,14 @@ function LoginForm({ onForgotPassword }) {
       await login(form);
     } catch (err) {
       const status = err.response?.status;
-      if (status === 401 || status === 400) {
-        setLoginError('Invalid email or password. Please try again.');
+      const backendMessage = getBackendMessage(err);
+
+      if (err.isAuthError || status === 401 || status === 400) {
+        setLoginError(backendMessage || err.message || 'Invalid email or password. Please try again.');
       } else if (!err.response) {
         setLoginError('Network error. Please check your connection.');
       } else {
-        setLoginError('Something went wrong. Please try again.');
+        setLoginError(backendMessage || 'Something went wrong. Please try again.');
       }
       setLoading(false);
     }
@@ -78,7 +91,7 @@ function LoginForm({ onForgotPassword }) {
       </div>
 
       {loginError && (
-        <div className="alert alert-danger py-2 small" role="alert">{loginError}</div>
+        <div className="login-error-message" role="alert">{loginError}</div>
       )}
 
       <form onSubmit={handleSubmit} noValidate>

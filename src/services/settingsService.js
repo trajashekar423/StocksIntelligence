@@ -3,6 +3,7 @@ import { getUser } from '../utils/authStorage';
 
 export const fetchLoyaltyProgram  = ()     => api.get('/api/v1/merchant/loyalty-program/').then(r => r.data?.data);
 export const updateLoyaltyProgram = (body) => api.put('/api/v1/merchant/loyalty-program/', body).then(r => r.data);
+export const changePassword       = (body) => api.post('/api/v1/auth/change-password/', body).then(r => r.data);
 
 export function getStoreStatusCounts(stores = []) {
   return stores.reduce((acc, s) => {

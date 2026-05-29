@@ -14,7 +14,10 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (res) => res,
   (error) => {
-    if (error.response?.status === 401) {
+    const requestUrl = error.config?.url || '';
+    const isLoginRequest = requestUrl.includes('/auth/login/');
+
+    if (error.response?.status === 401 && !isLoginRequest) {
       console.warn('401 on:', error.config?.url, '— token:', getToken());
       removeToken();
       window.location.href = '/login';

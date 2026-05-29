@@ -35,7 +35,11 @@ export const loginUser = async ({ email, password }) => {
     data?.tokens?.access       ||
     data?.token;
   const user = normalizeUser(data);
-  if (!token) console.warn('TOKEN NOT FOUND in response:', data);
+  if (data?.error === true || !token) {
+    const error = new Error(data?.message || 'Invalid email or password. Please try again.');
+    error.isAuthError = true;
+    throw error;
+  }
   return { token, user };
 };
 
