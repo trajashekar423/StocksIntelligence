@@ -26,6 +26,7 @@ import {
   buildTomorrowScanner,
   renderTomorrowSetup,
 } from './tomorrowScanner';
+import MomentumScanner from './MomentumScanner.jsx';
 
 const UNAVAILABLE = 'Unavailable';
 
@@ -2183,6 +2184,15 @@ export default function Stocks() {
       ]
     );
 
+  const momentumIndustryScoreMap = useMemo(() => {
+    const map = new Map();
+    scanner.scanned.forEach((row) => {
+      const ind = row.industry || row.sector || 'Unclassified';
+      if (!map.has(ind)) map.set(ind, row.score || 45);
+    });
+    return map;
+  }, [scanner.scanned]);
+
   /* ==========================================================
      SEARCH
      ========================================================== */
@@ -3658,6 +3668,15 @@ export default function Stocks() {
             );
           })()}
         </>
+      )}
+
+      {activeTab === 'momentum' && (
+        <MomentumScanner
+          scannerRows={scanner.scanned}
+          marketScore={scanner.marketConfirmation?.score ?? 50}
+          industryScoreMap={momentumIndustryScoreMap}
+          lastUpdated={lastUpdated}
+        />
       )}
 
       {selectedStock && (

@@ -11,6 +11,7 @@ export default function TopIntraday({ activeTab, onChange }) {
     { key: 'cupid', label: 'CUPID', tone: 'neutral' },
     { key: 'basic-industry', label: 'Basic Industry', tone: 'neutral' },
     { key: 'personal-care', label: 'Personal Care', tone: 'neutral' },
+    { key: 'momentum', label: '🚀 Momentum Scanner', tone: 'green' },
   ];
 
   return (

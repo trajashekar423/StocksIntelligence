@@ -128,6 +128,12 @@ export const STOCK_TAB_HELP = {
     description: 'Raw chart/API data for CUPID, useful for checking candles and API response shape.',
     beginnerTip: 'This is more of a data/debug tab than a trading decision tab.',
   },
+  momentum: {
+    title: '🚀 1–50% Momentum Scanner',
+    tone: 'green',
+    description: 'Identifies NSE stocks with developing momentum from 1% onward. Ranks early-stage setups (1–5% from open) above already-extended stocks.',
+    beginnerTip: 'Focus on the Potential Movers tab first. Look for stocks with RVOL above 1.5x, price above VWAP, and a score above 70.',
+  },
   'basic-industry': {
     title: 'Basic Industry',
     tone: 'neutral',
