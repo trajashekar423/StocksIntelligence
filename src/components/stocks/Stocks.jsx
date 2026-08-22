@@ -13,7 +13,7 @@ import {
 
 import { filterStocksByGroup } from './stockFilters';
 import StatusChip from './StatusChip';
-import TopIntraday from './TopIntraday';
+import TopIntraday from './topintraday';
 import MarketIntelligenceTable from './MarketIntelligenceTable';
 import {
   MARKET_INTELLIGENCE_DEAL_MODES,
