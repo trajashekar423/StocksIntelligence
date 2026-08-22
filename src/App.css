@@ -564,6 +564,29 @@
   min-width: 0;
 }
 
+.dl-topbar-nav {
+  display: flex;
+  align-items: center;
+}
+
+.dl-topbar-link {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.6rem 1rem;
+  border-radius: 999px;
+  text-decoration: none;
+  color: #4b5563;
+  font-size: 0.92rem;
+  font-weight: 700;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+
+.dl-topbar-link:hover,
+.dl-topbar-link.active {
+  background: #fff7ed;
+  color: #c2410c;
+}
+
 .dl-page-title {
   margin: 12px;
   color: #111827;
@@ -6246,4 +6269,183 @@
   font-weight: 700;
   box-shadow: 0 14px 34px rgba(15, 23, 42, 0.22);
   animation: rw-slide-up 0.2s ease;
+}
+
+/* Stocks beginner guidance */
+.st-tab-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.st-tab-btn {
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #334155;
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.st-tab-btn:hover {
+  background: #f8fafc;
+}
+
+.st-tab-btn--green {
+  border-color: #86efac;
+  color: #166534;
+}
+
+.st-tab-btn--green.active {
+  background: #16a34a;
+  border-color: #16a34a;
+  color: #fff;
+}
+
+.st-tab-btn--orange {
+  border-color: #fdba74;
+  color: #9a3412;
+}
+
+.st-tab-btn--orange.active {
+  background: #f97316;
+  border-color: #f97316;
+  color: #fff;
+}
+
+.st-tab-btn--red {
+  border-color: #fca5a5;
+  color: #991b1b;
+}
+
+.st-tab-btn--red.active {
+  background: #dc2626;
+  border-color: #dc2626;
+  color: #fff;
+}
+
+.st-tab-btn--neutral.active {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #fff;
+}
+
+.st-tab-help {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  border: 1px solid #dbeafe;
+  border-left-width: 5px;
+  border-radius: 8px;
+  background: #f8fafc;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+}
+
+.st-tab-help--green {
+  border-left-color: #16a34a;
+  background: #f0fdf4;
+}
+
+.st-tab-help--orange {
+  border-left-color: #f97316;
+  background: #fff7ed;
+}
+
+.st-tab-help--red {
+  border-left-color: #dc2626;
+  background: #fef2f2;
+}
+
+.st-tab-help--neutral {
+  border-left-color: #2563eb;
+}
+
+.st-tab-help-title {
+  color: #0f172a;
+  font-size: 15px;
+  font-weight: 800;
+  margin-bottom: 3px;
+}
+
+.st-tab-help-description,
+.st-tab-help-tip {
+  color: #475569;
+  font-size: 13px;
+}
+
+.st-tab-help-tip {
+  margin-top: 4px;
+  font-weight: 700;
+}
+
+.st-color-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+  min-width: 230px;
+}
+
+.st-legend-item {
+  border-radius: 999px;
+  padding: 4px 9px;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.st-legend-green {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.st-legend-orange {
+  background: #ffedd5;
+  color: #9a3412;
+}
+
+.st-legend-red {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.table > tbody > tr.st-score-excellent > * {
+  background-color: #bbf7d0;
+  color: #14532d;
+}
+
+.table > tbody > tr.st-score-good > * {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.table > tbody > tr.st-score-watch > * {
+  background-color: #fef9c3;
+  color: #713f12;
+}
+
+.table > tbody > tr.st-score-caution > * {
+  background-color: #ffedd5;
+  color: #9a3412;
+}
+
+.table > tbody > tr.st-score-risk > * {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+@media (max-width: 768px) {
+  .st-tab-help {
+    display: block;
+  }
+
+  .st-color-legend {
+    justify-content: flex-start;
+    min-width: 0;
+    margin-top: 10px;
+  }
 }

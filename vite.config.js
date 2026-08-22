@@ -6,6 +6,11 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
+      '/api/nse': {
+        target: `http://localhost:${process.env.NSE_PROXY_PORT || 5175}`,
+        changeOrigin: true,
+        secure: false,
+      },
       '/api': {
         target: 'https://dev-api.ranevra.com',
         changeOrigin: true,

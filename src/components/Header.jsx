@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useLocation } from 'react-router-dom';
-import { FiBell, FiChevronDown, FiLogOut, FiMenu } from 'react-icons/fi';
+import { NavLink, useLocation } from 'react-router-dom';
+import { FiBell, FiChevronDown, FiLogOut } from 'react-icons/fi';
 import useAuth from '../hooks/useAuth';
-import sidebarConfig from '../config/sidebarConfig.json';
 import { getUser } from '../utils/authStorage';
 
 function getInitials(name = '') {
@@ -19,7 +18,7 @@ function getUserEmail(user) {
   return user?.email_address || user?.email || 'owner@ranevra.com';
 }
 
-export default function Header({ onOpenMobileSidebar }) {
+export default function Header() {
   const location = useLocation();
   const { logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -30,11 +29,8 @@ export default function Header({ onOpenMobileSidebar }) {
   const userRole = user?.role || 'Store owner';
 
   const pageTitle = useMemo(() => {
-    const activeItem = sidebarConfig.find((item) => (
-      item.path?.toLowerCase() === location.pathname.toLowerCase()
-    ));
-
-    return activeItem?.label || 'Dashboard';
+    if (location.pathname.startsWith('/stocks')) return 'Stocks';
+    return 'Stocks';
   }, [location.pathname]);
 
   useEffect(() => {
@@ -51,59 +47,18 @@ export default function Header({ onOpenMobileSidebar }) {
   return (
     <header className="dl-topbar">
       <div className="dl-topbar-left">
-        <button
-          className="dl-mobile-menu d-flex d-md-none"
-          onClick={onOpenMobileSidebar}
-          aria-label="Open menu"
-          type="button"
-        >
-          <FiMenu size={20} />
-        </button>
         <h1 className="dl-page-title">{pageTitle}</h1>
-      </div>
-
-      <div className="dl-topbar-right">
-        <button className="dl-icon-btn" type="button" aria-label="Notifications">
-          <FiBell size={19} />
-        </button>
-
-        <div className="dl-profile-wrap" ref={profileRef}>
-          <button
-            className={`dl-profile-btn ${menuOpen ? 'dl-profile-btn-open' : ''}`}
-            type="button"
-            onClick={() => setMenuOpen((open) => !open)}
-            aria-expanded={menuOpen}
-            aria-haspopup="menu"
+        <nav className="dl-topbar-nav" aria-label="Primary navigation">
+          <NavLink
+            to="/stocks"
+            className={({ isActive }) => `dl-topbar-link ${isActive ? 'active' : ''}`}
           >
-            <span className="dl-avatar" aria-hidden="true">
-              {user?.profile_image ? (
-                <img src={user.profile_image} alt="" />
-              ) : (
-                <span>{getInitials(userName)}</span>
-              )}
-            </span>
-            <span className="dl-profile-copy">
-              <span className="dl-profile-name">{userName}</span>
-              <span className="dl-profile-role">{userRole}</span>
-            </span>
-            <FiChevronDown className="dl-profile-arrow" size={16} />
-          </button>
-
-          {menuOpen && (
-            <div className="dl-profile-menu" role="menu">
-              <div className="dl-profile-menu-head">
-                <p className="dl-menu-name">{userName}</p>
-                <p className="dl-menu-email">{userEmail}</p>
-              </div>
-              <div className="dl-menu-divider" />
-              <button className="dl-signout-btn" type="button" onClick={logout} role="menuitem">
-                <FiLogOut size={17} />
-                <span>Sign out</span>
-              </button>
-            </div>
-          )}
-        </div>
+            Stocks
+          </NavLink>
+        </nav>
       </div>
+
+     
     </header>
   );
 }

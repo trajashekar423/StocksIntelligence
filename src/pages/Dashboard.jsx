@@ -1,10 +1,7 @@
 export default function DashboardHome() {
   return (
     <div>
-      <div className="pg-header">
-        <h5 className="pg-title">Dashboard</h5>
-        <p className="pg-sub">Welcome back! Here's what's happening today. testing dploy</p>
-      </div>
+    
       <div className="pg-card">
         <div className="pg-card-header">
           <span className="pg-card-title">Overview</span>
