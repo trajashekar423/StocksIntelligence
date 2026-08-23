@@ -297,7 +297,7 @@ export async function fetchLargeDeals(mode) {
 }
 
 export async function fetchStockCandles(symbol) {
-  const sym = String(symbol || '').trim().toUpperCase();
+  const sym = String(symbol || '').trim().toUpperCase().replace(/:.*$/, '');
   if (!sym) return { ok: false, error: 'No symbol provided', data: [] };
   try {
     const endpoint = `/api/nse/candles?symbol=${encodeURIComponent(sym)}`;

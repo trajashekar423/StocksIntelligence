@@ -363,12 +363,13 @@ export default function MomentumScanner({ scannerRows = [], marketScore = 50, in
   const [candleStatus, setCandleStatus]         = useState('idle'); // idle | loading | partial | ready
   const fetchedRef = useRef(new Set());
 
-  // Deduplicate symbols from scannerRows
+  // Deduplicate symbols from scannerRows — strip series suffix (e.g. QUADFUTURE:1 → QUADFUTURE)
   const symbols = useMemo(() => {
     const seen = new Set();
     const out = [];
     for (const r of scannerRows) {
-      const s = String(r?.symbol || r?.Symbol || '').trim().toUpperCase();
+      const raw = String(r?.symbol || r?.Symbol || '').trim().toUpperCase();
+      const s = raw.replace(/:.*$/, ''); // strip :EQ / :1 / :BE etc.
       if (s && !seen.has(s)) { seen.add(s); out.push(s); }
     }
     return out;

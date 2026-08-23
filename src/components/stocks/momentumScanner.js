@@ -174,7 +174,7 @@ function detectChase(pctFromOpen, rsi, price, vwap, rvol) {
 export function buildMomentumScanner(rows = [], candleMap = new Map(), marketScore = 50, industryScoreMap = new Map()) {
   const results = rows
     .map((row) => {
-      const symbol    = String(row?.symbol || row?.Symbol || '').trim().toUpperCase();
+      const symbol    = String(row?.symbol || row?.Symbol || '').trim().toUpperCase().replace(/:.*$/, '');
       const price     = toNum(row?.price ?? row?.lastPrice ?? row?.ltp ?? row?.close);
       if (!price || !symbol) return null;
 
