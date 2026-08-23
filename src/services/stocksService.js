@@ -296,6 +296,32 @@ export async function fetchLargeDeals(mode) {
   }
 }
 
+export async function fetchStockCandles(symbol) {
+  const sym = String(symbol || '').trim().toUpperCase();
+  if (!sym) return { ok: false, error: 'No symbol provided', data: [] };
+  try {
+    const endpoint = `/api/nse/candles?symbol=${encodeURIComponent(sym)}`;
+    const res = await fetch(endpoint);
+    const ct = (res.headers.get('content-type') || '').toLowerCase();
+    if (!res.ok) {
+      const text = await res.text();
+      return { ok: false, status: res.status, error: text, symbol: sym, data: [] };
+    }
+    if (ct.includes('application/json')) {
+      const text = await res.text();
+      if (!text || !text.trim()) return { ok: true, symbol: sym, data: [] };
+      try {
+        return { ok: true, symbol: sym, data: JSON.parse(text) };
+      } catch {
+        return { ok: true, symbol: sym, data: [] };
+      }
+    }
+    return { ok: true, symbol: sym, data: [] };
+  } catch (err) {
+    return { ok: false, symbol: sym, error: err?.message || String(err), data: [] };
+  }
+}
+
 export async function fetchScannerMarketData() {
   // Combine top-ten and most-active feeds into a single market data array
   try {

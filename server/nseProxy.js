@@ -159,6 +159,13 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
+  if (!nsePath && url.pathname === '/api/nse/candles') {
+    const symbol = (url.searchParams.get('symbol') || '').trim().toUpperCase();
+    if (symbol) {
+      nsePath = `/api/chart-databyindex?index=EQN:${encodeURIComponent(symbol)}`;
+    }
+  }
+
   if (!nsePath && (url.pathname === LARGE_DEAL_ROUTE || url.pathname === '/api/snapshot-capital-market-largedeal')) {
     const mode = url.searchParams.get('mode');
     const query = new URLSearchParams();

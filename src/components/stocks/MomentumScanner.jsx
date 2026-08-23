@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { buildMomentumScanner, MOVEMENT_ZONES, getMovementLevels } from './momentumScanner';
+import { getCandles, prefetchCandles } from '../../services/candleCache.js';
 
 /* ─── HELPERS ────────────────────────────────────────────── */
 
@@ -155,16 +156,17 @@ function ChaseWarning({ warning }) {
 
 function ScoreBreakdown({ scores }) {
   const items = [
-    ['Gap',        scores.sGap,      10],
-    ['RVOL',       scores.sRvol,     15],
-    ['VWAP',       scores.sVwap,     10],
-    ['EMA',        scores.sEma,      10],
-    ['Breakout',   scores.sBreakout, 15],
-    ['Candle',     scores.sCandle,   10],
-    ['RSI',        scores.sRsi,       5],
-    ['ADX',        scores.sAdx,       5],
-    ['Industry',   scores.sInd,      10],
-    ['Market',     scores.sMkt,       5],
+    ['VWAP',     scores.sVwap,   15],
+    ['RSI',      scores.sRsi,    10],
+    ['ADX',      scores.sAdx,    15],
+    ['RVOL',     scores.sRvol,   15],
+    ['ORB',      scores.sOrb,    15],
+    ['EMA',      scores.sEma,    10],
+    ['MACD',     scores.sMacd,    5],
+    ['Momentum', scores.sMom,     5],
+    ['Sector',   scores.sSector,  5],
+    ['Market',   scores.sMkt,     5],
+    ['Candle',   scores.sCandle,  5],
   ];
   return (
     <div className="ms-score-breakdown">
@@ -203,12 +205,19 @@ function StockDetail({ row, onClose }) {
         <div className="col-6 col-md-3"><span className="text-muted">Price</span><br /><strong>{fmt(row.price)}</strong></div>
         <div className="col-6 col-md-3"><span className="text-muted">Open</span><br /><strong>{fmt(row.open)}</strong></div>
         <div className="col-6 col-md-3"><span className="text-muted">From Open</span><br /><strong className={row.pctFromOpen >= 0 ? 'text-success' : 'text-danger'}>{fmtPct(row.pctFromOpen)}</strong></div>
-        <div className="col-6 col-md-3"><span className="text-muted">RVOL</span><br /><strong>{row.rvol.toFixed(2)}x</strong></div>
-        <div className="col-6 col-md-3"><span className="text-muted">VWAP</span><br /><strong>{fmt(row.vwap)}</strong></div>
-        <div className="col-6 col-md-3"><span className="text-muted">RSI</span><br /><strong>{row.rsi ? row.rsi.toFixed(1) : 'N/A'}</strong></div>
-        <div className="col-6 col-md-3"><span className="text-muted">ADX</span><br /><strong>{row.adx ? row.adx.toFixed(1) : 'N/A'}</strong></div>
+        <div className="col-6 col-md-3"><span className="text-muted">RVOL</span><br /><strong>{row.rvol > 0 ? `${row.rvol.toFixed(2)}x` : <span className="text-warning">⚪ {row.rvolStatus || 'N/A'}</span>}</strong></div>
+        <div className="col-6 col-md-3"><span className="text-muted">VWAP</span><br /><strong>{row.vwap ? fmt(row.vwap) : <span className="text-warning">⚪ {row.vwapStatus || 'N/A'}</span>}</strong></div>
+        <div className="col-6 col-md-3"><span className="text-muted">RSI(14)</span><br /><strong>{row.rsi !== null && row.rsi !== undefined ? row.rsi.toFixed(1) : <span className="text-warning">⚪ {row.rsiStatus || 'N/A'}</span>}</strong></div>
+        <div className="col-6 col-md-3"><span className="text-muted">ADX(14)</span><br /><strong>{row.adx !== null && row.adx !== undefined ? row.adx.toFixed(1) : <span className="text-warning">⚪ {row.adxStatus || 'N/A'}</span>}</strong></div>
+        <div className="col-6 col-md-3"><span className="text-muted">+DI / -DI</span><br /><strong>{row.plusDI ? `${row.plusDI.toFixed(1)} / ${row.minusDI?.toFixed(1)}` : 'N/A'}</strong></div>
+        <div className="col-6 col-md-3"><span className="text-muted">EMA 9</span><br /><strong>{row.ema9 ? fmt(row.ema9) : 'N/A'}</strong></div>
+        <div className="col-6 col-md-3"><span className="text-muted">EMA 20</span><br /><strong>{row.ema20 ? fmt(row.ema20) : 'N/A'}</strong></div>
+        <div className="col-6 col-md-3"><span className="text-muted">EMA 50</span><br /><strong>{row.ema50 ? fmt(row.ema50) : 'N/A'}</strong></div>
         <div className="col-6 col-md-3"><span className="text-muted">Pattern</span><br /><strong>{row.pattern || 'None'}</strong></div>
-        <div className="col-6 col-md-3"><span className="text-muted">ORB</span><br /><strong>{row.orbStatus ? `${row.orbStatus} SIGNAL` : 'No signal'}</strong></div>
+        <div className="col-6 col-md-3"><span className="text-muted">ORB High</span><br /><strong>{row.orbHigh ? fmt(row.orbHigh) : 'N/A'}</strong></div>
+        <div className="col-6 col-md-3"><span className="text-muted">ORB Low</span><br /><strong>{row.orbLow ? fmt(row.orbLow) : 'N/A'}</strong></div>
+        <div className="col-6 col-md-3"><span className="text-muted">ORB Signal</span><br /><strong>{row.orbStatus || 'No signal'}</strong></div>
+        <div className="col-6 col-md-3"><span className="text-muted">Candles</span><br /><strong>{row.candleCount > 0 ? `${row.candleCount} bars` : <span className="text-warning">⚪ No candles</span>}</strong></div>
         <div className="col-6 col-md-3"><span className="text-muted">Stop Loss</span><br /><strong>{fmt(row.sl)}</strong></div>
         <div className="col-6 col-md-3"><span className="text-muted">Target 1</span><br /><strong>{fmt(row.t1)}</strong></div>
         <div className="col-6 col-md-3"><span className="text-muted">R/R</span><br /><strong>1:{row.rr}</strong></div>
@@ -323,11 +332,11 @@ function MomentumTable({ rows, onSelect }) {
               <td className={`text-end fw-bold ${row.pctFromOpen >= 0 ? 'text-success' : 'text-danger'}`}>
                 {fmtPct(row.pctFromOpen)}
               </td>
-              <td className="text-end">{row.rvol.toFixed(2)}x</td>
+              <td className="text-end">{row.rvol > 0 ? `${row.rvol.toFixed(2)}x` : <span className="text-muted">—</span>}</td>
               <td className="text-end">
-                <span className={row.vwap && row.price > row.vwap ? 'text-success' : 'text-danger'}>
-                  {row.vwap && row.price > row.vwap ? '▲ Above' : '▼ Below'}
-                </span>
+                {row.vwap
+                  ? <span className={row.price > row.vwap ? 'text-success' : 'text-danger'}>{row.price > row.vwap ? '▲ Above' : '▼ Below'}</span>
+                  : <span className="text-muted">⚪ —</span>}
               </td>
               <td className="text-end">{row.indScore}/100</td>
               <td className="text-end"><ScoreBadge score={row.momentumScore} /></td>
@@ -347,13 +356,66 @@ function MomentumTable({ rows, onSelect }) {
 /* ─── MAIN COMPONENT ─────────────────────────────────────── */
 
 export default function MomentumScanner({ scannerRows = [], marketScore = 50, industryScoreMap = new Map(), lastUpdated }) {
-  const [activeZone, setActiveZone]         = useState('potential');
-  const [selectedRow, setSelectedRow]       = useState(null);
+  const [activeZone, setActiveZone]             = useState('potential');
+  const [selectedRow, setSelectedRow]           = useState(null);
   const [selectedIndustry, setSelectedIndustry] = useState('');
+  const [candleMap, setCandleMap]               = useState(new Map());
+  const [candleStatus, setCandleStatus]         = useState('idle'); // idle | loading | partial | ready
+  const fetchedRef = useRef(new Set());
+
+  // Deduplicate symbols from scannerRows
+  const symbols = useMemo(() => {
+    const seen = new Set();
+    const out = [];
+    for (const r of scannerRows) {
+      const s = String(r?.symbol || r?.Symbol || '').trim().toUpperCase();
+      if (s && !seen.has(s)) { seen.add(s); out.push(s); }
+    }
+    return out;
+  }, [scannerRows]);
+
+  // Fetch candles for all visible symbols, throttled via candleCache
+  useEffect(() => {
+    if (!symbols.length) return;
+    const newSymbols = symbols.filter((s) => !fetchedRef.current.has(s));
+    if (!newSymbols.length) return;
+
+    setCandleStatus('loading');
+    prefetchCandles(newSymbols);
+
+    let cancelled = false;
+    const BATCH = 6;
+
+    async function fetchBatch(batch) {
+      const results = await Promise.allSettled(batch.map((sym) => getCandles(sym)));
+      if (cancelled) return;
+      setCandleMap((prev) => {
+        const next = new Map(prev);
+        batch.forEach((sym, i) => {
+          const r = results[i];
+          const candles = r.status === 'fulfilled' ? (r.value?.candles || []) : [];
+          next.set(sym, candles);
+          fetchedRef.current.add(sym);
+        });
+        return next;
+      });
+    }
+
+    async function fetchAll() {
+      for (let i = 0; i < newSymbols.length; i += BATCH) {
+        if (cancelled) break;
+        await fetchBatch(newSymbols.slice(i, i + BATCH));
+      }
+      if (!cancelled) setCandleStatus('ready');
+    }
+
+    fetchAll();
+    return () => { cancelled = true; };
+  }, [symbols]);
 
   const allRows = useMemo(
-    () => buildMomentumScanner(scannerRows, [], marketScore, industryScoreMap),
-    [scannerRows, marketScore, industryScoreMap]
+    () => buildMomentumScanner(scannerRows, candleMap, marketScore, industryScoreMap),
+    [scannerRows, candleMap, marketScore, industryScoreMap]
   );
 
   const filteredRows = useMemo(() => {
@@ -388,6 +450,8 @@ export default function MomentumScanner({ scannerRows = [], marketScore = 50, in
         </div>
         <div className="text-end small text-muted">
           {lastUpdated ? `Updated: ${lastUpdated.toLocaleTimeString()}` : 'Awaiting data'}
+          {candleStatus === 'loading' && <div className="text-info">⏳ Loading candles...</div>}
+          {candleStatus === 'ready'   && <div className="text-success">✓ Candles loaded ({candleMap.size} symbols)</div>}
         </div>
       </div>
 

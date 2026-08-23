@@ -112,6 +112,12 @@ export default async function handler(req) {
     if (index) nsePath = `/api/chart-databyindex?index=${encodeURIComponent(index)}`;
   }
 
+  // candles — intraday OHLCV for any NSE equity symbol
+  if (!nsePath && pathname === '/api/nse/candles') {
+    const symbol = (url.searchParams.get('symbol') || '').trim().toUpperCase();
+    if (symbol) nsePath = `/api/chart-databyindex?index=EQN:${encodeURIComponent(symbol)}`;
+  }
+
   // large-deals
   if (!nsePath && pathname === '/api/nse/large-deals') {
     const mode = url.searchParams.get('mode');

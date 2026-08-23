@@ -1,3 +1,11 @@
+/**
+ * Momentum Scanner — pure scoring logic.
+ * Receives pre-computed indicators from indicatorEngine.js.
+ * No symbol-specific code. Works for any valid NSE equity.
+ */
+
+import { computeIndicators } from '../../services/indicatorEngine.js';
+
 const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
 
 function toNum(value) {
@@ -7,87 +15,17 @@ function toNum(value) {
   return Number.isFinite(p) ? p : 0;
 }
 
-function emaSeries(values, period) {
-  const result = Array(values.length).fill(null);
-  if (values.length < period) return result;
-  const k = 2 / (period + 1);
-  let ema = values.slice(0, period).reduce((s, v) => s + v, 0) / period;
-  result[period - 1] = ema;
-  for (let i = period; i < values.length; i++) {
-    ema = (values[i] - ema) * k + ema;
-    result[i] = ema;
-  }
-  return result;
-}
-
-function rsiValue(closes, period = 14) {
-  if (closes.length <= period) return null;
-  let gains = 0, losses = 0;
-  for (let i = closes.length - period; i < closes.length; i++) {
-    const d = closes[i] - closes[i - 1];
-    if (d >= 0) gains += d; else losses += Math.abs(d);
-  }
-  if (!losses) return 100;
-  return 100 - 100 / (1 + gains / losses);
-}
-
-function adxProxy(candles) {
-  if (candles.length < 15) return null;
-  const recent = candles.slice(-14);
-  const trs = recent.map((c, i) => {
-    const prev = recent[i - 1]?.close ?? c.close;
-    return Math.max(c.high - c.low, Math.abs(c.high - prev), Math.abs(c.low - prev));
-  });
-  const atr = trs.reduce((s, v) => s + v, 0) / trs.length;
-  return clamp((atr / Math.max(candles.at(-1)?.close || 1, 1)) * 1000, 8, 60);
-}
-
-function vwapCurrent(candles) {
-  let pv = 0, vol = 0;
-  for (const c of candles) {
-    const v = toNum(c.volume);
-    if (!v) continue;
-    pv += ((c.high + c.low + c.close) / 3) * v;
-    vol += v;
-  }
-  return vol ? pv / vol : null;
-}
-
-function detectBullishPattern(candles) {
-  if (candles.length < 2) return null;
-  const last = candles.at(-1);
-  const prev = candles.at(-2);
-  const body = (c) => Math.abs(c.close - c.open);
-  const range = (c) => Math.max(c.high - c.low, 0.001);
-  const bullish = (c) => c.close >= c.open;
-  const bodyHigh = (c) => Math.max(c.open, c.close);
-  const bodyLow = (c) => Math.min(c.open, c.close);
-
-  if (!bullish(prev) && bullish(last) && bodyHigh(last) >= bodyHigh(prev) && bodyLow(last) <= bodyLow(prev)) return 'Bullish Engulfing';
-  const lower = Math.min(last.open, last.close) - last.low;
-  const upper = last.high - Math.max(last.open, last.close);
-  if (lower > body(last) * 2 && upper <= body(last) * 0.8 && bullish(last)) return 'Hammer';
-  if (!bullish(prev) && bullish(last) && last.close > prev.open - body(prev) / 2 && last.open < prev.close) return 'Piercing Pattern';
-  if (!bullish(prev) && bullish(last) && bodyHigh(last) < bodyHigh(prev) && bodyLow(last) > bodyLow(prev)) return 'Bullish Harami';
-  if (candles.length >= 3) {
-    const third = candles.at(-3);
-    if (!bullish(third) && body(prev) / range(prev) < 0.35 && bullish(last) && last.close > (third.open + third.close) / 2) return 'Morning Star';
-    if (bullish(third) && bullish(prev) && bullish(last) && last.close > prev.close && prev.close > third.close) return 'Three White Soldiers';
-  }
-  return null;
-}
-
-/* ─── MOVEMENT ZONE ─────────────────────────────────────── */
+/* ─── MOVEMENT ZONES ─────────────────────────────────────── */
 
 export const MOVEMENT_ZONES = [
-  { key: 'early',    label: '🟢 1–2% Early Momentum',      min: 1,  max: 2  },
-  { key: 'strong',   label: '🟢 2–5% Strong Momentum',     min: 2,  max: 5  },
-  { key: 'high',     label: '🔥 5–10% High Momentum',      min: 5,  max: 10 },
+  { key: 'early',    label: '🟢 1–2% Early Momentum',       min: 1,  max: 2  },
+  { key: 'strong',   label: '🟢 2–5% Strong Momentum',      min: 2,  max: 5  },
+  { key: 'high',     label: '🔥 5–10% High Momentum',       min: 5,  max: 10 },
   { key: 'veryhigh', label: '🔥 10–20% Very High Momentum', min: 10, max: 20 },
   { key: 'extreme1', label: '🔥🔥 20–30% Extreme Momentum', min: 20, max: 30 },
-  { key: 'extreme2', label: '🚨 30–40% Extreme Move',       min: 30, max: 40 },
-  { key: 'extreme3', label: '🚨 40–50% Extreme Move',       min: 40, max: 50 },
-  { key: 'potential',label: '🔮 Potential Movers',          min: 0,  max: 5  },
+  { key: 'extreme2', label: '🚨 30–40% Extreme Move',        min: 30, max: 40 },
+  { key: 'extreme3', label: '🚨 40–50% Extreme Move',        min: 40, max: 50 },
+  { key: 'potential',label: '🔮 Potential Movers',           min: 0,  max: 5  },
 ];
 
 export function getMovementZone(pctFromOpen) {
@@ -110,219 +48,246 @@ export function getMovementLevels(open) {
   }));
 }
 
-/* ─── MOMENTUM SCORE ─────────────────────────────────────── */
+/* ─── SCORING FUNCTIONS ──────────────────────────────────── */
 
-function scoreGap(pctFromOpen) {
-  if (pctFromOpen > 8)  return 10;
-  if (pctFromOpen > 6)  return 9;
-  if (pctFromOpen > 4)  return 7;
-  if (pctFromOpen > 2)  return 5;
-  if (pctFromOpen > 1)  return 4;
-  if (pctFromOpen > 0)  return 2;
+function scoreVWAP(price, vwap) {
+  if (!vwap || !price) return 0;
+  if (price > vwap * 1.005) return 15;
+  if (price > vwap) return 10;
   return 0;
 }
 
-function scoreRVOL(rvol) {
+function scoreRSI(rsi) {
+  if (rsi === null || rsi === undefined) return 0;
+  if (rsi > 80) return 0;
+  if (rsi >= 65) return 8;
+  if (rsi >= 55) return 10;
+  if (rsi >= 50) return 6;
+  return 0;
+}
+
+function scoreADX(adx, plusDI, minusDI) {
+  if (!adx) return 0;
+  const trending = plusDI && minusDI ? plusDI > minusDI : true;
+  if (!trending) return 0;
+  if (adx > 40) return 15;
+  if (adx > 30) return 12;
+  if (adx > 25) return 10;
+  if (adx > 20) return 7;
+  if (adx > 15) return 4;
+  return 0;
+}
+
+function scoreRVOL(rvol, rvolStatus) {
+  if (!rvol || rvolStatus === 'insufficient_history') return 0;
   if (rvol > 3)   return 15;
   if (rvol > 2)   return 12;
-  if (rvol > 1.5) return 8;
-  if (rvol > 1)   return 5;
+  if (rvol > 1.5) return 9;
+  if (rvol > 1.2) return 6;
+  if (rvol > 1)   return 3;
   return 0;
 }
 
-function scoreVWAP(price, vwap, prevVwap) {
-  if (!vwap) return 0;
-  if (price > vwap && prevVwap && vwap > prevVwap) return 10;
-  if (price > vwap) return 6;
+function scoreORB(price, orbHigh, orbLow, orbStatus, vwap, rvol) {
+  if (orbStatus !== 'valid' || !orbHigh || !orbLow) return 0;
+  if (price > orbHigh && vwap && price > vwap && rvol >= 1.5) return 15;
+  if (price > orbHigh) return 10;
+  if (price >= orbHigh * 0.995) return 5;
   return 0;
 }
 
-function scoreEMA(ema9, ema21, ema50) {
+function scoreEMA(price, ema9, ema20, ema50) {
   let s = 0;
-  if (ema9 && ema21 && ema9 > ema21) s += 5;
-  if (ema21 && ema50 && ema21 > ema50) s += 5;
-  return s;
+  if (ema9 && ema20 && ema9 > ema20) s += 5;
+  if (ema20 && ema50 && ema20 > ema50) s += 3;
+  if (price && ema9 && price > ema9) s += 2;
+  return Math.min(s, 10);
 }
 
-function scoreBreakout(price, pdh, orbHigh, resistance, rvol) {
-  const levels = [pdh, orbHigh, resistance].filter(Boolean);
-  const broken = levels.filter((l) => price > l);
-  if (!broken.length) {
-    const near = levels.some((l) => price >= l * 0.995 && price < l);
-    return near ? 3 : 0;
-  }
-  if (rvol > 2)   return 15;
-  if (rvol > 1.5) return 10;
-  return 5;
+function scoreMACD(macd, macdSignal, macdHist) {
+  if (macd === null || macdSignal === null) return 0;
+  if (macd > macdSignal && macdHist > 0) return 5;
+  if (macd > macdSignal) return 3;
+  return 0;
+}
+
+function scorePriceMomentum(pctFromOpen) {
+  if (pctFromOpen > 8)  return 5;
+  if (pctFromOpen > 4)  return 4;
+  if (pctFromOpen > 2)  return 3;
+  if (pctFromOpen > 1)  return 2;
+  if (pctFromOpen > 0)  return 1;
+  return 0;
 }
 
 function scoreCandle(pattern) {
   if (!pattern) return 0;
-  const strong = ['Bullish Engulfing', 'Morning Star', 'Three White Soldiers', 'Three Outside Up', 'Three Inside Up'];
-  return strong.includes(pattern) ? 10 : 3;
+  const strong = ['Bullish Engulfing', 'Morning Star', 'Three White Soldiers', 'Hammer'];
+  const moderate = ['Bullish Harami', 'Piercing Pattern', 'Strong Bullish Candle'];
+  if (strong.includes(pattern)) return 5;
+  if (moderate.includes(pattern)) return 3;
+  return 1;
 }
 
-function scoreRSI(rsi) {
-  if (!rsi) return 0;
-  if (rsi > 80) return 0;
-  if (rsi >= 70) return 3;
-  if (rsi >= 60) return 5;
-  if (rsi >= 50) return 3;
-  return 0;
-}
-
-function scoreADX(adx) {
-  if (!adx) return 0;
-  if (adx > 35) return 5;
-  if (adx > 25) return 4;
-  if (adx > 20) return 2;
-  return 0;
-}
-
-function scoreIndustry(industryScore) {
-  if (industryScore >= 80) return 10;
-  if (industryScore >= 65) return 7;
-  if (industryScore >= 50) return 4;
-  if (industryScore >= 35) return 2;
+function scoreSector(sectorScore) {
+  if (sectorScore >= 80) return 5;
+  if (sectorScore >= 65) return 4;
+  if (sectorScore >= 50) return 3;
+  if (sectorScore >= 35) return 1;
   return 0;
 }
 
 function scoreMarket(marketScore) {
   if (marketScore >= 65) return 5;
-  if (marketScore >= 45) return 2;
+  if (marketScore >= 45) return 3;
   return 0;
+}
+
+/* ─── ORB STATUS LABEL ───────────────────────────────────── */
+
+function getOrbStatusLabel(price, orbHigh, orbLow, orbStatus, vwap, rvol) {
+  if (orbStatus !== 'valid' || !orbHigh || !orbLow) return null;
+  if (price > orbHigh && vwap && price > vwap && rvol >= 1.5) return 'BUY';
+  if (price < orbLow  && vwap && price < vwap && rvol >= 1.5) return 'SELL';
+  if (price > orbHigh) return 'BREAKOUT';
+  if (price < orbLow)  return 'BREAKDOWN';
+  return null;
 }
 
 /* ─── CHASE DETECTION ────────────────────────────────────── */
 
 function detectChase(pctFromOpen, rsi, price, vwap, rvol) {
-  if (pctFromOpen >= 10 && rsi > 80 && vwap && price > vwap * 1.05 && rvol < 1.5) {
-    return 'DO_NOT_CHASE';
-  }
-  if (pctFromOpen >= 20) return 'EXTREME_CAUTION';
   if (pctFromOpen >= 30) return 'EXTREME_VOLATILITY';
+  if (pctFromOpen >= 20) return 'EXTREME_CAUTION';
+  if (pctFromOpen >= 10 && rsi > 80 && vwap && price > vwap * 1.05 && rvol < 1.5) return 'DO_NOT_CHASE';
   return null;
-}
-
-/* ─── ORB ────────────────────────────────────────────────── */
-
-function calcORB(candles, minutes = 15) {
-  if (!candles.length) return { high: null, low: null };
-  const orbCandles = candles.slice(0, Math.ceil(minutes));
-  return {
-    high: Math.max(...orbCandles.map((c) => c.high).filter(Boolean)),
-    low:  Math.min(...orbCandles.map((c) => c.low).filter(Boolean)),
-  };
 }
 
 /* ─── MAIN BUILD ─────────────────────────────────────────── */
 
-export function buildMomentumScanner(rows = [], candles = [], marketScore = 50, industryScoreMap = new Map()) {
+/**
+ * @param {Array}  rows            - scanner rows (quote/top-ten data)
+ * @param {Map}    candleMap       - Map<symbol, candle[]> from candleCache
+ * @param {number} marketScore     - 0–100 broad market score
+ * @param {Map}    industryScoreMap - Map<industry, score>
+ */
+export function buildMomentumScanner(rows = [], candleMap = new Map(), marketScore = 50, industryScoreMap = new Map()) {
   const results = rows
     .map((row) => {
-      const price      = toNum(row?.price ?? row?.lastPrice ?? row?.ltp ?? row?.close);
-      const open       = toNum(row?.open ?? row?.open_price) || price;
-      const dayHigh    = toNum(row?.dayHigh ?? row?.high);
-      const dayLow     = toNum(row?.dayLow ?? row?.low);
-      const pdh        = toNum(row?.previousDayHigh ?? row?.prevDayHigh);
-      const pdl        = toNum(row?.previousDayLow  ?? row?.prevDayLow);
-      const prevClose  = toNum(row?.previousClose   ?? row?.prevClose);
-      const volume     = toNum(row?.volume ?? row?.totalTradedVolume ?? row?.quantityTraded);
-      const avgVolume  = toNum(row?.averageVolume   ?? row?.avgVolume);
-      const rvol       = avgVolume > 0 ? volume / avgVolume : toNum(row?.volumeRatio);
-      const symbol     = String(row?.symbol || row?.Symbol || '').trim().toUpperCase();
-      const industry   = row?.industry || row?.sector || 'Unclassified';
-      const indScore   = industryScoreMap.get(industry) ?? 45;
-
+      const symbol    = String(row?.symbol || row?.Symbol || '').trim().toUpperCase();
+      const price     = toNum(row?.price ?? row?.lastPrice ?? row?.ltp ?? row?.close);
       if (!price || !symbol) return null;
 
-      const rowCandles = candles.filter((c) => c.symbol === symbol);
-      const closes     = rowCandles.map((c) => c.close).filter(Boolean);
-      const ema9s      = emaSeries(closes, 9);
-      const ema21s     = emaSeries(closes, 21);
-      const ema50s     = emaSeries(closes, 50);
-      const ema9       = toNum(row?.ema9)  || ema9s.at(-1)  || 0;
-      const ema21      = toNum(row?.ema20) || ema21s.at(-1) || 0;
-      const ema50      = toNum(row?.ema50) || ema50s.at(-1) || 0;
-      const vwap       = toNum(row?.vwap)  || vwapCurrent(rowCandles) || 0;
-      const prevVwap   = rowCandles.length > 1 ? vwapCurrent(rowCandles.slice(0, -1)) : null;
-      const rsi        = toNum(row?.rsi)   || rsiValue(closes);
-      const adx        = toNum(row?.adx)   || adxProxy(rowCandles);
-      const pattern    = detectBullishPattern(rowCandles);
-      const orb        = calcORB(rowCandles);
+      const open      = toNum(row?.open ?? row?.open_price) || price;
+      const dayHigh   = toNum(row?.dayHigh ?? row?.high);
+      const dayLow    = toNum(row?.dayLow  ?? row?.low);
+      const pdh       = toNum(row?.previousDayHigh ?? row?.prevDayHigh);
+      const pdl       = toNum(row?.previousDayLow  ?? row?.prevDayLow);
+      const prevClose = toNum(row?.previousClose   ?? row?.prevClose);
+      const volume    = toNum(row?.volume ?? row?.totalTradedVolume ?? row?.quantityTraded);
+      const avgVolume = toNum(row?.averageVolume   ?? row?.avgVolume);
+      const industry  = row?.industry || row?.sector || 'Unclassified';
+      const indScore  = industryScoreMap.get(industry) ?? 45;
 
-      const pctFromOpen   = open ? ((price - open) / open) * 100 : 0;
-      const highFromOpen  = open ? ((dayHigh - open) / open) * 100 : 0;
-      const lowFromOpen   = open ? ((dayLow  - open) / open) * 100 : 0;
-      const distVwap      = vwap  ? ((price - vwap)  / vwap)  * 100 : null;
-      const distPDH       = pdh   ? ((price - pdh)   / pdh)   * 100 : null;
-      const distPDL       = pdl   ? ((price - pdl)   / pdl)   * 100 : null;
+      // Get candles for this symbol from the pre-fetched map
+      const candles = candleMap.get(symbol) || [];
 
-      const resistance = toNum(row?.resistance) || pdh || (rowCandles.length ? Math.max(...rowCandles.slice(-20).map((c) => c.high)) : 0);
-      const support    = toNum(row?.support)    || pdl || (rowCandles.length ? Math.min(...rowCandles.slice(-20).map((c) => c.low))  : 0);
+      // Compute all indicators from candles
+      const ind = computeIndicators(candles, { currentVolume: volume, averageVolume: avgVolume });
 
-      /* ── Scores ── */
-      const sGap      = scoreGap(pctFromOpen);
-      const sRvol     = scoreRVOL(rvol);
-      const sVwap     = scoreVWAP(price, vwap, prevVwap);
-      const sEma      = scoreEMA(ema9, ema21, ema50);
-      const sBreakout = scoreBreakout(price, pdh, orb.high, resistance, rvol);
-      const sCandle   = scoreCandle(pattern);
-      const sRsi      = scoreRSI(rsi);
-      const sAdx      = scoreADX(adx);
-      const sInd      = scoreIndustry(indScore);
-      const sMkt      = scoreMarket(marketScore);
+      // Prefer candle-derived values; fall back to quote fields only if candles unavailable
+      const vwap    = (ind.vwap    != null) ? ind.vwap    : (toNum(row?.vwap)  || null);
+      const rsi     = (ind.rsi     != null) ? ind.rsi     : (toNum(row?.rsi)   || null);
+      const adx     = ind.adx     ?? null;
+      const plusDI  = ind.plusDI  ?? null;
+      const minusDI = ind.minusDI ?? null;
+      const atr     = ind.atr     ?? null;
+      const rvol    = (ind.rvol != null) ? ind.rvol : ((avgVolume > 0 ? volume / avgVolume : toNum(row?.volumeRatio)) || 0);
+      const rvolStatus = ind.rvolStatus;
+      const ema9    = (ind.ema9  != null) ? ind.ema9  : (toNum(row?.ema9)  || null);
+      const ema20   = (ind.ema20 != null) ? ind.ema20 : (toNum(row?.ema20) || null);
+      const ema50   = (ind.ema50 != null) ? ind.ema50 : (toNum(row?.ema50) || null);
+      const orbHigh = ind.orbHigh ?? null;
+      const orbLow  = ind.orbLow  ?? null;
+      const orbCalcStatus = ind.orbStatus;
+      const macd    = ind.macd    ?? null;
+      const macdSig = ind.macdSignal ?? null;
+      const macdHist = ind.macdHist ?? null;
+      const pattern = ind.candlePattern;
+
+      const pctFromOpen  = open ? ((price - open) / open) * 100 : 0;
+      const highFromOpen = open ? ((dayHigh - open) / open) * 100 : 0;
+      const lowFromOpen  = open ? ((dayLow  - open) / open) * 100 : 0;
+      const distVwap     = vwap  ? ((price - vwap)  / vwap)  * 100 : null;
+      const distPDH      = pdh   ? ((price - pdh)   / pdh)   * 100 : null;
+
+      const resistance = toNum(row?.resistance) || pdh || (candles.length ? Math.max(...candles.slice(-20).map((c) => c.high)) : 0);
+      const support    = toNum(row?.support)    || pdl || (candles.length ? Math.min(...candles.slice(-20).map((c) => c.low))  : 0);
+
+      /* ── Scores (total 100) ── */
+      const sVwap    = scoreVWAP(price, vwap);                                    // 15
+      const sRsi     = scoreRSI(rsi);                                             // 10
+      const sAdx     = scoreADX(adx, plusDI, minusDI);                           // 15
+      const sRvol    = scoreRVOL(rvol, rvolStatus);                              // 15
+      const sOrb     = scoreORB(price, orbHigh, orbLow, orbCalcStatus, vwap, rvol); // 15
+      const sEma     = scoreEMA(price, ema9, ema20, ema50);                      // 10
+      const sMacd    = scoreMACD(macd, macdSig, macdHist);                       // 5
+      const sMom     = scorePriceMomentum(pctFromOpen);                          // 5
+      const sSector  = scoreSector(indScore);                                    // 5
+      const sMkt     = scoreMarket(marketScore);                                 // 5
+      // candle pattern is a bonus (not in base 100)
+      const sCandle  = scoreCandle(pattern);
 
       const momentumScore = clamp(
-        Math.round(sGap + sRvol + sVwap + sEma + sBreakout + sCandle + sRsi + sAdx + sInd + sMkt),
+        Math.round(sVwap + sRsi + sAdx + sRvol + sOrb + sEma + sMacd + sMom + sSector + sMkt + sCandle),
         0, 100
       );
 
-      /* ── Early momentum bonus ── */
-      const earlyMomentum = pctFromOpen >= 1 && pctFromOpen <= 5 && rvol >= 1.5 && vwap && price > vwap && ema9 > ema21;
+      /* ── Data sufficiency check ── */
+      const hasCandles = candles.length >= 5;
+      const dataInsufficient = !hasCandles && !vwap && !rsi && !adx;
 
-      /* ── ORB status ── */
-      let orbStatus = null;
-      if (orb.high && price > orb.high && vwap && price > vwap && ema9 > ema21 && rvol >= 1.5) orbStatus = 'BUY';
-      else if (orb.low && price < orb.low && vwap && price < vwap && ema9 < ema21 && rvol >= 1.5) orbStatus = 'SELL';
+      /* ── ORB trade signal ── */
+      const orbTradeStatus = getOrbStatusLabel(price, orbHigh, orbLow, orbCalcStatus, vwap, rvol);
+
+      /* ── Early momentum ── */
+      const earlyMomentum = pctFromOpen >= 1 && pctFromOpen <= 5 && rvol >= 1.5 && vwap && price > vwap && ema9 && ema20 && ema9 > ema20;
 
       /* ── Chase detection ── */
       const chaseWarning = detectChase(pctFromOpen, rsi, price, vwap, rvol);
 
       /* ── Signal label ── */
       const signalLabel =
-        momentumScore >= 90 ? '🚀 Exceptional Momentum' :
-        momentumScore >= 80 ? '🟢 Strong Momentum' :
-        momentumScore >= 70 ? '🟢 Favorable Setup' :
-        momentumScore >= 60 ? '🟡 Watch' :
-        momentumScore >= 50 ? '🟠 Weak' :
+        dataInsufficient      ? '⚪ Data Insufficient' :
+        momentumScore >= 85   ? '🚀 Super Strong' :
+        momentumScore >= 75   ? '🟢 Strong' :
+        momentumScore >= 65   ? '🟡 Watch' :
+        momentumScore >= 50   ? '⚠️ Weak' :
         '🔴 Avoid';
 
       /* ── Risk/Reward ── */
-      const atr = adx ? (price * adx / 1000) : price * 0.006;
-      const sl  = support && support < price ? Math.max(support, price - atr * 1.5) : price - atr * 1.5;
-      const risk = Math.max(price - sl, 0.01);
-      const t1  = resistance && resistance > price ? resistance : price + risk * 2;
-      const t2  = price + risk * 2.5;
-      const t3  = price + risk * 3.5;
-      const rr  = (t1 - price) / risk;
+      const atrVal  = atr || (price * 0.006);
+      const sl      = support && support < price ? Math.max(support, price - atrVal * 1.5) : price - atrVal * 1.5;
+      const risk    = Math.max(price - sl, 0.01);
+      const t1      = resistance && resistance > price ? resistance : price + risk * 2;
+      const t2      = price + risk * 2.5;
+      const t3      = price + risk * 3.5;
+      const rr      = (t1 - price) / risk;
 
       /* ── Buy conditions ── */
       const buyConditions = [
-        [price > vwap,          'Price above VWAP'],
-        [ema9 > ema21,          'EMA 9 > EMA 21'],
-        [rvol >= 1.5,           `RVOL ${rvol.toFixed(2)}x`],
-        [sBreakout >= 10,       'Resistance breakout'],
-        [Boolean(pattern),      pattern ? `${pattern} detected` : ''],
-        [indScore >= 65,        `Industry strength ${indScore}/100`],
-        [marketScore >= 55,     'Market supportive'],
-        [rsi >= 50 && rsi <= 75, `RSI ${rsi?.toFixed(0) || 'N/A'}`],
+        [vwap && price > vwap,                    'Price above VWAP'],
+        [ema9 && ema20 && ema9 > ema20,           'EMA 9 > EMA 20'],
+        [rvol >= 1.5,                             `RVOL ${rvol.toFixed(2)}x`],
+        [sOrb >= 10,                              'ORB Breakout'],
+        [Boolean(pattern),                        pattern ? `${pattern}` : ''],
+        [indScore >= 65,                          `Sector ${indScore}/100`],
+        [marketScore >= 55,                       'Market supportive'],
+        [rsi !== null && rsi >= 50 && rsi <= 75,  `RSI ${rsi?.toFixed(0)}`],
+        [adx !== null && adx > 20,                `ADX ${adx?.toFixed(0)}`],
       ].filter(([ok, label]) => ok && label);
 
-      const buyConfirmed = buyConditions.length >= 5 && momentumScore >= 80 && rr >= 2 && !chaseWarning;
-
-      /* ── Movement zone ── */
-      const zone = getMovementZone(pctFromOpen);
+      const buyConfirmed = buyConditions.length >= 5 && momentumScore >= 75 && rr >= 2 && !chaseWarning;
 
       return {
         symbol,
@@ -339,21 +304,32 @@ export function buildMomentumScanner(rows = [], candles = [], marketScore = 50, 
         volume,
         avgVolume,
         rvol,
+        rvolStatus,
         vwap,
+        vwapStatus: ind.vwapStatus,
         ema9,
-        ema21,
+        ema20,
         ema50,
         rsi,
+        rsiStatus: ind.rsiStatus,
         adx,
+        plusDI,
+        minusDI,
+        adxStatus: ind.adxStatus,
+        atr: atrVal,
+        macd,
+        macdSignal: macdSig,
+        macdHist,
         pattern,
-        orb,
-        orbStatus,
+        orbHigh,
+        orbLow,
+        orbStatus: orbTradeStatus,
+        orbCalcStatus,
         pctFromOpen,
         highFromOpen,
         lowFromOpen,
         distVwap,
         distPDH,
-        distPDL,
         resistance,
         support,
         sl,
@@ -367,13 +343,15 @@ export function buildMomentumScanner(rows = [], candles = [], marketScore = 50, 
         chaseWarning,
         buyConditions,
         buyConfirmed,
-        zone,
-        scores: { sGap, sRvol, sVwap, sEma, sBreakout, sCandle, sRsi, sAdx, sInd, sMkt },
+        dataInsufficient,
+        candleCount: candles.length,
+        zone: getMovementZone(pctFromOpen),
+        scores: { sVwap, sRsi, sAdx, sRvol, sOrb, sEma, sMacd, sMom, sSector, sMkt, sCandle },
+        indicators: ind,
       };
     })
     .filter(Boolean)
     .sort((a, b) => {
-      // Favor early momentum (1–5%) with high score over already-extended stocks
       const aEarly = a.pctFromOpen >= 1 && a.pctFromOpen <= 5 ? 1 : 0;
       const bEarly = b.pctFromOpen >= 1 && b.pctFromOpen <= 5 ? 1 : 0;
       if (bEarly !== aEarly) return bEarly - aEarly;
