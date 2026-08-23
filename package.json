@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:proxy": "node server/nseProxy.js",
+    "dev:full": "start \"NSE Proxy\" cmd /k node server/nseProxy.js && vite",
     "build": "vite build",
     "lint": "eslint .",
     "start:proxy": "node server/nseProxy.js",

@@ -5,6 +5,7 @@
  */
 
 import { computeIndicators } from '../../services/indicatorEngine.js';
+import { normalizeSymbol } from '../../services/candleCache.js';
 
 const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
 
@@ -247,6 +248,10 @@ export function buildMomentumScanner(rows = [], candleMap = new Map(), marketSco
       const hasCandles = candles.length >= 5;
       const dataInsufficient = !hasCandles && !vwap && !rsi && !adx;
 
+      /* ── Data completeness % ── */
+      const dataFields = [vwap, rsi, adx, rvol > 0 ? rvol : null, ema9, ema20, ema50, macd, orbHigh];
+      const dataCompleteness = Math.round((dataFields.filter((v) => v != null).length / dataFields.length) * 100);
+
       /* ── ORB trade signal ── */
       const orbTradeStatus = getOrbStatusLabel(price, orbHigh, orbLow, orbCalcStatus, vwap, rvol);
 
@@ -259,11 +264,22 @@ export function buildMomentumScanner(rows = [], candleMap = new Map(), marketSco
       /* ── Signal label ── */
       const signalLabel =
         dataInsufficient      ? '⚪ Data Insufficient' :
-        momentumScore >= 85   ? '🚀 Super Strong' :
-        momentumScore >= 75   ? '🟢 Strong' :
+        momentumScore >= 85   ? '🔥 Strong Momentum' :
+        momentumScore >= 75   ? '🟢 Good' :
         momentumScore >= 65   ? '🟡 Watch' :
-        momentumScore >= 50   ? '⚠️ Weak' :
         '🔴 Avoid';
+
+      /* ── Entry status (separate from ranking) ── */
+      const entryReady =
+        momentumScore >= 75 &&
+        vwap && price > vwap &&
+        rvol >= 1.5 &&
+        adx != null && adx >= 20 &&
+        sOrb >= 10 &&
+        ema9 && ema20 && ema9 > ema20 &&
+        !chaseWarning;
+
+      const entryStatus = entryReady ? '✅ ENTRY READY' : momentumScore >= 65 ? '👁 WATCH' : '⛔ NOT READY';
 
       /* ── Risk/Reward ── */
       const atrVal  = atr || (price * 0.006);
@@ -344,6 +360,9 @@ export function buildMomentumScanner(rows = [], candleMap = new Map(), marketSco
         buyConditions,
         buyConfirmed,
         dataInsufficient,
+        dataCompleteness,
+        entryStatus,
+        entryReady,
         candleCount: candles.length,
         zone: getMovementZone(pctFromOpen),
         scores: { sVwap, sRsi, sAdx, sRvol, sOrb, sEma, sMacd, sMom, sSector, sMkt, sCandle },
@@ -351,12 +370,8 @@ export function buildMomentumScanner(rows = [], candleMap = new Map(), marketSco
       };
     })
     .filter(Boolean)
-    .sort((a, b) => {
-      const aEarly = a.pctFromOpen >= 1 && a.pctFromOpen <= 5 ? 1 : 0;
-      const bEarly = b.pctFromOpen >= 1 && b.pctFromOpen <= 5 ? 1 : 0;
-      if (bEarly !== aEarly) return bEarly - aEarly;
-      return b.momentumScore - a.momentumScore || b.rvol - a.rvol || b.indScore - a.indScore;
-    });
+    // TOP 10 = highest Momentum Score descending. NSE Top Ten / Most Active do NOT determine rank.
+    .sort((a, b) => b.momentumScore - a.momentumScore || b.rvol - a.rvol || b.indScore - a.indScore);
 
   return results;
 }

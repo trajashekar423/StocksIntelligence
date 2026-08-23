@@ -1,7 +1,9 @@
 /**
  * Candle Cache — throttled, deduplicated, stale-aware per-symbol fetcher.
- * Uses fetchIntradayCandles → normalizeCandles pipeline.
- * Cache key: symbol (clean, no series suffix).
+ * Cache key: normalizeSymbol(symbol) — always clean, no series suffix.
+ *
+ * Each cache entry: { candles, fetchedAt, status, error, tradingDate, sessionType }
+ * status: 'valid' | 'empty' | 'error' | 'no_symbol'
  */
 
 import { fetchIntradayCandles } from './stocksService.js';
@@ -11,10 +13,24 @@ const STALE_MS = 30_000;
 const CONCURRENT_LIMIT = 4;
 const RETRY_DELAY_MS = 1_500;
 
-const cache = new Map();    // symbol → { candles, fetchedAt, status, error }
+// Diagnostics — exported so UI can display them
+export const diagnostics = {
+  requested: 0,
+  successful: 0,
+  empty: 0,
+  failed: 0,
+  bySymbol: new Map(), // symbol → { status, candleCount, error, tradingDate }
+};
+
+const cache = new Map();    // symbol → entry
 const inFlight = new Map(); // symbol → Promise
 let activeCount = 0;
-const queue = [];           // { symbol, resolve, reject }
+const queue = [];
+
+/** Strip series suffix and uppercase: MOTISONS:1 → MOTISONS */
+export function normalizeSymbol(symbol) {
+  return String(symbol || '').trim().toUpperCase().replace(/:.*$/, '').replace(/\.NS$/, '').replace(/^NSE:/, '');
+}
 
 function processQueue() {
   while (queue.length && activeCount < CONCURRENT_LIMIT) {
@@ -28,22 +44,49 @@ function processQueue() {
 }
 
 async function _doFetch(symbol) {
-  const sym = symbol.trim().toUpperCase().replace(/:.*$/, '');
+  const sym = normalizeSymbol(symbol);
+  diagnostics.requested++;
   try {
     const res = await fetchIntradayCandles(sym);
-    // res.raw is the raw NSE JSON; normalize it into [{timestamp,open,high,low,close,volume}]
-    const candles = normalizeCandles(res.raw ?? res.data ?? null, sym);
+
+    // fetchIntradayCandles returns { ok, symbol, raw, candles:[] }
+    // raw is the full parsed NSE JSON — pass it through normalizeCandles
+    const rawPayload = res.raw ?? res.data ?? null;
+    const candles = normalizeCandles(rawPayload, sym);
+
+    // Determine trading date from first candle timestamp
+    let tradingDate = null;
+    if (candles.length) {
+      const ts = candles[0].timestamp;
+      const d = ts instanceof Date ? ts : new Date(ts);
+      if (!isNaN(d.getTime())) {
+        const pad = (n) => String(n).padStart(2, '0');
+        tradingDate = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+      }
+    }
+
+    const status = candles.length ? 'valid' : 'empty';
     const entry = {
       candles,
       fetchedAt: Date.now(),
-      status: candles.length ? 'valid' : 'empty',
-      error: candles.length ? null : (res.error || 'No candles returned'),
+      status,
+      error: candles.length ? null : (res.error || 'No candles in response'),
+      tradingDate,
+      sessionType: candles.length ? 'LAST_AVAILABLE' : 'NONE',
     };
     cache.set(sym, entry);
+
+    // Update diagnostics
+    if (candles.length) diagnostics.successful++;
+    else diagnostics.empty++;
+    diagnostics.bySymbol.set(sym, { status, candleCount: candles.length, error: entry.error, tradingDate });
+
     return entry;
   } catch (err) {
-    const entry = { candles: [], fetchedAt: Date.now(), status: 'error', error: err?.message || String(err) };
+    diagnostics.failed++;
+    const entry = { candles: [], fetchedAt: Date.now(), status: 'error', error: err?.message || String(err), tradingDate: null, sessionType: 'NONE' };
     cache.set(sym, entry);
+    diagnostics.bySymbol.set(sym, { status: 'error', candleCount: 0, error: entry.error, tradingDate: null });
     return entry;
   } finally {
     inFlight.delete(sym);
@@ -58,8 +101,8 @@ function enqueue(symbol) {
 }
 
 export async function getCandles(symbol) {
-  const sym = String(symbol || '').trim().toUpperCase().replace(/:.*$/, '');
-  if (!sym) return { candles: [], status: 'no_symbol' };
+  const sym = normalizeSymbol(symbol);
+  if (!sym) return { candles: [], status: 'no_symbol', tradingDate: null };
   const cached = cache.get(sym);
   if (cached && Date.now() - cached.fetchedAt < STALE_MS) return cached;
   if (inFlight.has(sym)) return inFlight.get(sym);
@@ -70,7 +113,7 @@ export async function getCandles(symbol) {
 
 export function prefetchCandles(symbols) {
   for (const sym of symbols) {
-    const s = String(sym || '').trim().toUpperCase().replace(/:.*$/, '');
+    const s = normalizeSymbol(sym);
     if (!s) continue;
     const cached = cache.get(s);
     if (cached && Date.now() - cached.fetchedAt < STALE_MS) continue;
@@ -81,14 +124,32 @@ export function prefetchCandles(symbols) {
 }
 
 export function invalidate(symbol) {
-  cache.delete(String(symbol || '').trim().toUpperCase().replace(/:.*$/, ''));
+  cache.delete(normalizeSymbol(symbol));
 }
 
 export function getCacheStatus(symbol) {
-  const sym = String(symbol || '').trim().toUpperCase().replace(/:.*$/, '');
+  const sym = normalizeSymbol(symbol);
   const entry = cache.get(sym);
-  if (!entry) return { cached: false };
-  return { cached: true, stale: Date.now() - entry.fetchedAt > STALE_MS, ageMs: Date.now() - entry.fetchedAt, status: entry.status, candleCount: entry.candles.length };
+  if (!entry) return { cached: false, status: 'not_fetched' };
+  return {
+    cached: true,
+    stale: Date.now() - entry.fetchedAt > STALE_MS,
+    ageMs: Date.now() - entry.fetchedAt,
+    status: entry.status,
+    candleCount: entry.candles.length,
+    tradingDate: entry.tradingDate,
+    error: entry.error,
+  };
+}
+
+export function getDiagnostics() {
+  return {
+    requested: diagnostics.requested,
+    successful: diagnostics.successful,
+    empty: diagnostics.empty,
+    failed: diagnostics.failed,
+    bySymbol: Object.fromEntries(diagnostics.bySymbol),
+  };
 }
 
 export async function retryCandles(symbol) {

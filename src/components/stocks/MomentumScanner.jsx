@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { buildMomentumScanner, MOVEMENT_ZONES, getMovementLevels } from './momentumScanner';
-import { getCandles, prefetchCandles } from '../../services/candleCache.js';
+import { getCandles, prefetchCandles, normalizeSymbol, getDiagnostics } from '../../services/candleCache.js';
 import { getMarketSessionStatus } from '../../services/stocksService.js';
 import {
   createTrade, updateTrade, evaluateExit,
@@ -235,7 +235,9 @@ function StockDetail({ row, onClose, onStartTracking, canTradeNow, isMarketOpen 
         <div className="col-6 col-md-3"><span className="text-muted">ORB High</span><br /><strong>{row.orbHigh ? fmt(row.orbHigh) : 'N/A'}</strong></div>
         <div className="col-6 col-md-3"><span className="text-muted">ORB Low</span><br /><strong>{row.orbLow ? fmt(row.orbLow) : 'N/A'}</strong></div>
         <div className="col-6 col-md-3"><span className="text-muted">ORB Signal</span><br /><strong>{row.orbStatus || 'No signal'}</strong></div>
-        <div className="col-6 col-md-3"><span className="text-muted">Candles</span><br /><strong>{row.candleCount > 0 ? `${row.candleCount} bars` : <span className="text-warning">⚪ No candles</span>}</strong></div>
+        <div className="col-6 col-md-3"><span className="text-muted">Candles</span><br /><strong>{row.candleCount > 0
+          ? `${row.candleCount} bars`
+          : <span className="text-warning">⚪ Historical candles unavailable — indicators cannot be calculated</span>}</strong></div>
         <div className="col-6 col-md-3"><span className="text-muted">Stop Loss</span><br /><strong>{fmt(row.sl)}</strong></div>
         <div className="col-6 col-md-3"><span className="text-muted">Target 1</span><br /><strong>{fmt(row.t1)}</strong></div>
         <div className="col-6 col-md-3"><span className="text-muted">R/R</span><br /><strong>1:{row.rr}</strong></div>
@@ -377,21 +379,22 @@ export default function MomentumScanner({ scannerRows = [], marketScore = 50, in
   const [activeZone, setActiveZone]             = useState('potential');
   const [selectedRow, setSelectedRow]           = useState(null);
   const [selectedIndustry, setSelectedIndustry] = useState('');
-  const [candleMap, setCandleMap]               = useState(new Map());
+  const [candleMap, setCandleMap]               = useState(new Map()); // symbol → candles[]
+  const [candleMeta, setCandleMeta]             = useState(new Map()); // symbol → {status,tradingDate,error}
   const [candleStatus, setCandleStatus]         = useState('idle');
+  const [showDiagnostics, setShowDiagnostics]   = useState(false);
   const [activeTrade, setActiveTrade]           = useState(null);
   const [dailyTracker, setDailyTracker]         = useState(() => createDailyTracker(DAILY_TARGET, 1000));
   const [marketSession]                         = useState(() => getMarketSessionStatus());
   const fetchedRef = useRef(new Set());
   const tradeTimerRef = useRef(null);
 
-  // Deduplicate symbols from scannerRows — strip series suffix (e.g. QUADFUTURE:1 → QUADFUTURE)
+  // Deduplicate symbols using normalizeSymbol — same key used everywhere
   const symbols = useMemo(() => {
     const seen = new Set();
     const out = [];
     for (const r of scannerRows) {
-      const raw = String(r?.symbol || r?.Symbol || '').trim().toUpperCase();
-      const s = raw.replace(/:.*$/, ''); // strip :EQ / :1 / :BE etc.
+      const s = normalizeSymbol(r?.symbol || r?.Symbol || '');
       if (s && !seen.has(s)) { seen.add(s); out.push(s); }
     }
     return out;
@@ -416,9 +419,24 @@ export default function MomentumScanner({ scannerRows = [], marketScore = 50, in
         const next = new Map(prev);
         batch.forEach((sym, i) => {
           const r = results[i];
-          const candles = r.status === 'fulfilled' ? (r.value?.candles || []) : [];
-          next.set(sym, candles);
+          // Store plain candles array — momentumScanner.js expects Map<symbol, candle[]>
+          const entry = r.status === 'fulfilled' ? r.value : null;
+          next.set(sym, entry?.candles || []);
           fetchedRef.current.add(sym);
+        });
+        return next;
+      });
+      setCandleMeta((prev) => {
+        const next = new Map(prev);
+        batch.forEach((sym, i) => {
+          const r = results[i];
+          const entry = r.status === 'fulfilled' ? r.value : null;
+          next.set(sym, {
+            status: entry?.status || 'error',
+            candleCount: entry?.candles?.length || 0,
+            tradingDate: entry?.tradingDate || null,
+            error: entry?.error || null,
+          });
         });
         return next;
       });
@@ -518,8 +536,20 @@ export default function MomentumScanner({ scannerRows = [], marketScore = 50, in
         </div>
         <div className="text-end small text-muted">
           {lastUpdated ? `Updated: ${lastUpdated.toLocaleTimeString()}` : 'Awaiting data'}
-          {candleStatus === 'loading' && <div className="text-info">⏳ Loading candles...</div>}
-          {candleStatus === 'ready'   && <div className="text-success">✓ Candles loaded ({candleMap.size} symbols)</div>}
+          {candleStatus === 'loading' && <div className="text-info">⏳ Loading candles ({candleMap.size}/{symbols.length})...</div>}
+          {candleStatus === 'ready' && (() => {
+            const valid = [...candleMeta.values()].filter((m) => m.status === 'valid').length;
+            const empty = [...candleMeta.values()].filter((m) => m.status === 'empty').length;
+            const failed = [...candleMeta.values()].filter((m) => m.status === 'error').length;
+            return (
+              <div>
+                <span className="text-success">✓ Candles: {valid} valid</span>
+                {empty > 0 && <span className="text-warning ms-2">⚪ {empty} empty</span>}
+                {failed > 0 && <span className="text-danger ms-2">❌ {failed} failed</span>}
+                <button type="button" className="btn btn-link btn-sm p-0 ms-2" onClick={() => setShowDiagnostics((v) => !v)}>details</button>
+              </div>
+            );
+          })()}
         </div>
       </div>
 
@@ -538,6 +568,40 @@ export default function MomentumScanner({ scannerRows = [], marketScore = 50, in
       {marketSession.isPreOpen && (
         <div className="alert alert-warning mb-3">
           <strong>🟡 PRE-OPEN SESSION</strong> — Market opens at 09:15 IST. Candles will be available after open.
+        </div>
+      )}
+
+      {/* Diagnostics panel */}
+      {showDiagnostics && candleStatus === 'ready' && (
+        <div className="card border-0 shadow-sm mb-3">
+          <div className="card-body small">
+            <div className="d-flex justify-content-between align-items-center mb-2">
+              <strong>🔍 Candle Data Quality</strong>
+              <button type="button" className="btn-close btn-sm" onClick={() => setShowDiagnostics(false)} />
+            </div>
+            <div className="row g-2 mb-2">
+              <div className="col-3">Requested: <strong>{symbols.length}</strong></div>
+              <div className="col-3 text-success">Valid: <strong>{[...candleMeta.values()].filter((m) => m.status === 'valid').length}</strong></div>
+              <div className="col-3 text-warning">Empty: <strong>{[...candleMeta.values()].filter((m) => m.status === 'empty').length}</strong></div>
+              <div className="col-3 text-danger">Failed: <strong>{[...candleMeta.values()].filter((m) => m.status === 'error').length}</strong></div>
+            </div>
+            <div className="table-responsive" style={{ maxHeight: 240, overflowY: 'auto' }}>
+              <table className="table table-sm mb-0">
+                <thead><tr><th>Symbol</th><th>Status</th><th>Candles</th><th>Date</th><th>Error</th></tr></thead>
+                <tbody>
+                  {[...candleMeta.entries()].map(([sym, m]) => (
+                    <tr key={sym}>
+                      <td><strong>{sym}</strong></td>
+                      <td><span className={m.status === 'valid' ? 'text-success' : m.status === 'empty' ? 'text-warning' : 'text-danger'}>{m.status.toUpperCase()}</span></td>
+                      <td>{m.candleCount}</td>
+                      <td>{m.tradingDate || '—'}</td>
+                      <td className="text-muted">{m.error || '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       )}
 

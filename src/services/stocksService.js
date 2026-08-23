@@ -395,14 +395,45 @@ export function getMarketSessionStatus() {
 }
 
 export async function fetchScannerMarketData() {
-  // Combine top-ten and most-active feeds into a single market data array
+  // Primary universe = all eligible NSE equities from /api/nse/universe
+  // Top-ten and most-active are supplementary quote enrichment ONLY — never the candidate universe.
   try {
-    const [topRes, mostRes] = await Promise.all([fetchTopTen(), fetchMostActive()]);
+    const [uniRes, topRes, mostRes] = await Promise.all([fetchUniverse(), fetchTopTen(), fetchMostActive()]);
+    const universe = Array.isArray(uniRes?.data) ? uniRes.data : [];
     const top = Array.isArray(topRes?.data) ? topRes.data : [];
     const most = Array.isArray(mostRes?.data) ? mostRes.data : [];
-    const merged = [...top, ...most];
-    const ok = Boolean(topRes?.ok || mostRes?.ok);
-    return { ok, data: merged };
+
+    // Build supplementary quote map for price/volume enrichment
+    const quoteMap = new Map();
+    [...top, ...most].forEach((row) => {
+      const sym = String(row?.symbol || row?.Symbol || '').trim().toUpperCase();
+      if (sym && !quoteMap.has(sym)) quoteMap.set(sym, row);
+    });
+
+    if (universe.length) {
+      const universeSyms = new Set();
+      const merged = universe.map((u) => {
+        const sym = String(u.symbol || '').trim().toUpperCase();
+        universeSyms.add(sym);
+        const quote = quoteMap.get(sym) || {};
+        return { ...quote, ...u, symbol: sym };
+      });
+      // Include any top/most-active rows not already in universe
+      [...top, ...most].forEach((row) => {
+        const sym = String(row?.symbol || row?.Symbol || '').trim().toUpperCase();
+        if (sym && !universeSyms.has(sym)) { merged.push({ ...row, symbol: sym }); universeSyms.add(sym); }
+      });
+      return { ok: true, data: merged };
+    }
+
+    // Fallback: universe unavailable — use top+most (degraded mode)
+    const seen = new Set();
+    const deduped = [...top, ...most].filter((r) => {
+      const sym = String(r?.symbol || r?.Symbol || '').trim().toUpperCase();
+      if (!sym || seen.has(sym)) return false;
+      seen.add(sym); return true;
+    });
+    return { ok: Boolean(topRes?.ok || mostRes?.ok), data: deduped, degraded: true };
   } catch (err) {
     return { ok: false, error: err?.message || String(err) };
   }

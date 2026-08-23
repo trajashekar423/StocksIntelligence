@@ -22,39 +22,81 @@ function valid(v) { return typeof v === 'number' && Number.isFinite(v) && v !== 
 /**
  * Normalize any NSE chart-databyindex response into
  * [{ timestamp: Date, open, high, low, close, volume }]
+ * Handles all known NSE response shapes exhaustively.
  */
 export function normalizeCandles(raw, symbol) {
   if (!raw) return [];
 
-  // NSE chart-databyindex format: { grapthData: [[ts,o,h,l,c,v], ...] }
-  // or { data: { grapthData: [...] } }
-  const graph =
-    raw?.grapthData ||
-    raw?.data?.grapthData ||
-    raw?.graphData ||
-    raw?.data?.graphData ||
-    null;
+  // Walk every possible nesting level NSE uses
+  const candidates = [
+    raw?.grapthData,
+    raw?.graphData,
+    raw?.data?.grapthData,
+    raw?.data?.graphData,
+    raw?.candles,
+    raw?.data?.candles,
+    // Some NSE responses wrap in { data: { data: [...] } }
+    raw?.data?.data,
+    // Top-level array
+    Array.isArray(raw) ? raw : null,
+  ];
 
-  if (Array.isArray(graph)) {
-    return graph
-      .map((row) => {
-        if (!Array.isArray(row) || row.length < 5) return null;
-        const ts = row[0];
-        const open = toN(row[1]);
-        const high = toN(row[2]);
-        const low = toN(row[3]);
-        const close = toN(row[4]);
-        const volume = toN(row[5] ?? 0);
-        if (!open || !high || !low || !close) return null;
-        const timestamp = ts instanceof Date ? ts : new Date(ts);
-        if (isNaN(timestamp.getTime())) return null;
-        return { symbol, timestamp, open, high, low, close, volume };
-      })
-      .filter(Boolean);
+  const graph = candidates.find((c) => Array.isArray(c) && c.length > 0);
+
+  if (graph) {
+    // Each element is either [ts, o, h, l, c, v] or an object
+    const result = [];
+    for (const row of graph) {
+      let ts, open, high, low, close, volume;
+      if (Array.isArray(row)) {
+        if (row.length < 4) continue;
+        ts = row[0];
+        open  = toN(row[1]);
+        high  = toN(row[2]);
+        low   = toN(row[3]);
+        close = toN(row[4] ?? row[3]);
+        volume = toN(row[5] ?? 0);
+      } else if (row && typeof row === 'object') {
+        ts = row.timestamp ?? row.time ?? row.date ?? row.t;
+        open  = toN(row.open  ?? row.o);
+        high  = toN(row.high  ?? row.h);
+        low   = toN(row.low   ?? row.l);
+        close = toN(row.close ?? row.c ?? row.ltp);
+        volume = toN(row.volume ?? row.v ?? row.vol ?? 0);
+      } else {
+        continue;
+      }
+      if (!open || !high || !low || !close) continue;
+      // Parse timestamp — NSE uses epoch ms, ISO strings, or DD-MMM-YYYY HH:MM
+      let timestamp;
+      if (ts instanceof Date) {
+        timestamp = ts;
+      } else if (typeof ts === 'number') {
+        // epoch ms or epoch seconds
+        timestamp = new Date(ts > 1e10 ? ts : ts * 1000);
+      } else if (typeof ts === 'string') {
+        // Try direct parse first
+        timestamp = new Date(ts);
+        if (isNaN(timestamp.getTime())) {
+          // NSE format: "21-Aug-2026 09:15" or "21-Aug-2026"
+          const m = ts.match(/(\d{1,2})[-/](\w+)[-/](\d{4})(?:\s+(\d{1,2}):(\d{2}))?/);
+          if (m) {
+            const months = { Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11 };
+            const mo = months[m[2]] ?? parseInt(m[2], 10) - 1;
+            timestamp = new Date(parseInt(m[3],10), mo, parseInt(m[1],10), parseInt(m[4]||'9',10), parseInt(m[5]||'15',10));
+          }
+        }
+      } else {
+        continue;
+      }
+      if (!timestamp || isNaN(timestamp.getTime())) continue;
+      result.push({ symbol, timestamp, open, high, low, close, volume });
+    }
+    if (result.length) return result;
   }
 
-  // Alternate: arrays of timestamps + OHLCV separately
-  const timestamps = raw?.timestamp || raw?.data?.timestamp || [];
+  // Parallel arrays format: { timestamp: [...], open: [...], high: [...], ... }
+  const timestamps = raw?.timestamp || raw?.data?.timestamp || raw?.timestamps || [];
   const opens   = raw?.open   || raw?.data?.open   || [];
   const highs   = raw?.high   || raw?.data?.high   || [];
   const lows    = raw?.low    || raw?.data?.low    || [];
@@ -62,19 +104,20 @@ export function normalizeCandles(raw, symbol) {
   const volumes = raw?.volume || raw?.data?.volume || [];
 
   if (Array.isArray(timestamps) && timestamps.length) {
-    return timestamps
-      .map((ts, i) => {
-        const open  = toN(opens[i]);
-        const high  = toN(highs[i]);
-        const low   = toN(lows[i]);
-        const close = toN(closes[i]);
-        const volume = toN(volumes[i] ?? 0);
-        if (!open || !high || !low || !close) return null;
-        const timestamp = ts instanceof Date ? ts : new Date(ts);
-        if (isNaN(timestamp.getTime())) return null;
-        return { symbol, timestamp, open, high, low, close, volume };
-      })
-      .filter(Boolean);
+    const result = [];
+    for (let i = 0; i < timestamps.length; i++) {
+      const open  = toN(opens[i]);
+      const high  = toN(highs[i]);
+      const low   = toN(lows[i]);
+      const close = toN(closes[i]);
+      const volume = toN(volumes[i] ?? 0);
+      if (!open || !high || !low || !close) continue;
+      const ts = timestamps[i];
+      let timestamp = ts instanceof Date ? ts : new Date(ts);
+      if (isNaN(timestamp.getTime())) continue;
+      result.push({ symbol, timestamp, open, high, low, close, volume });
+    }
+    return result;
   }
 
   return [];
