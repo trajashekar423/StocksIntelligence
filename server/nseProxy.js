@@ -160,7 +160,14 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (!nsePath && url.pathname === '/api/nse/candles') {
-    const symbol = (url.searchParams.get('symbol') || '').trim().toUpperCase();
+    const symbol = (url.searchParams.get('symbol') || '').trim().toUpperCase().replace(/:.*$/, '');
+    if (symbol) {
+      nsePath = `/api/chart-databyindex?index=EQN:${encodeURIComponent(symbol)}`;
+    }
+  }
+
+  if (!nsePath && url.pathname.startsWith('/api/nse/intraday/')) {
+    const symbol = url.pathname.replace('/api/nse/intraday/', '').trim().toUpperCase().replace(/:.*$/, '');
     if (symbol) {
       nsePath = `/api/chart-databyindex?index=EQN:${encodeURIComponent(symbol)}`;
     }

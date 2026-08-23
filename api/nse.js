@@ -114,7 +114,13 @@ export default async function handler(req) {
 
   // candles — intraday OHLCV for any NSE equity symbol
   if (!nsePath && pathname === '/api/nse/candles') {
-    const symbol = (url.searchParams.get('symbol') || '').trim().toUpperCase();
+    const symbol = (url.searchParams.get('symbol') || '').trim().toUpperCase().replace(/:.*$/, '');
+    if (symbol) nsePath = `/api/chart-databyindex?index=EQN:${encodeURIComponent(symbol)}`;
+  }
+
+  // intraday — normalized alias: /api/nse/intraday/SYMBOL
+  if (!nsePath && pathname.startsWith('/api/nse/intraday/')) {
+    const symbol = pathname.replace('/api/nse/intraday/', '').trim().toUpperCase().replace(/:.*$/, '');
     if (symbol) nsePath = `/api/chart-databyindex?index=EQN:${encodeURIComponent(symbol)}`;
   }
 

@@ -322,6 +322,78 @@ export async function fetchStockCandles(symbol) {
   }
 }
 
+/**
+ * Normalized intraday candle fetch — uses /api/nse/intraday/:symbol
+ * Returns { ok, symbol, candles: [{timestamp,open,high,low,close,volume}], error }
+ */
+export async function fetchIntradayCandles(symbol) {
+  const sym = String(symbol || '').trim().toUpperCase().replace(/:.*$/, '');
+  if (!sym) return { ok: false, symbol: sym, candles: [], error: 'No symbol' };
+  try {
+    const res = await fetch(`/api/nse/intraday/${encodeURIComponent(sym)}`);
+    if (!res.ok) return { ok: false, symbol: sym, candles: [], error: `HTTP ${res.status}` };
+    const ct = (res.headers.get('content-type') || '').toLowerCase();
+    if (!ct.includes('application/json')) return { ok: false, symbol: sym, candles: [], error: 'Non-JSON response' };
+    const text = await res.text();
+    if (!text || !text.trim()) return { ok: true, symbol: sym, candles: [] };
+    try {
+      return { ok: true, symbol: sym, raw: JSON.parse(text), candles: [] };
+    } catch {
+      return { ok: true, symbol: sym, candles: [] };
+    }
+  } catch (err) {
+    return { ok: false, symbol: sym, candles: [], error: err?.message || String(err) };
+  }
+}
+
+/**
+ * Batch fetch candles for multiple symbols — returns Map<symbol, rawData>
+ */
+export async function fetchIntradayCandlesBatch(symbols, concurrency = 4) {
+  const result = new Map();
+  const unique = [...new Set(symbols.map((s) => String(s || '').trim().toUpperCase().replace(/:.*$/, '')).filter(Boolean))];
+  for (let i = 0; i < unique.length; i += concurrency) {
+    const batch = unique.slice(i, i + concurrency);
+    const results = await Promise.allSettled(batch.map((sym) => fetchIntradayCandles(sym)));
+    results.forEach((r, idx) => {
+      const sym = batch[idx];
+      result.set(sym, r.status === 'fulfilled' ? r.value : { ok: false, symbol: sym, candles: [], error: 'fetch failed' });
+    });
+  }
+  return result;
+}
+
+/**
+ * NSE market session status based on IST time.
+ * Returns { isMarketOpen, isPreOpen, isPostMarket, isTradingDay, status, tradingDate }
+ */
+export function getMarketSessionStatus() {
+  const now = new Date();
+  // Convert to IST (UTC+5:30)
+  const istOffset = 5.5 * 60 * 60 * 1000;
+  const ist = new Date(now.getTime() + istOffset - now.getTimezoneOffset() * 60 * 1000);
+  const day = ist.getDay(); // 0=Sun, 6=Sat
+  const h = ist.getHours();
+  const m = ist.getMinutes();
+  const totalMin = h * 60 + m;
+
+  const isTradingDay = day >= 1 && day <= 5; // Mon-Fri (holidays not checked)
+  const isPreOpen   = isTradingDay && totalMin >= 9 * 60 && totalMin < 9 * 60 + 15;
+  const isMarketOpen = isTradingDay && totalMin >= 9 * 60 + 15 && totalMin < 15 * 60 + 30;
+  const isPostMarket = isTradingDay && totalMin >= 15 * 60 + 30 && totalMin < 16 * 60;
+
+  let status = 'CLOSED';
+  if (!isTradingDay) status = 'WEEKEND';
+  else if (isPreOpen) status = 'PRE_OPEN';
+  else if (isMarketOpen) status = 'OPEN';
+  else if (isPostMarket) status = 'POST_MARKET';
+
+  const pad = (n) => String(n).padStart(2, '0');
+  const tradingDate = `${ist.getFullYear()}-${pad(ist.getMonth() + 1)}-${pad(ist.getDate())}`;
+
+  return { isMarketOpen, isPreOpen, isPostMarket, isTradingDay, status, tradingDate, istTime: `${pad(h)}:${pad(m)}` };
+}
+
 export async function fetchScannerMarketData() {
   // Combine top-ten and most-active feeds into a single market data array
   try {

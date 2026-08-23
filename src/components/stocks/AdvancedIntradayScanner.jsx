@@ -1,5 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { fetchChartDataByIndex, fetchScannerMarketData } from '../../services/stocksService';
+import { fetchChartDataByIndex, fetchScannerMarketData, getMarketSessionStatus } from '../../services/stocksService';
+import {
+  emaSeries, calcVWAP, calcRSI, calcADX, calcATR, calcMACD,
+  calcRVOL, calcORB, detectCandlePattern, normalizeCandles,
+} from '../../services/indicatorEngine.js';
 
 const TIMEFRAMES = [
   { label: '1m', minutes: 1 },
@@ -219,6 +223,32 @@ function formatVolume(value) {
   return volume.toLocaleString('en-IN');
 }
 
+// ── Delegate duplicate implementations to shared indicatorEngine ──
+function emaSeries_local(values, period) { return emaSeries(values, period); }
+function rsiValue(closes, period = 14) { const r = calcRSI(closes, period); return r.value; }
+function vwapSeries(candles) {
+  // Return cumulative VWAP per candle for chart plotting
+  let pv = 0, vol = 0;
+  return candles.map((c) => {
+    const v = toNumber(c.volume);
+    if (!v) return null;
+    pv += ((c.high + c.low + c.close) / 3) * v;
+    vol += v;
+    return vol ? pv / vol : null;
+  });
+}
+function atrValue(candles, period = 14) { const r = calcATR(candles, period); return r.value; }
+function macdState(closes) {
+  const r = calcMACD(closes);
+  if (!r.macd || !r.signal) return null;
+  return r.macd > r.signal ? 'bullish' : 'bearish';
+}
+function adxProxy(candles) {
+  // Use real ADX from shared engine
+  const r = calcADX(candles);
+  return r.adx;
+}
+
 function getRows(payload) {
   if (Array.isArray(payload)) return payload;
   if (Array.isArray(payload?.data)) return payload.data;
@@ -293,69 +323,25 @@ function aggregateCandles(candles, minutes) {
   return aggregated;
 }
 
-function emaSeries(values, period) {
-  const result = Array(values.length).fill(null);
-  if (values.length < period) return result;
-  const multiplier = 2 / (period + 1);
-  let ema = values.slice(0, period).reduce((sum, value) => sum + value, 0) / period;
-  result[period - 1] = ema;
-  for (let index = period; index < values.length; index += 1) {
-    ema = (values[index] - ema) * multiplier + ema;
-    result[index] = ema;
+function normalizeCandlesFromChart(payload) {
+  // Use shared normalizeCandles from indicatorEngine, then map to local {time,open,high,low,close,volume} shape
+  const sym = '';
+  const normalized = normalizeCandles(payload, sym);
+  if (normalized.length) {
+    return normalized.map((c) => ({
+      time: c.timestamp instanceof Date ? c.timestamp.getTime() : new Date(c.timestamp).getTime(),
+      open: c.open, high: c.high, low: c.low, close: c.close, volume: c.volume,
+    }));
   }
-  return result;
+  // Fallback: try legacy array-of-arrays format directly
+  const possible = [
+    payload?.candles, payload?.data?.candles,
+    payload?.grapthData, payload?.graphData,
+    payload?.data?.grapthData, payload?.data?.graphData,
+    payload?.data, payload,
+  ].find(Array.isArray);
+  return (possible || []).map(normalizeCandle).filter((c) => c.open && c.high && c.low && c.close);
 }
-
-function rsiValue(closes, period = 14) {
-  if (closes.length <= period) return null;
-  let gains = 0;
-  let losses = 0;
-  for (let index = closes.length - period; index < closes.length; index += 1) {
-    const change = closes[index] - closes[index - 1];
-    if (change >= 0) gains += change;
-    else losses += Math.abs(change);
-  }
-  if (!losses) return 100;
-  const rs = gains / losses;
-  return 100 - (100 / (1 + rs));
-}
-
-function vwapSeries(candles) {
-  let pv = 0;
-  let volume = 0;
-  return candles.map((candle) => {
-    const candleVolume = toNumber(candle.volume);
-    if (!candleVolume) return null;
-    pv += ((candle.high + candle.low + candle.close) / 3) * candleVolume;
-    volume += candleVolume;
-    return volume ? pv / volume : null;
-  });
-}
-
-function atrValue(candles, period = 14) {
-  if (candles.length <= period) return null;
-  const ranges = candles.slice(-period).map((candle, index, arr) => {
-    const prev = arr[index - 1]?.close ?? candle.close;
-    return Math.max(candle.high - candle.low, Math.abs(candle.high - prev), Math.abs(candle.low - prev));
-  });
-  return ranges.reduce((sum, value) => sum + value, 0) / ranges.length;
-}
-
-function macdState(closes) {
-  const ema12 = emaSeries(closes, 12).at(-1);
-  const ema26 = emaSeries(closes, 26).at(-1);
-  if (ema12 === null || ema26 === null) return null;
-  return ema12 > ema26 ? 'bullish' : 'bearish';
-}
-
-function adxProxy(candles) {
-  if (candles.length < 15) return null;
-  const atr = atrValue(candles);
-  const close = candles.at(-1)?.close || 1;
-  return Math.min(45, Math.max(8, (atr / close) * 1000));
-}
-
-function levelInfo(candles, row) {
   const highs = candles.map((c) => c.high).filter(Boolean);
   const lows = candles.map((c) => c.low).filter(Boolean);
   const recent = candles.slice(-20);
@@ -473,9 +459,9 @@ function analyzeRow(row, candles, marketDirection, industryScore) {
   const price = toNumber(row?.price ?? row?.lastPrice ?? row?.ltp ?? row?.close ?? row?.last_price);
   const volume = toNumber(row?.volume ?? row?.totalTradedVolume ?? row?.quantityTraded);
   const closes = candles.map((c) => c.close);
-  const ema9 = toNumber(row?.ema9) || emaSeries(closes, 9).at(-1);
-  const ema21 = toNumber(row?.ema21 ?? row?.ema20) || emaSeries(closes, 21).at(-1);
-  const ema50 = toNumber(row?.ema50) || emaSeries(closes, 50).at(-1);
+  const ema9 = toNumber(row?.ema9) || emaSeries_local(closes, 9).at(-1);
+  const ema21 = toNumber(row?.ema21 ?? row?.ema20) || emaSeries_local(closes, 21).at(-1);
+  const ema50 = toNumber(row?.ema50) || emaSeries_local(closes, 50).at(-1);
   const vwap = toNumber(row?.vwap) || vwapSeries(candles).filter(Boolean).at(-1);
   const rsi = toNumber(row?.rsi) || rsiValue(closes);
   const macd = row?.macd ? (row.macd.macd > row.macd.signal ? 'bullish' : 'bearish') : macdState(closes);
@@ -663,9 +649,9 @@ function TradingChart({ analysis, candles, timeframe, onTimeframeChange }) {
   const [hover, setHover] = useState(null);
   const displayCandles = useMemo(() => aggregateCandles(candles, timeframe.minutes).slice(-80), [candles, timeframe]);
   const closes = displayCandles.map((c) => c.close);
-  const ema9 = emaSeries(closes, 9);
-  const ema21 = emaSeries(closes, 21);
-  const ema50 = emaSeries(closes, 50);
+  const ema9 = emaSeries_local(closes, 9);
+  const ema21 = emaSeries_local(closes, 21);
+  const ema50 = emaSeries_local(closes, 50);
   const vwap = vwapSeries(displayCandles);
 
   useEffect(() => {
@@ -1004,6 +990,7 @@ export default function AdvancedIntradayScanner() {
   const [chartLoading, setChartLoading] = useState(false);
   const [error, setError] = useState('');
   const [lastUpdated, setLastUpdated] = useState(null);
+  const [marketSession] = useState(() => getMarketSessionStatus());
 
   useEffect(() => {
     let cancelled = false;
@@ -1107,6 +1094,13 @@ export default function AdvancedIntradayScanner() {
 
       {error && <div className="alert alert-warning">{error}</div>}
       {loading && <div className="alert alert-info">Refreshing NSE market data...</div>}
+
+      {!marketSession.isMarketOpen && !marketSession.isPreOpen && (
+        <div className="alert alert-danger">
+          <strong>🔴 NSE MARKET {marketSession.status === 'WEEKEND' ? 'CLOSED (WEEKEND)' : 'CLOSED'}</strong> — IST {marketSession.istTime}.
+          <div className="small mt-1">Intraday indicators are from the last available session. They are <strong>NOT live signals</strong>. Do not trade based on closed-market data.</div>
+        </div>
+      )}
 
       <div className="alert alert-secondary border-0 small">
         This tool highlights “Strong Setup”, “Favorable Setup”, or “High-Confidence Setup” only when multiple rules align. It does not guarantee profit and it should not be treated as risk-free advice.

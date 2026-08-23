@@ -1,6 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { buildMomentumScanner, MOVEMENT_ZONES, getMovementLevels } from './momentumScanner';
 import { getCandles, prefetchCandles } from '../../services/candleCache.js';
+import { getMarketSessionStatus } from '../../services/stocksService.js';
+import {
+  createTrade, updateTrade, evaluateExit,
+  createDailyTracker, recordTradePnl, canTrade, getElapsedTime,
+  TRADE_STATUS, DAILY_TARGET,
+} from '../../services/tradeTracker.js';
 
 /* ─── HELPERS ────────────────────────────────────────────── */
 
@@ -185,7 +191,7 @@ function ScoreBreakdown({ scores }) {
 
 /* ─── STOCK DETAIL PANEL ─────────────────────────────────── */
 
-function StockDetail({ row, onClose }) {
+function StockDetail({ row, onClose, onStartTracking, canTradeNow, isMarketOpen }) {
   if (!row) return null;
   return (
     <div className="ms-detail-panel">
@@ -200,6 +206,18 @@ function StockDetail({ row, onClose }) {
       <ChaseWarning warning={row.chaseWarning} />
       <FavorableCard row={row} />
       <EarlyMomentumCard row={row} />
+
+      {isMarketOpen && canTradeNow && (
+        <button type="button" className="btn btn-success btn-sm mb-3" onClick={() => onStartTracking(row)}>
+          📊 START TRACKING {row.symbol}
+        </button>
+      )}
+      {!isMarketOpen && (
+        <div className="alert alert-secondary small py-2 mb-3">🔴 Market closed — tracking disabled. Indicators below are from last session.</div>
+      )}
+      {!canTradeNow && isMarketOpen && (
+        <div className="alert alert-warning small py-2 mb-3">🛑 Daily target or max loss reached — new trades blocked.</div>
+      )}
 
       <div className="row g-2 small mt-2">
         <div className="col-6 col-md-3"><span className="text-muted">Price</span><br /><strong>{fmt(row.price)}</strong></div>
@@ -360,8 +378,12 @@ export default function MomentumScanner({ scannerRows = [], marketScore = 50, in
   const [selectedRow, setSelectedRow]           = useState(null);
   const [selectedIndustry, setSelectedIndustry] = useState('');
   const [candleMap, setCandleMap]               = useState(new Map());
-  const [candleStatus, setCandleStatus]         = useState('idle'); // idle | loading | partial | ready
+  const [candleStatus, setCandleStatus]         = useState('idle');
+  const [activeTrade, setActiveTrade]           = useState(null);
+  const [dailyTracker, setDailyTracker]         = useState(() => createDailyTracker(DAILY_TARGET, 1000));
+  const [marketSession]                         = useState(() => getMarketSessionStatus());
   const fetchedRef = useRef(new Set());
+  const tradeTimerRef = useRef(null);
 
   // Deduplicate symbols from scannerRows — strip series suffix (e.g. QUADFUTURE:1 → QUADFUTURE)
   const symbols = useMemo(() => {
@@ -439,6 +461,51 @@ export default function MomentumScanner({ scannerRows = [], marketScore = 50, in
 
   const topRow = filteredRows[0] || null;
 
+  // Live trade update loop
+  useEffect(() => {
+    if (!activeTrade || activeTrade.status !== TRADE_STATUS.TRACKING) {
+      if (tradeTimerRef.current) clearInterval(tradeTimerRef.current);
+      return;
+    }
+    tradeTimerRef.current = setInterval(() => {
+      const row = allRows.find((r) => r.symbol === activeTrade.symbol);
+      if (!row) return;
+      const updated = updateTrade(activeTrade, row.price, row.momentumScore);
+      const exitSignal = evaluateExit(updated, { vwap: row.vwap, momentumScore: row.momentumScore, orbHigh: row.orbHigh, orbLow: row.orbLow });
+      if (exitSignal) {
+        setActiveTrade({ ...updated, status: exitSignal.exitType, exitReason: exitSignal.reason, exitTime: new Date().toISOString(), exitPrice: row.price });
+        setDailyTracker((prev) => recordTradePnl(prev, updated.pnl));
+      } else {
+        setActiveTrade(updated);
+      }
+    }, 3000);
+    return () => clearInterval(tradeTimerRef.current);
+  }, [activeTrade, allRows]);
+
+  function handleStartTracking(row) {
+    if (!canTrade(dailyTracker)) return;
+    const trade = createTrade({
+      symbol: row.symbol,
+      side: 'LONG',
+      entryPrice: row.price,
+      quantity: 1,
+      stopLoss: row.sl,
+      target1: row.t1,
+      target2: row.t2,
+      atr: row.atr,
+    });
+    setActiveTrade(trade);
+  }
+
+  function handleManualExit() {
+    if (!activeTrade) return;
+    const row = allRows.find((r) => r.symbol === activeTrade.symbol);
+    const exitPrice = row?.price || activeTrade.currentPrice;
+    const finalPnl = (exitPrice - activeTrade.entryPrice) * activeTrade.quantity;
+    setActiveTrade((t) => ({ ...t, status: TRADE_STATUS.MANUAL_EXIT, exitReason: 'Manual exit', exitTime: new Date().toISOString(), exitPrice }));
+    setDailyTracker((prev) => recordTradePnl(prev, finalPnl));
+  }
+
   return (
     <div className="ms-page">
       {/* Header */}
@@ -460,8 +527,36 @@ export default function MomentumScanner({ scannerRows = [], marketScore = 50, in
         This scanner identifies <strong>developing momentum from 1% onward</strong>. Movement categories (1%, 10%, 50%) are monitoring levels — not guaranteed targets. Always use stop loss and risk/reward.
       </div>
 
-      {/* Summary cards */}
+      {/* Market closed banner */}
+      {!marketSession.isMarketOpen && !marketSession.isPreOpen && (
+        <div className="alert alert-danger mb-3">
+          <strong>🔴 NSE MARKET {marketSession.status === 'WEEKEND' ? 'CLOSED (WEEKEND)' : 'CLOSED'}</strong>
+          <div className="small mt-1">Intraday scanner paused. No live candles expected. Indicators shown below are from the last available session and are <strong>NOT live signals</strong>.</div>
+          <div className="small text-muted mt-1">IST: {marketSession.istTime} · Date: {marketSession.tradingDate}</div>
+        </div>
+      )}
+      {marketSession.isPreOpen && (
+        <div className="alert alert-warning mb-3">
+          <strong>🟡 PRE-OPEN SESSION</strong> — Market opens at 09:15 IST. Candles will be available after open.
+        </div>
+      )}
+
+      {/* Daily P&L panel */}
       <div className="row g-2 mb-3">
+        <div className="col-6 col-lg-3">
+          <div className={`ms-summary-card ${dailyTracker.realizedPnl >= 0 ? 'ms-summary-card--green' : 'ms-summary-card--red'}`}>
+            <span>💰 Daily P&amp;L</span>
+            <strong>₹{dailyTracker.realizedPnl.toFixed(2)}</strong>
+            <small>{dailyTracker.targetReached ? '🎯 TARGET REACHED' : dailyTracker.maxLossHit ? '🛑 MAX LOSS HIT' : `Target ₹${dailyTracker.target}`}</small>
+          </div>
+        </div>
+        <div className="col-6 col-lg-3">
+          <div className="ms-summary-card">
+            <span>🎯 Remaining</span>
+            <strong>₹{Math.max(0, dailyTracker.target - dailyTracker.realizedPnl).toFixed(2)}</strong>
+            <small>Max loss: ₹{dailyTracker.maxLoss}</small>
+          </div>
+        </div>
         <div className="col-6 col-lg-3">
           <div className="ms-summary-card">
             <span>🔮 Potential Movers</span>
@@ -476,21 +571,48 @@ export default function MomentumScanner({ scannerRows = [], marketScore = 50, in
             <small>5+ conditions aligned</small>
           </div>
         </div>
-        <div className="col-6 col-lg-3">
-          <div className="ms-summary-card ms-summary-card--orange">
-            <span>🔥 High Momentum</span>
-            <strong>{allRows.filter((r) => r.pctFromOpen >= 5).length}</strong>
-            <small>5%+ from open</small>
-          </div>
-        </div>
-        <div className="col-6 col-lg-3">
-          <div className="ms-summary-card ms-summary-card--red">
-            <span>⚠️ Chase Warning</span>
-            <strong>{allRows.filter((r) => r.chaseWarning).length}</strong>
-            <small>Extended stocks</small>
-          </div>
-        </div>
       </div>
+
+      {/* Daily target reached / max loss */}
+      {dailyTracker.targetReached && (
+        <div className="alert alert-success mb-3">
+          🎯 <strong>DAILY TARGET REACHED — ₹{dailyTracker.realizedPnl.toFixed(2)}</strong>. New trades blocked. Well done — protect your gains.
+          <div className="small text-muted mt-1">This system does not guarantee ₹{dailyTracker.target}/day. Risk management is always the priority.</div>
+        </div>
+      )}
+      {dailyTracker.maxLossHit && (
+        <div className="alert alert-danger mb-3">
+          🛑 <strong>DAILY MAX LOSS HIT — ₹{Math.abs(dailyTracker.realizedPnl).toFixed(2)} lost</strong>. New trades blocked for today.
+        </div>
+      )}
+
+      {/* Active trade tracker */}
+      {activeTrade && (
+        <div className={`alert ${activeTrade.status === TRADE_STATUS.TRACKING ? 'alert-primary' : activeTrade.pnl >= 0 ? 'alert-success' : 'alert-danger'} mb-3`}>
+          <div className="d-flex justify-content-between align-items-start flex-wrap gap-2">
+            <div>
+              <strong>📊 ACTIVE TRADE — {activeTrade.symbol} {activeTrade.side}</strong>
+              {activeTrade.status !== TRADE_STATUS.TRACKING && <span className="badge text-bg-warning ms-2">{activeTrade.status.replace(/_/g, ' ')}</span>}
+            </div>
+            {activeTrade.status === TRADE_STATUS.TRACKING && (
+              <button type="button" className="btn btn-sm btn-danger" onClick={handleManualExit}>EXIT NOW</button>
+            )}
+          </div>
+          <div className="row g-2 small mt-2">
+            <div className="col-6 col-md-3">Entry: <strong>₹{activeTrade.entryPrice.toFixed(2)}</strong></div>
+            <div className="col-6 col-md-3">Current: <strong>₹{activeTrade.currentPrice.toFixed(2)}</strong></div>
+            <div className="col-6 col-md-3">Qty: <strong>{activeTrade.quantity}</strong></div>
+            <div className="col-6 col-md-3">P&amp;L: <strong className={activeTrade.pnl >= 0 ? 'text-success' : 'text-danger'}>₹{activeTrade.pnl.toFixed(2)} ({activeTrade.pnlPercent.toFixed(2)}%)</strong></div>
+            <div className="col-6 col-md-3">Stop Loss: <strong>₹{activeTrade.stopLoss.toFixed(2)}</strong></div>
+            <div className="col-6 col-md-3">Trailing SL: <strong>₹{activeTrade.trailingStop.toFixed(2)}</strong></div>
+            <div className="col-6 col-md-3">Target 1: <strong>₹{activeTrade.target1.toFixed(2)}</strong></div>
+            <div className="col-6 col-md-3">Target 2: <strong>₹{activeTrade.target2.toFixed(2)}</strong></div>
+            <div className="col-6 col-md-3">Score: <strong>{activeTrade.momentumScore ?? '—'}/100</strong></div>
+            <div className="col-6 col-md-3">Elapsed: <strong>{getElapsedTime(activeTrade.entryTime)}</strong></div>
+            {activeTrade.exitReason && <div className="col-12 text-warning">Exit reason: {activeTrade.exitReason}</div>}
+          </div>
+        </div>
+      )}
 
       {/* Zone tabs */}
       <div className="d-flex flex-wrap gap-2 mb-3">
@@ -542,7 +664,7 @@ export default function MomentumScanner({ scannerRows = [], marketScore = 50, in
           {selectedRow && (
             <div className="card border-0 shadow-sm mb-3">
               <div className="card-body">
-                <StockDetail row={selectedRow} onClose={() => setSelectedRow(null)} />
+                <StockDetail row={selectedRow} onClose={() => setSelectedRow(null)} onStartTracking={handleStartTracking} canTradeNow={canTrade(dailyTracker)} isMarketOpen={marketSession.isMarketOpen} />
               </div>
             </div>
           )}
