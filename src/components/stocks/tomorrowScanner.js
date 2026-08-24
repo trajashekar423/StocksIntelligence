@@ -1,3 +1,4 @@
+import { getNSEDateTime } from '../../utils/nseTime.js';
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 const toNumber = (value) => {
   if (value === null || value === undefined || value === '') return 0;
@@ -140,7 +141,7 @@ export function buildTomorrowScanner(rows = [], context = {}) {
     safeSetup,
     avoidTomorrow,
     dataDate: now.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }),
-    dataTime: now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false }),
+    dataTime: getNSEDateTime(now).shortTime,
     dataStatus: context?.live === false ? 'DELAYED' : 'LIVE',
     marketSummary: context?.marketSummary || 'N/A',
     signalSummary: bestPick ? `${bestPick.symbol} · ${bestPick.signal}` : 'N/A',

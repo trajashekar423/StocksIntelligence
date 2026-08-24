@@ -1,3 +1,4 @@
+import { getNSEParts } from '../utils/nseTime.js';
 /**
  * Universal NSE Indicator Engine
  * Computes VWAP, RSI(14), ADX(14), RVOL, ORB, EMA9/20/50, MACD, ATR, candle patterns
@@ -83,7 +84,12 @@ export function normalizeCandles(raw, symbol) {
           if (m) {
             const months = { Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11 };
             const mo = months[m[2]] ?? parseInt(m[2], 10) - 1;
-            timestamp = new Date(parseInt(m[3],10), mo, parseInt(m[1],10), parseInt(m[4]||'9',10), parseInt(m[5]||'15',10));
+            const y = parseInt(m[3], 10);
+            const day = parseInt(m[1], 10);
+            const hour = parseInt(m[4] || '9', 10);
+            const minute = parseInt(m[5] || '15', 10);
+            // NSE timestamps without an offset are IST. Convert IST to UTC explicitly.
+            timestamp = new Date(Date.UTC(y, mo, day, hour, minute) - (5.5 * 60 * 60 * 1000));
           }
         }
       } else {
@@ -276,7 +282,8 @@ export function calcRVOL(candles, currentVolume, averageVolume) {
       if (!c.timestamp) continue;
       const d = c.timestamp instanceof Date ? c.timestamp : new Date(c.timestamp);
       if (isNaN(d.getTime())) continue;
-      const key = d.getHours() * 60 + d.getMinutes();
+      const n = getNSEParts(d);
+        const key = n.minutes;
       if (!byMinute.has(key)) byMinute.set(key, []);
       byMinute.get(key).push(toN(c.volume));
     }
@@ -285,7 +292,8 @@ export function calcRVOL(candles, currentVolume, averageVolume) {
     if (last?.timestamp) {
       const d = last.timestamp instanceof Date ? last.timestamp : new Date(last.timestamp);
       if (!isNaN(d.getTime())) {
-        const key = d.getHours() * 60 + d.getMinutes();
+        const n = getNSEParts(d);
+        const key = n.minutes;
         const slot = byMinute.get(key) || [];
         if (slot.length >= 2) {
           const avg = slot.slice(0, -1).reduce((s, v) => s + v, 0) / (slot.length - 1);
@@ -323,21 +331,18 @@ export function calcORB(candles, orbMinutes = ORB_MINUTES) {
   // Find market open time from first candle or use 09:15 IST
   const first = candles[0];
   const firstTs = first?.timestamp instanceof Date ? first.timestamp : new Date(first?.timestamp);
-  const baseMs = isNaN(firstTs?.getTime())
-    ? null
-    : new Date(firstTs.getFullYear(), firstTs.getMonth(), firstTs.getDate(), NSE_OPEN_HOUR, NSE_OPEN_MIN, 0).getTime();
+  const firstNse = isNaN(firstTs?.getTime()) ? null : getNSEParts(firstTs);
+  const tradingDate = firstNse?.date || null;
 
-  let orbCandles;
-  if (baseMs) {
-    const cutoff = baseMs + orbMinutes * 60 * 1000;
-    orbCandles = candles.filter((c) => {
-      const ts = c.timestamp instanceof Date ? c.timestamp : new Date(c.timestamp);
-      return !isNaN(ts.getTime()) && ts.getTime() >= baseMs && ts.getTime() <= cutoff;
-    });
-  }
+  let orbCandles = candles.filter((c) => {
+    const ts = c.timestamp instanceof Date ? c.timestamp : new Date(c.timestamp);
+    if (isNaN(ts.getTime())) return false;
+    const n = getNSEParts(ts);
+    return n.date === tradingDate && n.minutes >= (NSE_OPEN_HOUR * 60 + NSE_OPEN_MIN) && n.minutes < (NSE_OPEN_HOUR * 60 + NSE_OPEN_MIN + orbMinutes);
+  });
 
-  // Fallback: use first N candles (assume 1-min or 5-min bars)
-  if (!orbCandles || !orbCandles.length) {
+  // Fallback only when timestamp timezone/session cannot be resolved.
+  if (!orbCandles.length && candles.length) {
     orbCandles = candles.slice(0, Math.max(1, Math.ceil(orbMinutes / 5)));
   }
 

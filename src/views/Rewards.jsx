@@ -1,3 +1,5 @@
+'use client';
+
 import { useState, useEffect, useCallback } from 'react';
 import { fetchRewards, createReward, updateReward, deleteReward } from '../services/rewardsService';
 import { fetchStoreSettings } from '../services/settingsService';

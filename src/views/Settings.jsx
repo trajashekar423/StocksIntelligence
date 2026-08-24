@@ -1,3 +1,5 @@
+'use client';
+
 import { useEffect, useState } from 'react';
 import StoresSettings   from '../components/settings/StoresSettings';
 import PointsSettings   from '../components/settings/PointsSettings';

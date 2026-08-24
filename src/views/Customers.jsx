@@ -1,3 +1,5 @@
+'use client';
+
 import { useState, useEffect, useMemo } from 'react';
 import { fetchCustomers } from '../services/customerService';
 import HeaderSection from '../components/customers/HeaderSection';

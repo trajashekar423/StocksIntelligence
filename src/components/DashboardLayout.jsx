@@ -1,14 +1,15 @@
-import { Outlet } from 'react-router-dom';
+'use client';
+
 import Header from './Header';
 
-export default function DashboardLayout() {
+export default function DashboardLayout({ children }) {
   return (
     <div className="dl-wrapper">
       <main className="">
         <Header />
 
         <div className="dl-page">
-          <Outlet />
+          {children}
         </div>
       </main>
     </div>

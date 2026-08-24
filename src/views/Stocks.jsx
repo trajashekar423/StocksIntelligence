@@ -1,3 +1,5 @@
+'use client';
+
 import Stocks from '../components/stocks/Stocks';
 
 export default function StocksPage() {

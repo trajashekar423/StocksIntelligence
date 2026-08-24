@@ -1,4 +1,7 @@
-import { NavLink, useLocation } from 'react-router-dom';
+'use client';
+
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import sidebarConfig from '../config/sidebarConfig.json';
 import themeConfig from '../config/themeConfig.json';
@@ -18,7 +21,7 @@ function getIcon(iconName) {
 }
 
 export default function Sidebar({ collapsed, mobileOpen = false, onToggle, onClose }) {
-  const location = useLocation();
+  const pathname = usePathname() || '';
   const [navItems, setNavItems] = useState([]);
   const [theme, setTheme] = useState({});
 
@@ -54,15 +57,14 @@ export default function Sidebar({ collapsed, mobileOpen = false, onToggle, onClo
               <span className="sb-brand-sub">Merchant Portal</span>
             </div>
           )}
-          
         </div>
 
         {/* Nav */}
         <nav className="sb-nav d-flex flex-column gap-2">
           <p className="sb-section-label text-muted small fw-bold">{!collapsed && 'MAIN MENU'}</p>
-          {navItems.filter(item => item.visibility !== false).map(({ label, path, icon, color }) => {
+          {navItems.filter((item) => item.visibility !== false).map(({ label, path, icon, color }) => {
             const Icon = getIcon(icon);
-            const isActive = location.pathname === path;
+            const isActive = pathname === path || (path !== '/' && pathname.startsWith(path));
             return (
               <div key={path} className={label === 'Settings' ? 'sb-admin-group' : undefined}>
                 {label === 'Settings' && (
@@ -70,12 +72,10 @@ export default function Sidebar({ collapsed, mobileOpen = false, onToggle, onClo
                     {!collapsed && 'ADMIN'}
                   </p>
                 )}
-                <NavLink
-                  to={path}
+                <Link
+                  href={path}
                   onClick={onClose}
-                  className={({ isActive: navActive }) =>
-                    `sidebar-item sb-nav-item d-flex align-items-center gap-2 rounded-3 fw-semibold ${navActive || isActive ? 'active sb-active' : ''}`
-                  }
+                  className={`sidebar-item sb-nav-item d-flex align-items-center gap-2 rounded-3 fw-semibold ${isActive ? 'active sb-active' : ''}`}
                   style={isActive ? {
                     color: theme.sidebarActiveColor,
                     ...(color ? { color } : {}),
@@ -83,7 +83,7 @@ export default function Sidebar({ collapsed, mobileOpen = false, onToggle, onClo
                 >
                   <span className="sb-icon"><Icon size={18} /></span>
                   {!collapsed && <span className="sb-label">{label}</span>}
-                </NavLink>
+                </Link>
               </div>
             );
           })}

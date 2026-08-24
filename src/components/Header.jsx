@@ -1,5 +1,8 @@
+'use client';
+
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { FiBell, FiChevronDown, FiLogOut } from 'react-icons/fi';
 import useAuth from '../hooks/useAuth';
 import { getUser } from '../utils/authStorage';
@@ -19,19 +22,30 @@ function getUserEmail(user) {
 }
 
 export default function Header() {
-  const location = useLocation();
+  const pathname = usePathname() || '';
   const { logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [user, setUser] = useState(null);
   const profileRef = useRef(null);
-  const user = getUser();
+
+  useEffect(() => {
+    setUser(getUser());
+  }, []);
+
   const userName = getUserName(user);
   const userEmail = getUserEmail(user);
   const userRole = user?.role || 'Store owner';
 
   const pageTitle = useMemo(() => {
-    if (location.pathname.startsWith('/stocks')) return 'Stocks';
+    if (pathname.startsWith('/stocks')) return 'Stocks';
+    if (pathname.startsWith('/customers')) return 'Customers';
+    if (pathname.startsWith('/transactions')) return 'Transactions';
+    if (pathname.startsWith('/rewards')) return 'Rewards';
+    if (pathname.startsWith('/settings')) return 'Settings';
+    if (pathname.startsWith('/invoices')) return 'Invoices';
+    if (pathname.startsWith('/reports')) return 'Reports';
     return 'Stocks';
-  }, [location.pathname]);
+  }, [pathname]);
 
   useEffect(() => {
     const handleOutsideClick = (event) => {
@@ -49,16 +63,14 @@ export default function Header() {
       <div className="dl-topbar-left">
         <h1 className="dl-page-title">{pageTitle}</h1>
         <nav className="dl-topbar-nav" aria-label="Primary navigation">
-          <NavLink
-            to="/stocks"
-            className={({ isActive }) => `dl-topbar-link ${isActive ? 'active' : ''}`}
+          <Link
+            href="/stocks"
+            className={`dl-topbar-link ${pathname.startsWith('/stocks') ? 'active' : ''}`}
           >
             Stocks
-          </NavLink>
+          </Link>
         </nav>
       </div>
-
-     
     </header>
   );
 }

@@ -1,3 +1,4 @@
+import { getNSEParts } from '../utils/nseTime.js';
 function formatError(status, text) {
   return {
     ok: false,
@@ -269,6 +270,43 @@ export async function fetchUniverse() {
   }
 }
 
+/**
+ * Bulk quote snapshot for an entire NSE index basket in a single request
+ * (e.g. 'NIFTY 500', 'NIFTY MIDCAP 150', 'NIFTY SMALLCAP 250').
+ * This is what lets the scanner see live price/volume for hundreds of
+ * universe symbols at once instead of only NSE Top Ten / Most Active —
+ * no symbol is hard-coded, the index name is just a broader basket.
+ */
+export async function fetchEquityStockIndices(indexName) {
+  try {
+    const endpoint = `/api/nse/equity-stock-indices?index=${encodeURIComponent(indexName)}`;
+    const res = await fetch(endpoint);
+    const ct = (res.headers.get('content-type') || '').toLowerCase();
+    if (!res.ok) return { ok: false, status: res.status, error: await res.text(), data: [] };
+    const text = await res.text();
+    if (!text || !text.trim()) return { ok: true, data: [] };
+    if (ct.includes('application/json')) {
+      try {
+        const parsed = JSON.parse(text);
+        const rows = Array.isArray(parsed?.data) ? parsed.data : Array.isArray(parsed) ? parsed : [];
+        return { ok: true, data: rows };
+      } catch {
+        return { ok: true, data: [] };
+      }
+    }
+    return { ok: true, data: [] };
+  } catch (err) {
+    return { ok: false, error: err?.message || String(err), data: [] };
+  }
+}
+
+/**
+ * Broad candidate baskets used to enrich the universe with live quotes.
+ * Each is fetched independently and merged; a failure in one basket
+ * does not block the others (Promise.allSettled).
+ */
+export const SCANNER_QUOTE_BASKETS = ['NIFTY 500', 'NIFTY MIDCAP 150', 'NIFTY SMALLCAP 250'];
+
 export async function fetchLargeDeals(mode) {
   try {
     const params = new URLSearchParams({ mode });
@@ -327,19 +365,19 @@ export async function fetchStockCandles(symbol) {
  * Returns { ok, symbol, candles: [{timestamp,open,high,low,close,volume}], error }
  */
 export async function fetchIntradayCandles(symbol) {
-  const sym = String(symbol || '').trim().toUpperCase().replace(/:.*$/, '');
+  const sym = String(symbol || '').trim().toUpperCase().replace(/^NSE:/, '').replace(/\.NS$/, '').replace(/:.*$/, '');
   if (!sym) return { ok: false, symbol: sym, candles: [], error: 'No symbol' };
   try {
     const res = await fetch(`/api/nse/intraday/${encodeURIComponent(sym)}`);
-    if (!res.ok) return { ok: false, symbol: sym, candles: [], error: `HTTP ${res.status}` };
     const ct = (res.headers.get('content-type') || '').toLowerCase();
-    if (!ct.includes('application/json')) return { ok: false, symbol: sym, candles: [], error: 'Non-JSON response' };
     const text = await res.text();
-    if (!text || !text.trim()) return { ok: true, symbol: sym, candles: [] };
+    if (!res.ok) return { ok: false, symbol: sym, candles: [], error: `HTTP ${res.status}`, raw: text };
+    if (!ct.includes('application/json')) return { ok: false, symbol: sym, candles: [], error: 'Non-JSON response', raw: text };
+    if (!text.trim()) return { ok: true, symbol: sym, candles: [], error: 'Empty response' };
     try {
       return { ok: true, symbol: sym, raw: JSON.parse(text), candles: [] };
-    } catch {
-      return { ok: true, symbol: sym, candles: [] };
+    } catch (err) {
+      return { ok: false, symbol: sym, candles: [], error: 'Invalid JSON response' };
     }
   } catch (err) {
     return { ok: false, symbol: sym, candles: [], error: err?.message || String(err) };
@@ -368,19 +406,12 @@ export async function fetchIntradayCandlesBatch(symbols, concurrency = 4) {
  * Returns { isMarketOpen, isPreOpen, isPostMarket, isTradingDay, status, tradingDate }
  */
 export function getMarketSessionStatus() {
-  const now = new Date();
-  // Convert to IST (UTC+5:30)
-  const istOffset = 5.5 * 60 * 60 * 1000;
-  const ist = new Date(now.getTime() + istOffset - now.getTimezoneOffset() * 60 * 1000);
-  const day = ist.getDay(); // 0=Sun, 6=Sat
-  const h = ist.getHours();
-  const m = ist.getMinutes();
-  const totalMin = h * 60 + m;
-
-  const isTradingDay = day >= 1 && day <= 5; // Mon-Fri (holidays not checked)
-  const isPreOpen   = isTradingDay && totalMin >= 9 * 60 && totalMin < 9 * 60 + 15;
-  const isMarketOpen = isTradingDay && totalMin >= 9 * 60 + 15 && totalMin < 15 * 60 + 30;
-  const isPostMarket = isTradingDay && totalMin >= 15 * 60 + 30 && totalMin < 16 * 60;
+  const now = getNSEParts();
+  const totalMin = now.minutes;
+  const isTradingDay = now.dayOfWeek !== 'Sat' && now.dayOfWeek !== 'Sun';
+  const isPreOpen = isTradingDay && totalMin >= 540 && totalMin < 555;
+  const isMarketOpen = isTradingDay && totalMin >= 555 && totalMin < 930;
+  const isPostMarket = isTradingDay && totalMin >= 930 && totalMin < 960;
 
   let status = 'CLOSED';
   if (!isTradingDay) status = 'WEEKEND';
@@ -388,26 +419,39 @@ export function getMarketSessionStatus() {
   else if (isMarketOpen) status = 'OPEN';
   else if (isPostMarket) status = 'POST_MARKET';
 
-  const pad = (n) => String(n).padStart(2, '0');
-  const tradingDate = `${ist.getFullYear()}-${pad(ist.getMonth() + 1)}-${pad(ist.getDate())}`;
-
-  return { isMarketOpen, isPreOpen, isPostMarket, isTradingDay, status, tradingDate, istTime: `${pad(h)}:${pad(m)}` };
+  return {
+    isMarketOpen, isPreOpen, isPostMarket, isTradingDay, status,
+    tradingDate: now.date, istTime: now.shortTime, istDateTime: now.time,
+  };
 }
 
 export async function fetchScannerMarketData() {
   // Primary universe = all eligible NSE equities from /api/nse/universe
-  // Top-ten and most-active are supplementary quote enrichment ONLY — never the candidate universe.
+  // Top-ten / most-active / broad index baskets are supplementary quote
+  // enrichment ONLY — they never define or restrict the candidate universe.
+  // Any universe stock that gets a live quote from ANY of these sources is
+  // eligible to be scanned and rank #1, whether or not it's a "top" stock.
   try {
-    const [uniRes, topRes, mostRes] = await Promise.all([fetchUniverse(), fetchTopTen(), fetchMostActive()]);
+    const basketPromises = SCANNER_QUOTE_BASKETS.map((name) => fetchEquityStockIndices(name));
+    const [uniRes, topRes, mostRes, ...basketRes] = await Promise.all([
+      fetchUniverse(),
+      fetchTopTen(),
+      fetchMostActive(),
+      ...basketPromises,
+    ]);
     const universe = Array.isArray(uniRes?.data) ? uniRes.data : [];
     const top = Array.isArray(topRes?.data) ? topRes.data : [];
     const most = Array.isArray(mostRes?.data) ? mostRes.data : [];
+    const baskets = basketRes.flatMap((r) => (Array.isArray(r?.data) ? r.data : []));
 
-    // Build supplementary quote map for price/volume enrichment
+    // Build supplementary quote map for price/volume enrichment.
+    // Broad index baskets are merged first (widest coverage), then
+    // top-ten/most-active override with their (usually fresher) values.
     const quoteMap = new Map();
-    [...top, ...most].forEach((row) => {
+    [...baskets, ...top, ...most].forEach((row) => {
       const sym = String(row?.symbol || row?.Symbol || '').trim().toUpperCase();
-      if (sym && !quoteMap.has(sym)) quoteMap.set(sym, row);
+      if (!sym) return;
+      quoteMap.set(sym, { ...(quoteMap.get(sym) || {}), ...row });
     });
 
     if (universe.length) {
@@ -418,22 +462,22 @@ export async function fetchScannerMarketData() {
         const quote = quoteMap.get(sym) || {};
         return { ...quote, ...u, symbol: sym };
       });
-      // Include any top/most-active rows not already in universe
-      [...top, ...most].forEach((row) => {
+      // Include any top/most-active/basket rows not already in universe
+      [...top, ...most, ...baskets].forEach((row) => {
         const sym = String(row?.symbol || row?.Symbol || '').trim().toUpperCase();
         if (sym && !universeSyms.has(sym)) { merged.push({ ...row, symbol: sym }); universeSyms.add(sym); }
       });
       return { ok: true, data: merged };
     }
 
-    // Fallback: universe unavailable — use top+most (degraded mode)
+    // Fallback: universe unavailable — use whatever quote sources responded (degraded mode)
     const seen = new Set();
-    const deduped = [...top, ...most].filter((r) => {
+    const deduped = [...top, ...most, ...baskets].filter((r) => {
       const sym = String(r?.symbol || r?.Symbol || '').trim().toUpperCase();
       if (!sym || seen.has(sym)) return false;
       seen.add(sym); return true;
     });
-    return { ok: Boolean(topRes?.ok || mostRes?.ok), data: deduped, degraded: true };
+    return { ok: Boolean(topRes?.ok || mostRes?.ok || baskets.length), data: deduped, degraded: true };
   } catch (err) {
     return { ok: false, error: err?.message || String(err) };
   }

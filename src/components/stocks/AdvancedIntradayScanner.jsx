@@ -1,8 +1,9 @@
+'use client';
+
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { fetchChartDataByIndex, fetchScannerMarketData, getMarketSessionStatus } from '../../services/stocksService';
 import {
-  emaSeries, calcVWAP, calcRSI, calcADX, calcATR, calcMACD,
-  calcRVOL, calcORB, detectCandlePattern, normalizeCandles,
+  emaSeries, calcRSI, calcADX, calcATR, calcMACD, normalizeCandles,
 } from '../../services/indicatorEngine.js';
 
 const TIMEFRAMES = [
@@ -287,23 +288,6 @@ function normalizeCandle(raw, index) {
   };
 }
 
-function normalizeCandlesFromChart(payload) {
-  const possible = [
-    payload?.candles,
-    payload?.data?.candles,
-    payload?.grapthData,
-    payload?.graphData,
-    payload?.data?.grapthData,
-    payload?.data?.graphData,
-    payload?.data,
-    payload,
-  ].find(Array.isArray);
-
-  return (possible || [])
-    .map(normalizeCandle)
-    .filter((candle) => candle.open && candle.high && candle.low && candle.close);
-}
-
 function aggregateCandles(candles, minutes) {
   if (!candles.length || minutes <= 1) return candles;
   const bucketSize = minutes;
@@ -342,6 +326,8 @@ function normalizeCandlesFromChart(payload) {
   ].find(Array.isArray);
   return (possible || []).map(normalizeCandle).filter((c) => c.open && c.high && c.low && c.close);
 }
+
+function levelInfo(candles, row) {
   const highs = candles.map((c) => c.high).filter(Boolean);
   const lows = candles.map((c) => c.low).filter(Boolean);
   const recent = candles.slice(-20);
@@ -990,7 +976,13 @@ export default function AdvancedIntradayScanner() {
   const [chartLoading, setChartLoading] = useState(false);
   const [error, setError] = useState('');
   const [lastUpdated, setLastUpdated] = useState(null);
-  const [marketSession] = useState(() => getMarketSessionStatus());
+  const [marketSession, setMarketSession] = useState(() => getMarketSessionStatus());
+  useEffect(() => {
+    const update = () => setMarketSession(getMarketSessionStatus());
+    update();
+    const id = setInterval(update, 30000);
+    return () => clearInterval(id);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;

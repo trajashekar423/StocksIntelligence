@@ -1,3 +1,5 @@
+'use client';
+
 import { useState, useEffect, useMemo } from 'react';
 import { RiSearchLine } from 'react-icons/ri';
 import { getTransactions, exportTransactions } from '../services/transactionsService';

@@ -1,12 +1,20 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { loginUser, logoutUser } from '../services/authService';
-import { setToken, getToken, setUser as storeUser } from '../utils/authStorage';
+import { setToken, getToken, getUser, setUser as storeUser } from '../utils/authStorage';
 
 export default function useAuth() {
-  const navigate = useNavigate();
+  const router = useRouter();
   const [user, setUser] = useState(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(!!getToken());
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    const token = getToken();
+    setIsAuthenticated(!!token);
+    setUser(getUser());
+  }, []);
 
   const login = async (credentials) => {
     const data = await loginUser(credentials);
@@ -19,14 +27,14 @@ export default function useAuth() {
     storeUser(data.user);
     setUser(data.user);
     setIsAuthenticated(true);
-    navigate('/dashboard');
+    router.push('/dashboard');
   };
 
   const logout = () => {
     logoutUser();
     setUser(null);
     setIsAuthenticated(false);
-    navigate('/login');
+    router.push('/login');
   };
 
   return { login, logout, user, isAuthenticated };

@@ -1,7 +1,25 @@
-import { Navigate } from 'react-router-dom';
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { getToken } from '../utils/authStorage';
 
 export default function ProtectedRoute({ children }) {
-  return localStorage.getItem('authToken')
-    ? children
-    : <Navigate to="/login" replace />;
+  const router = useRouter();
+  const [authorized, setAuthorized] = useState(false);
+
+  useEffect(() => {
+    const token = getToken();
+    if (!token) {
+      router.replace('/login');
+    } else {
+      setAuthorized(true);
+    }
+  }, [router]);
+
+  if (!authorized) {
+    return null;
+  }
+
+  return children;
 }

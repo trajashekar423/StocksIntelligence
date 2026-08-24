@@ -5,7 +5,6 @@
  */
 
 import { computeIndicators } from '../../services/indicatorEngine.js';
-import { normalizeSymbol } from '../../services/candleCache.js';
 
 const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
 
@@ -53,8 +52,8 @@ export function getMovementLevels(open) {
 
 function scoreVWAP(price, vwap) {
   if (!vwap || !price) return 0;
-  if (price > vwap * 1.005) return 15;
-  if (price > vwap) return 10;
+  if (price > vwap * 1.005) return 14;
+  if (price > vwap) return 9;
   return 0;
 }
 
@@ -71,9 +70,9 @@ function scoreADX(adx, plusDI, minusDI) {
   if (!adx) return 0;
   const trending = plusDI && minusDI ? plusDI > minusDI : true;
   if (!trending) return 0;
-  if (adx > 40) return 15;
-  if (adx > 30) return 12;
-  if (adx > 25) return 10;
+  if (adx > 40) return 14;
+  if (adx > 30) return 11;
+  if (adx > 25) return 9;
   if (adx > 20) return 7;
   if (adx > 15) return 4;
   return 0;
@@ -81,8 +80,8 @@ function scoreADX(adx, plusDI, minusDI) {
 
 function scoreRVOL(rvol, rvolStatus) {
   if (!rvol || rvolStatus === 'insufficient_history') return 0;
-  if (rvol > 3)   return 15;
-  if (rvol > 2)   return 12;
+  if (rvol > 3)   return 14;
+  if (rvol > 2)   return 11;
   if (rvol > 1.5) return 9;
   if (rvol > 1.2) return 6;
   if (rvol > 1)   return 3;
@@ -91,8 +90,8 @@ function scoreRVOL(rvol, rvolStatus) {
 
 function scoreORB(price, orbHigh, orbLow, orbStatus, vwap, rvol) {
   if (orbStatus !== 'valid' || !orbHigh || !orbLow) return 0;
-  if (price > orbHigh && vwap && price > vwap && rvol >= 1.5) return 15;
-  if (price > orbHigh) return 10;
+  if (price > orbHigh && vwap && price > vwap && rvol >= 1.5) return 14;
+  if (price > orbHigh) return 9;
   if (price >= orbHigh * 0.995) return 5;
   return 0;
 }
@@ -121,14 +120,7 @@ function scorePriceMomentum(pctFromOpen) {
   return 0;
 }
 
-function scoreCandle(pattern) {
-  if (!pattern) return 0;
-  const strong = ['Bullish Engulfing', 'Morning Star', 'Three White Soldiers', 'Hammer'];
-  const moderate = ['Bullish Harami', 'Piercing Pattern', 'Strong Bullish Candle'];
-  if (strong.includes(pattern)) return 5;
-  if (moderate.includes(pattern)) return 3;
-  return 1;
-}
+
 
 function scoreSector(sectorScore) {
   if (sectorScore >= 80) return 5;
@@ -237,19 +229,19 @@ export function buildMomentumScanner(rows = [], candleMap = new Map(), marketSco
       const sSector  = scoreSector(indScore);                                    // 5
       const sMkt     = scoreMarket(marketScore);                                 // 5
       // candle pattern is a bonus (not in base 100)
-      const sCandle  = scoreCandle(pattern);
+      const sCandle  = 0; // candle pattern is informational; base score is exactly 100
 
-      const momentumScore = clamp(
-        Math.round(sVwap + sRsi + sAdx + sRvol + sOrb + sEma + sMacd + sMom + sSector + sMkt + sCandle),
-        0, 100
-      );
+      const baseScores = [sVwap, sRsi, sAdx, sRvol, sOrb, sEma, sMacd, sMom, sSector, sMkt];
+      const baseMax = [14, 10, 14, 14, 14, 10, 5, 5, 5, 5];
+      const dataAvailable = [vwap != null, rsi != null, adx != null, rvolStatus === 'valid', ema9 != null && ema20 != null && ema50 != null, macd != null, true, indScore != null, marketScore != null, orbCalcStatus === 'valid'];
+      const availableScore = baseScores.reduce((sum, value, i) => sum + (dataAvailable[i] ? value : 0), 0);
+      const availableMax = baseMax.reduce((sum, value, i) => sum + (dataAvailable[i] ? value : 0), 0);
+      const momentumScore = availableMax > 0 ? clamp(Math.round((availableScore / availableMax) * 100), 0, 100) : 0;
 
-      /* ── Data sufficiency check ── */
-      const hasCandles = candles.length >= 5;
-      const dataInsufficient = !hasCandles && !vwap && !rsi && !adx;
-
-      /* ── Data completeness % ── */
-      const dataFields = [vwap, rsi, adx, rvol > 0 ? rvol : null, ema9, ema20, ema50, macd, orbHigh];
+      /* ── Data sufficiency/completeness ── */
+      const hasCandles = candles.length >= 35;
+      const dataInsufficient = !hasCandles || availableMax < 70;
+      const dataFields = [vwap, rsi, adx, rvolStatus === 'valid' ? rvol : null, ema9, ema20, ema50, macd, orbHigh];
       const dataCompleteness = Math.round((dataFields.filter((v) => v != null).length / dataFields.length) * 100);
 
       /* ── ORB trade signal ── */
@@ -370,8 +362,42 @@ export function buildMomentumScanner(rows = [], candleMap = new Map(), marketSco
       };
     })
     .filter(Boolean)
-    // TOP 10 = highest Momentum Score descending. NSE Top Ten / Most Active do NOT determine rank.
-    .sort((a, b) => b.momentumScore - a.momentumScore || b.rvol - a.rvol || b.indScore - a.indScore);
+    // Rank by Momentum Score descending. NSE Top Ten / Most Active do NOT determine rank.
+    // Tie-break order: data completeness -> RVOL -> ADX -> liquidity (volume).
+    .sort((a, b) =>
+      b.momentumScore - a.momentumScore ||
+      b.dataCompleteness - a.dataCompleteness ||
+      b.rvol - a.rvol ||
+      (b.adx ?? 0) - (a.adx ?? 0) ||
+      b.volume - a.volume
+    );
 
   return results;
+}
+
+/* ─── QUALIFIED / TOP 10 (score 60–100) ──────────────────── */
+
+export const MOMENTUM_QUALIFY_MIN = 60;
+export const MOMENTUM_QUALIFY_MAX = 100;
+// Below this data-completeness %, a stock is excluded from TOP 10 only —
+// it still stays visible in the full 60–100 qualified list.
+export const MIN_TOP10_DATA_COMPLETENESS = 80;
+
+/**
+ * Build the two scanner sections the UI shows:
+ *  - qualified: EVERY stock with 60 <= momentumScore <= 100, sorted desc (no cap)
+ *  - top10:     the 10 highest-scoring qualified stocks with sufficient data
+ *
+ * @param {Array} allRows - output of buildMomentumScanner (already sorted)
+ */
+export function buildQualifiedMomentumStocks(allRows = []) {
+  const qualifiedMomentumStocks = allRows.filter(
+    (r) => r.momentumScore >= MOMENTUM_QUALIFY_MIN && r.momentumScore <= MOMENTUM_QUALIFY_MAX
+  );
+
+  const top10 = qualifiedMomentumStocks
+    .filter((r) => !r.dataInsufficient && r.dataCompleteness >= MIN_TOP10_DATA_COMPLETENESS)
+    .slice(0, 10);
+
+  return { qualifiedMomentumStocks, top10 };
 }

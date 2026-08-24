@@ -1,3 +1,6 @@
+'use client';
+
+import { getNSEDateTime } from '../../utils/nseTime.js';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import {
@@ -2194,6 +2197,36 @@ export default function Stocks() {
   }, [scanner.scanned]);
 
   /* ==========================================================
+     MOMENTUM SCANNER CANDIDATE PRE-FILTER (Stage 2)
+     ----------------------------------------------------------
+     The NSE universe is ~1800+ equities. Fetching intraday
+     candles for every universe symbol on every refresh is slow
+     and risks NSE rate limiting. Apply a cheap, symbol-agnostic
+     liquidity filter BEFORE the candle-fetch stage, mirroring:
+       ALL UNIVERSE -> CHEAP FILTER -> CANDIDATES -> CANDLES
+     No symbol is special-cased here — the same rule runs for
+     every row, so any qualifying universe stock can become a
+     candidate (not just NSE Top Ten / Most Active names).
+     ========================================================== */
+
+  const momentumCandidateRows = useMemo(() => {
+    const MAX_CANDIDATES = 300;
+    const MIN_PRICE = 2;
+    const MIN_TRADED_VALUE = 500000; // ~₹5L notional traded value floor
+
+    const candidates = (scanner.scanned || []).filter((row) => {
+      const price = toNumber(row.price);
+      const volume = toNumber(row.volume);
+      if (!price || price < MIN_PRICE || !volume) return false;
+      return price * volume >= MIN_TRADED_VALUE;
+    });
+
+    return candidates
+      .sort((a, b) => (toNumber(b.price) * toNumber(b.volume)) - (toNumber(a.price) * toNumber(a.volume)))
+      .slice(0, MAX_CANDIDATES);
+  }, [scanner.scanned]);
+
+  /* ==========================================================
      SEARCH
      ========================================================== */
 
@@ -2705,7 +2738,7 @@ export default function Stocks() {
 
           <div className="text-muted">
             {lastUpdated
-              ? `Last: ${lastUpdated.toLocaleTimeString()}`
+              ? `Last: ${getNSEDateTime(lastUpdated).shortTime} IST`
               : ''}
           </div>
         </div>
@@ -3672,7 +3705,7 @@ export default function Stocks() {
 
       {activeTab === 'momentum' && (
         <MomentumScanner
-          scannerRows={scanner.scanned}
+          scannerRows={momentumCandidateRows}
           marketScore={scanner.marketConfirmation?.score ?? 50}
           industryScoreMap={momentumIndustryScoreMap}
           lastUpdated={lastUpdated}

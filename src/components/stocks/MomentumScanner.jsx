@@ -1,6 +1,9 @@
+'use client';
+
+import { getNSEDateTime } from '../../utils/nseTime.js';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { buildMomentumScanner, MOVEMENT_ZONES, getMovementLevels } from './momentumScanner';
-import { getCandles, prefetchCandles, normalizeSymbol, getDiagnostics } from '../../services/candleCache.js';
+import { buildMomentumScanner, buildQualifiedMomentumStocks, MOVEMENT_ZONES, getMovementLevels } from './momentumScanner';
+import { getCandles, prefetchCandles, normalizeSymbol } from '../../services/candleCache.js';
 import { getMarketSessionStatus } from '../../services/stocksService.js';
 import {
   createTrade, updateTrade, evaluateExit,
@@ -21,13 +24,7 @@ function fmtPct(value) {
   return `${n >= 0 ? '+' : ''}${n.toFixed(2)}%`;
 }
 
-function fmtVol(value) {
-  const n = Number(value);
-  if (!n) return 'N/A';
-  if (n >= 10000000) return `${(n / 10000000).toFixed(2)}Cr`;
-  if (n >= 100000)   return `${(n / 100000).toFixed(2)}L`;
-  return n.toLocaleString('en-IN');
-}
+
 
 function ScoreBadge({ score }) {
   const cls =
@@ -37,6 +34,81 @@ function ScoreBadge({ score }) {
     score >= 60 ? 'text-bg-secondary' :
     'text-bg-danger';
   return <span className={`badge ${cls}`}>{score}/100</span>;
+}
+
+/* ─── TOP 10 / QUALIFIED (60–100) SECTION ────────────────── */
+
+function TopMomentumSection({ top10, qualified, onSelect, isHistorical }) {
+  const [showAll, setShowAll] = useState(false);
+
+  if (!qualified.length) {
+    return (
+      <div className="card border-0 shadow-sm mb-3">
+        <div className="card-body small text-muted">
+          No stocks currently score 60–100. This can be normal outside high-momentum windows —
+          the list re-checks the full NSE universe on every refresh.
+        </div>
+      </div>
+    );
+  }
+
+  const visible = showAll ? qualified : qualified.slice(0, 10);
+
+  return (
+    <div className="card border-0 shadow-sm mb-3">
+      <div className="card-body">
+        <div className="fw-semibold mb-1">🏆 TOP 10 MOMENTUM STOCKS</div>
+        {isHistorical && (
+          <div className="small text-warning mb-2">Historical — last session's data, not a live signal.</div>
+        )}
+        <div className="table-responsive mb-3">
+          <table className="table table-sm align-middle mb-0">
+            <thead>
+              <tr className="text-muted small">
+                <th>#</th><th>Symbol</th><th>Score</th><th>From Open</th><th>Entry Status</th><th>Data</th><th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {top10.map((row, i) => (
+                <tr key={row.symbol} role="button" onClick={() => onSelect(row)}>
+                  <td>{i + 1}</td>
+                  <td><strong>{row.symbol}</strong> <span className="text-muted small">{row.companyName}</span></td>
+                  <td><ScoreBadge score={row.momentumScore} /></td>
+                  <td className={row.pctFromOpen >= 0 ? 'text-success' : 'text-danger'}>{fmtPct(row.pctFromOpen)}</td>
+                  <td className="small">{row.entryStatus}</td>
+                  <td className="small text-muted">{row.dataCompleteness}%</td>
+                  <td><button type="button" className="btn btn-sm btn-outline-primary" onClick={(e) => { e.stopPropagation(); onSelect(row); }}>Track</button></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="d-flex justify-content-between align-items-center mb-2">
+          <div className="fw-semibold">📊 ALL STOCKS SCORE 60–100 ({qualified.length})</div>
+          {qualified.length > 10 && (
+            <button type="button" className="btn btn-sm btn-link" onClick={() => setShowAll((v) => !v)}>
+              {showAll ? 'Show top 10 only' : `Show all ${qualified.length}`}
+            </button>
+          )}
+        </div>
+        <div className="d-flex flex-wrap gap-2">
+          {visible.map((row) => (
+            <button
+              key={row.symbol}
+              type="button"
+              className="ms-potential-chip"
+              onClick={() => onSelect(row)}
+              title={`${row.symbol} — ${row.momentumScore}/100`}
+            >
+              <strong>{row.symbol}</strong>
+              <span className="text-muted">{row.momentumScore}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 /* ─── MOVEMENT PROGRESS BAR ──────────────────────────────── */
@@ -385,7 +457,14 @@ export default function MomentumScanner({ scannerRows = [], marketScore = 50, in
   const [showDiagnostics, setShowDiagnostics]   = useState(false);
   const [activeTrade, setActiveTrade]           = useState(null);
   const [dailyTracker, setDailyTracker]         = useState(() => createDailyTracker(DAILY_TARGET, 1000));
-  const [marketSession]                         = useState(() => getMarketSessionStatus());
+  const [marketSession, setMarketSession]       = useState(() => getMarketSessionStatus());
+
+  useEffect(() => {
+    const update = () => setMarketSession(getMarketSessionStatus());
+    update();
+    const id = setInterval(update, 30000);
+    return () => clearInterval(id);
+  }, []);
   const fetchedRef = useRef(new Set());
   const tradeTimerRef = useRef(null);
 
@@ -472,6 +551,14 @@ export default function MomentumScanner({ scannerRows = [], marketScore = 50, in
     return rows.filter((r) => r.pctFromOpen >= zone.min && r.pctFromOpen < zone.max);
   }, [allRows, activeZone, selectedIndustry]);
 
+  // ALL STOCKS SCORE 60–100 (uncapped) and the TOP 10 highest-scoring among them.
+  // Purely score-based — NSE Top Ten / Most Active never gate this, so any
+  // qualified universe stock (not just well-known names) can reach #1.
+  const { qualifiedMomentumStocks, top10 } = useMemo(
+    () => buildQualifiedMomentumStocks(allRows),
+    [allRows]
+  );
+
   const potentialMovers = useMemo(
     () => allRows.filter((r) => r.earlyMomentum && r.momentumScore >= 70).slice(0, 5),
     [allRows]
@@ -535,7 +622,7 @@ export default function MomentumScanner({ scannerRows = [], marketScore = 50, in
           </p>
         </div>
         <div className="text-end small text-muted">
-          {lastUpdated ? `Updated: ${lastUpdated.toLocaleTimeString()}` : 'Awaiting data'}
+          {lastUpdated ? `Updated: ${getNSEDateTime(lastUpdated).shortTime} IST` : 'Awaiting data'}
           {candleStatus === 'loading' && <div className="text-info">⏳ Loading candles ({candleMap.size}/{symbols.length})...</div>}
           {candleStatus === 'ready' && (() => {
             const valid = [...candleMeta.values()].filter((m) => m.status === 'valid').length;
@@ -570,6 +657,14 @@ export default function MomentumScanner({ scannerRows = [], marketScore = 50, in
           <strong>🟡 PRE-OPEN SESSION</strong> — Market opens at 09:15 IST. Candles will be available after open.
         </div>
       )}
+
+      {/* Top 10 momentum stocks + all qualified (score 60–100) — scanned across the full NSE universe */}
+      <TopMomentumSection
+        top10={top10}
+        qualified={qualifiedMomentumStocks}
+        onSelect={setSelectedRow}
+        isHistorical={!marketSession.isMarketOpen && !marketSession.isPreOpen}
+      />
 
       {/* Diagnostics panel */}
       {showDiagnostics && candleStatus === 'ready' && (

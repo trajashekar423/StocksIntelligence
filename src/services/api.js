@@ -1,8 +1,10 @@
 import axios from 'axios';
 import { getToken, removeToken } from '../utils/authStorage';
 
+const baseURL = process.env.NEXT_PUBLIC_BASE_URL || '';
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_BASE_URL,
+  baseURL,
 });
 
 api.interceptors.request.use((config) => {
@@ -20,7 +22,9 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && !isLoginRequest) {
       console.warn('401 on:', error.config?.url, '— token:', getToken());
       removeToken();
-      window.location.href = '/login';
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }

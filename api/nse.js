@@ -106,6 +106,13 @@ export default async function handler(req) {
     if (symbol) nsePath = `/api/NextApi/apiClient/GetQuoteApi?functionName=getSymbolData&marketType=N&series=EQ&symbol=${encodeURIComponent(symbol)}`;
   }
 
+  // equity-stockIndices — bulk quote snapshot for an entire index basket
+  // (e.g. 'NIFTY 500'). Widens candidate coverage beyond Top Ten/Most Active.
+  if (!nsePath && pathname === '/api/nse/equity-stock-indices') {
+    const index = url.searchParams.get('index') || 'NIFTY 500';
+    nsePath = `/api/equity-stockIndices?index=${encodeURIComponent(index)}`;
+  }
+
   // chart-databyindex
   if (!nsePath && pathname === '/api/nse/chart-databyindex') {
     const index = url.searchParams.get('index');
@@ -148,6 +155,10 @@ export default async function handler(req) {
       return json({ data: [], unavailable: true, error: 'NSE large-deal snapshot unavailable.' }, 200, { 'x-fallback': 'nse-large-deals-unavailable' });
     }
 
+    if ((upstream.status === 403 || upstream.status === 404) && nsePath.includes('/api/equity-stockIndices')) {
+      return json({ data: [], unavailable: true, error: 'NSE equity-stockIndices basket unavailable.' }, 200, { 'x-fallback': 'nse-equity-stock-indices-unavailable' });
+    }
+
     if (upstream.status === 403 && nsePath.startsWith('/api/quote-equity')) {
       const symbol = url.searchParams.get('symbol');
       return json({ symbol, unavailable: true, error: 'NSE blocked quote-equity.' }, 200, { 'x-fallback': 'nse-quote-blocked' });
@@ -165,6 +176,9 @@ export default async function handler(req) {
       if (data) return json(data, 200, { 'x-fallback': 'cached-universe' });
     }
     if (nsePath?.includes('snapshot-capital-market-largedeal')) {
+      return json({ data: [], unavailable: true, error: err?.message }, 200);
+    }
+    if (nsePath?.includes('/api/equity-stockIndices')) {
       return json({ data: [], unavailable: true, error: err?.message }, 200);
     }
     return json({ error: 'Failed to fetch NSE data', detail: err?.message }, 502);

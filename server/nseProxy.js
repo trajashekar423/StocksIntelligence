@@ -152,6 +152,11 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
+  if (!nsePath && url.pathname === '/api/nse/equity-stock-indices') {
+    const index = url.searchParams.get('index') || 'NIFTY 500';
+    nsePath = `/api/equity-stockIndices?index=${encodeURIComponent(index)}`;
+  }
+
   if (!nsePath && url.pathname === '/api/nse/chart-databyindex') {
     const index = url.searchParams.get('index');
     if (index) {
@@ -236,6 +241,15 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    if ((upstream.status === 403 || upstream.status === 404) && nsePath.startsWith('/api/equity-stockIndices')) {
+      sendFallbackJson(res, 'nse-equity-stock-indices-unavailable', {
+        data: [],
+        unavailable: true,
+        error: 'NSE equity-stockIndices basket is unavailable.',
+      });
+      return;
+    }
+
     res.writeHead(upstream.status, {
       'content-type': contentType,
       'access-control-allow-origin': '*',
@@ -272,6 +286,15 @@ const server = http.createServer(async (req, res) => {
         data: [],
         unavailable: true,
         error: error?.message || 'NSE large-deal snapshot is unavailable.',
+      });
+      return;
+    }
+
+    if (nsePath?.startsWith('/api/equity-stockIndices')) {
+      sendFallbackJson(res, 'nse-equity-stock-indices-unavailable', {
+        data: [],
+        unavailable: true,
+        error: error?.message || 'NSE equity-stockIndices basket is unavailable.',
       });
       return;
     }

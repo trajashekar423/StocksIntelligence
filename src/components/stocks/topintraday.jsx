@@ -1,3 +1,5 @@
+'use client';
+
 import { MARKET_INTELLIGENCE_TABS } from './marketIntelligence';
 
 export default function TopIntraday({ activeTab, onChange }) {
