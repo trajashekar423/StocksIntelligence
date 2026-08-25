@@ -1,3 +1,4 @@
 [
-  { "label": "Stocks", "path": "/stocks", "icon": "dashboard" }
+  { "label": "Stocks", "path": "/stocks", "icon": "dashboard" },
+  { "label": "Groww Trading", "path": "/trading", "icon": "credit-card" }
 ]

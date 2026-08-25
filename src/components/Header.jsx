@@ -37,14 +37,15 @@ export default function Header() {
   const userRole = user?.role || 'Store owner';
 
   const pageTitle = useMemo(() => {
-    if (pathname.startsWith('/stocks')) return 'Stocks';
+    if (pathname.startsWith('/trading')) return 'Groww Intraday Trading';
+    if (pathname.startsWith('/stocks')) return 'Stocks Intelligence';
     if (pathname.startsWith('/customers')) return 'Customers';
     if (pathname.startsWith('/transactions')) return 'Transactions';
     if (pathname.startsWith('/rewards')) return 'Rewards';
     if (pathname.startsWith('/settings')) return 'Settings';
     if (pathname.startsWith('/invoices')) return 'Invoices';
     if (pathname.startsWith('/reports')) return 'Reports';
-    return 'Stocks';
+    return 'Stocks Intelligence';
   }, [pathname]);
 
   useEffect(() => {
@@ -67,7 +68,13 @@ export default function Header() {
             href="/stocks"
             className={`dl-topbar-link ${pathname.startsWith('/stocks') ? 'active' : ''}`}
           >
-            Stocks
+            Stocks Intelligence
+          </Link>
+          <Link
+            href="/trading"
+            className={`dl-topbar-link ${pathname.startsWith('/trading') ? 'active' : ''}`}
+          >
+            ⚡ Groww Trading
           </Link>
         </nav>
       </div>

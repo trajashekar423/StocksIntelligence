@@ -30,6 +30,10 @@ import {
   renderTomorrowSetup,
 } from './tomorrowScanner';
 import MomentumScanner from './MomentumScanner.jsx';
+import IntradayTradingModule from '../trading/IntradayTradingModule';
+import StockDetailModal from './StockDetailModal.jsx';
+import CandleExplainer from './CandleExplainer.jsx';
+import PersonalPortfolio from './PersonalPortfolio.jsx';
 
 const UNAVAILABLE = 'Unavailable';
 
@@ -1658,100 +1662,6 @@ function EntrySetups({
 }
 
 /* ============================================================
-   AVOID TABLE
-   ============================================================ */
-
-function AvoidTable({
-  rows,
-}) {
-  if (!rows.length) {
-    return (
-      <div className="text-muted">
-        No avoid candidates.
-      </div>
-    );
-  }
-
-  return (
-    <div className="table-responsive">
-      <table className="table table-bordered table-sm align-middle">
-        <thead>
-          <tr>
-            <th>Symbol</th>
-            <th className="text-end">
-              Price
-            </th>
-            <th className="text-end">
-              Change %
-            </th>
-            <th className="text-end">
-              Volume Ratio
-            </th>
-            <th>
-              Signal
-            </th>
-            <th>
-              Reasons
-            </th>
-          </tr>
-        </thead>
-
-        <tbody>
-          {rows.map(
-            (row, index) => (
-              <tr
-                key={`${row.symbol || row.Symbol || 'r'}-${index}`}
-              >
-                <td>
-                  <strong>
-                    {row.symbol}
-                  </strong>
-                </td>
-
-                <td className="text-end">
-                  {formatMoney(
-                    row.price
-                  )}
-                </td>
-
-                <td className="text-end">
-                  {formatPercent(
-                    row.changePercent
-                  )}
-                </td>
-
-                <td className="text-end">
-                  {typeof row.volumeRatio ===
-                  'number'
-                    ? `${row.volumeRatio.toFixed(
-                        2
-                      )}x`
-                    : UNAVAILABLE}
-                </td>
-
-                <td>
-                  <SignalBadge
-                    signal={
-                      row.signal
-                    }
-                  />
-                </td>
-
-                <td>
-                  {row.avoidReasons.join(
-                    ', '
-                  )}
-                </td>
-              </tr>
-            )
-          )}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-/* ============================================================
    MOST ACTIVE
    ============================================================ */
 
@@ -3108,76 +3018,6 @@ export default function Stocks() {
       )}
 
       {activeTab ===
-        'block-deals' && (
-        <MarketIntelligenceTable
-          title="Block Deals"
-          rows={marketIntelligence.dealRows.filter((row) => row.mode === MARKET_INTELLIGENCE_DEAL_MODES.block)}
-          columns={DEAL_COLUMNS}
-          loading={marketIntelligenceStatus.loading}
-          error={marketIntelligenceStatus.error}
-          onRowClick={setSelectedStock}
-        />
-      )}
-
-      {activeTab ===
-        'bulk-deals' && (
-        <MarketIntelligenceTable
-          title="Bulk Deals"
-          rows={marketIntelligence.dealRows.filter((row) => row.mode === MARKET_INTELLIGENCE_DEAL_MODES.bulk)}
-          columns={DEAL_COLUMNS}
-          loading={marketIntelligenceStatus.loading}
-          error={marketIntelligenceStatus.error}
-          onRowClick={setSelectedStock}
-        />
-      )}
-
-      {activeTab ===
-        'short-deals' && (
-        <MarketIntelligenceTable
-          title="Short Deals"
-          rows={marketIntelligence.dealRows.filter((row) => row.mode === MARKET_INTELLIGENCE_DEAL_MODES.short)}
-          columns={SHORT_COLUMNS}
-          loading={marketIntelligenceStatus.loading}
-          error={marketIntelligenceStatus.error}
-          onRowClick={setSelectedStock}
-        />
-      )}
-
-      {activeTab ===
-        'volume-spike' && (
-        <MarketIntelligenceTable
-          title="Volume Spike"
-          rows={marketIntelligence.volumeSpikeRows}
-          columns={LIVE_SCANNER_COLUMNS}
-          loading={loading}
-          onRowClick={setSelectedStock}
-        />
-      )}
-
-      {activeTab ===
-        'order-book' && (
-        <MarketIntelligenceTable
-          title="Order Book"
-          rows={marketIntelligence.orderBookRows}
-          columns={ORDER_BOOK_COLUMNS}
-          loading={loading}
-          onRowClick={setSelectedStock}
-        />
-      )}
-
-      {activeTab ===
-        'institutional' && (
-        <MarketIntelligenceTable
-          title="Institutional Activity"
-          rows={marketIntelligence.dealRows}
-          columns={DEAL_COLUMNS}
-          loading={marketIntelligenceStatus.loading}
-          error={marketIntelligenceStatus.error}
-          onRowClick={setSelectedStock}
-        />
-      )}
-
-      {activeTab ===
         'favorites' && (
         <MarketIntelligenceTable
           title="Favorites"
@@ -3186,34 +3026,6 @@ export default function Stocks() {
           loading={loading}
           onRowClick={setSelectedStock}
         />
-      )}
-
-      {activeTab ===
-        'alerts' && (
-        <MarketIntelligenceTable
-          title="Alerts"
-          rows={marketIntelligence.alerts}
-          columns={ALERT_COLUMNS}
-          loading={loading}
-          onRowClick={setSelectedStock}
-        />
-      )}
-
-      {/* AVOID */}
-
-      {activeTab ===
-        'avoid' && (
-        <>
-          <h5>
-            Avoid Today
-          </h5>
-
-          <AvoidTable
-            rows={
-              scanner.avoid
-            }
-          />
-        </>
       )}
 
       {/* TOP GAINERS */}
@@ -3501,129 +3313,14 @@ export default function Stocks() {
         </>
       )}
 
-      {/* MY STOCKS */}
-
-      {activeTab ===
-        'mystocks' && (
-        <>
-          <h5>
-            MyStocks
-          </h5>
-
-          <div className="table-responsive">
-            <table className="table table-striped table-bordered table-sm">
-              <thead>
-                <tr>
-                  <th>Symbol</th>
-                  <th>Company</th>
-                  <th>Price</th>
-                  <th>Change</th>
-                  <th>% Change</th>
-                  <th>Prev Close</th>
-                  <th>Day High</th>
-                  <th>Day Low</th>
-                  <th>Status</th>
-                  <th>Sentiment</th>
-                  <th>Market</th>
-                  <th>Action</th>
-                  <th>Intraday</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {myStocks.map(
-                  (row) => (
-                    <tr
-                      key={
-                        row.symbol
-                      }
-                    >
-                      <td>
-                        <strong>
-                          {
-                            row.symbol
-                          }
-                        </strong>
-                      </td>
-
-                      <td>
-                        {
-                          row.companyName
-                        }
-                      </td>
-
-                      <td>
-                        {formatMoney(
-                          row.price
-                        )}
-                      </td>
-
-                      <td>
-                        {formatMoney(
-                          row.change
-                        )}
-                      </td>
-
-                      <td>
-                        {formatPercent(
-                          row.pChange
-                        )}
-                      </td>
-
-                      <td>
-                        {formatMoney(
-                          row.previousClose
-                        )}
-                      </td>
-
-                      <td>
-                        {formatMoney(
-                          row.dayHigh
-                        )}
-                      </td>
-
-                      <td>
-                        {formatMoney(
-                          row.dayLow
-                        )}
-                      </td>
-
-                      <td>
-                        {
-                          row.status
-                        }
-                      </td>
-
-                      <td>
-                        {
-                          row.sentiment
-                        }
-                      </td>
-
-                      <td>
-                        {
-                          row.marketDirection
-                        }
-                      </td>
-
-                      <td>
-                        {
-                          row.keyAction
-                        }
-                      </td>
-
-                      <td>
-                        {
-                          row.goodForIntraday
-                        }
-                      </td>
-                    </tr>
-                  )
-                )}
-              </tbody>
-            </table>
-          </div>
-        </>
+      {/* MY STOCKS / PERSONAL PORTFOLIO */}
+      {activeTab === 'mystocks' && (
+        <PersonalPortfolio
+          onQuickTrade={(s) => {
+            setSelectedStock(null);
+            setActiveTab('trading');
+          }}
+        />
       )}
 
       {/* GROUPS */}
@@ -3703,6 +3400,12 @@ export default function Stocks() {
         </>
       )}
 
+      {activeTab === 'trading' && (
+        <div className="mt-3">
+          <IntradayTradingModule />
+        </div>
+      )}
+
       {activeTab === 'momentum' && (
         <MomentumScanner
           scannerRows={momentumCandidateRows}
@@ -3712,43 +3415,21 @@ export default function Stocks() {
         />
       )}
 
+      {activeTab === 'candlestick-guide' && (
+        <CandleExplainer
+          selectedStock={selectedStock || momentumCandidateRows?.[0] || null}
+        />
+      )}
+
       {selectedStock && (
-        <div className="modal d-block" tabIndex="-1" role="dialog">
-          <div className="modal-dialog modal-lg modal-dialog-scrollable" role="document">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">
-                  {selectedStock.symbol || 'Stock'} Details
-                </h5>
-                <button
-                  type="button"
-                  className="btn-close"
-                  aria-label="Close"
-                  onClick={() => setSelectedStock(null)}
-                />
-              </div>
-
-              <div className="modal-body">
-                <div className="row g-2 small">
-                  {Object.entries(selectedStock)
-                    .filter(([key]) => key !== 'raw' && key !== 'institutionalDeals' && key !== 'marketDepth')
-                    .map(([key, value]) => (
-                      <div className="col-12 col-md-6" key={key}>
-                        <strong>{key}</strong>: {Array.isArray(value) ? value.join(', ') : String(value ?? '')}
-                      </div>
-                    ))}
-                </div>
-
-                {selectedStock.institutionalDeals?.length ? (
-                  <div className="mt-3">
-                    <h6>Institution Activity</h6>
-                    <TableView data={selectedStock.institutionalDeals} />
-                  </div>
-                ) : null}
-              </div>
-            </div>
-          </div>
-        </div>
+        <StockDetailModal
+          stock={selectedStock}
+          onClose={() => setSelectedStock(null)}
+          onQuickTrade={(s) => {
+            setSelectedStock(null);
+            setActiveTab('trading');
+          }}
+        />
       )}
     </div>
   );

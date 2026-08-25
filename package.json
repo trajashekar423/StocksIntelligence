@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "node --test src/components/stocks/stockFilters.test.js"
+    "test": "node --experimental-strip-types --test src/components/stocks/stockFilters.test.js src/lib/trading/trading.test.ts"
   },
   "dependencies": {
     "axios": "^1.15.0",
@@ -23,6 +23,7 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "eslint": "^9.39.4",
-    "eslint-config-next": "^15.2.0"
+    "eslint-config-next": "^15.2.0",
+    "typescript": "^5.8.2"
   }
 }

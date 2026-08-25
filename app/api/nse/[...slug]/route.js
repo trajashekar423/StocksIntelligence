@@ -202,13 +202,127 @@ export async function GET(req, { params }) {
       if (data) return jsonResponse(data, 200, { 'x-fallback': 'cached-universe' });
     }
 
+    const SYMBOL_ALIASES = {
+      ADVIT: 'RAMBHAJO',
+      'ADVIT JEWELS': 'RAMBHAJO',
+      'ADVIT-JEWELS': 'RAMBHAJO',
+      'ADVITJEWELS': 'RAMBHAJO',
+      NICTO: 'NITCO',
+      INFOSYS: 'INFY',
+      'TATA MOTORS': 'TATAMOTORS',
+      'TATA STEEL': 'TATASTEEL',
+      'STATE BANK': 'SBIN',
+      'SBI': 'SBIN',
+      'HDFC': 'HDFCBANK',
+      'ICICI': 'ICICIBANK',
+      'RELIANCE IND': 'RELIANCE',
+      'RIL': 'RELIANCE',
+    };
+
+    const normalizeSymbol = (sym) => {
+      if (!sym) return '';
+      const cleaned = String(sym).replace(/^EQN:/, '').replace(/:.*$/, '').trim().toUpperCase();
+      return SYMBOL_ALIASES[cleaned] || cleaned;
+    };
+
     if (upstream.status === 403 && nsePath.startsWith('/api/quote-equity')) {
-      const symbol = url.searchParams.get('symbol');
+      const rawSymbol = url.searchParams.get('symbol');
+      const symbol = normalizeSymbol(rawSymbol);
+      // Try live market price resolver
+      try {
+        const yfRes = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${symbol}.NS?interval=1d&range=5d`, {
+          headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+          signal: AbortSignal.timeout(4000),
+        });
+        if (yfRes.ok) {
+          const yfJson = await yfRes.json();
+          const meta = yfJson?.chart?.result?.[0]?.meta;
+          if (meta?.regularMarketPrice) {
+            const prev = meta.chartPreviousClose || meta.previousClose || meta.regularMarketPrice;
+            const ltp = meta.regularMarketPrice;
+            const chg = Number((ltp - prev).toFixed(2));
+            const pChg = prev > 0 ? Number(((chg / prev) * 100).toFixed(2)) : 0;
+            const compName = symbol === 'RAMBHAJO' ? 'Advit Jewels Limited' : (meta.shortName || meta.longName || `${symbol} Ltd`);
+            return jsonResponse({
+              info: { symbol, companyName: compName, activeSeries: ['EQ'] },
+              priceInfo: {
+                lastPrice: ltp,
+                change: chg,
+                pChange: pChg,
+                previousClose: prev,
+                open: meta.regularMarketDayLow ? meta.regularMarketDayLow : ltp,
+                close: ltp,
+                vwap: Number(((meta.regularMarketDayHigh + meta.regularMarketDayLow + ltp) / 3).toFixed(2)) || ltp,
+                intraDayHighLow: {
+                  min: meta.regularMarketDayLow || ltp,
+                  max: meta.regularMarketDayHigh || ltp,
+                },
+              },
+              metadata: {
+                symbol,
+                companyName: compName,
+                industry: meta.instrumentType || 'EQUITY',
+                lastUpdateTime: new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }),
+              },
+            }, 200, { 'x-source': 'live-market-feed' });
+          }
+        }
+      } catch {
+        // continue to local cache
+      }
+
       const data = readLocalQuote(symbol);
       if (data) return jsonResponse(data, 200, { 'x-fallback': 'cached-quote' });
       return jsonResponse({ symbol, unavailable: true, error: 'NSE blocked quote-equity.' }, 200, {
         'x-fallback': 'nse-quote-blocked',
       });
+    }
+
+    if (routeKey === 'candles' || routeKey === 'chart-databyindex' || slug.includes('candles')) {
+      const rawSymbol = url.searchParams.get('symbol') || url.searchParams.get('index') || '';
+      const symbol = normalizeSymbol(rawSymbol);
+      if (symbol) {
+        try {
+          const yfRes = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${symbol}.NS?interval=5m&range=1d`, {
+            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+            signal: AbortSignal.timeout(4000),
+          });
+          if (yfRes.ok) {
+            const yfJson = await yfRes.json();
+            const timestamps = yfJson?.chart?.result?.[0]?.timestamp || [];
+            const quotes = yfJson?.chart?.result?.[0]?.indicators?.quote?.[0] || {};
+            
+            const grapthData = timestamps.map((ts, idx) => [
+              ts * 1000,
+              quotes.close?.[idx] || quotes.open?.[idx] || 0,
+            ]).filter(([_, p]) => p > 0);
+
+            const candles = timestamps.map((ts, idx) => {
+              const o = quotes.open?.[idx] || 0;
+              const h = quotes.high?.[idx] || o;
+              const l = quotes.low?.[idx] || o;
+              const c = quotes.close?.[idx] || o;
+              const v = quotes.volume?.[idx] || 0;
+              const date = new Date(ts * 1000);
+              return {
+                timestamp: date.toISOString(),
+                timeStr: date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                open: Number(o.toFixed(2)),
+                high: Number(h.toFixed(2)),
+                low: Number(l.toFixed(2)),
+                close: Number(c.toFixed(2)),
+                volume: v,
+              };
+            }).filter((c) => c.close > 0);
+
+            if (candles.length > 0) {
+              return jsonResponse({ candles, grapthData, symbol }, 200, { 'x-source': 'live-candles' });
+            }
+          }
+        } catch {
+          // ignore
+        }
+      }
     }
 
     if ((upstream.status === 403 || upstream.status === 404) && nsePath.includes('snapshot-capital-market-largedeal')) {

@@ -1,0 +1,2138 @@
+{
+  "config": {
+    "mode": "PAPER",
+    "enabled": true,
+    "capital": 50000,
+    "riskPerTradePct": 1,
+    "maxPositionValue": 25000,
+    "maxTradesPerDay": 10,
+    "maxDailyLoss": 2000,
+    "maxOpenPositions": 3,
+    "minBullishScore": 80,
+    "minRsi": 45,
+    "maxRsi": 75,
+    "minVolume": 50000,
+    "minVolumeRatio": 1.2,
+    "minBreakoutPercent": 0.5,
+    "stopLossPct": 1.5,
+    "targetPct": 3,
+    "trailingStopTriggerPct": 1,
+    "trailingStopDistancePct": 1,
+    "useAtrStop": false
+  },
+  "positions": [],
+  "closedPositions": [
+    {
+      "id": "PAPER-1787651790611-INFY",
+      "symbol": "INFY",
+      "exchange": "NSE",
+      "side": "LONG",
+      "mode": "PAPER",
+      "entryPrice": 2000,
+      "currentPrice": 2030,
+      "quantity": 10,
+      "stopLoss": 1970,
+      "target1": 2060,
+      "target2": 2090,
+      "trailingStop": 2019.6,
+      "trailingHighWater": 2040,
+      "unrealizedPnL": 0,
+      "unrealizedPnLPercent": 0,
+      "status": "CLOSED",
+      "entryTime": "2026-08-25T09:56:30.611Z",
+      "orderReferenceId": "SIM-ORD-1787651790611",
+      "exitPrice": 2065,
+      "exitTime": "2026-08-25T09:56:30.616Z",
+      "exitReason": "Target Hit",
+      "realizedPnL": 650
+    },
+    {
+      "id": "PAPER-1787635275792-INFY",
+      "symbol": "INFY",
+      "exchange": "NSE",
+      "side": "LONG",
+      "mode": "PAPER",
+      "entryPrice": 2000,
+      "currentPrice": 2030,
+      "quantity": 10,
+      "stopLoss": 1970,
+      "target1": 2060,
+      "target2": 2090,
+      "trailingStop": 2019.6,
+      "trailingHighWater": 2040,
+      "unrealizedPnL": 0,
+      "unrealizedPnLPercent": 0,
+      "status": "CLOSED",
+      "entryTime": "2026-08-25T05:21:15.792Z",
+      "orderReferenceId": "SIM-ORD-1787635275792",
+      "exitPrice": 2065,
+      "exitTime": "2026-08-25T05:21:15.797Z",
+      "exitReason": "Target Hit",
+      "realizedPnL": 650
+    },
+    {
+      "id": "PAPER-1787635111565-INFY",
+      "symbol": "INFY",
+      "exchange": "NSE",
+      "side": "LONG",
+      "mode": "PAPER",
+      "entryPrice": 2000,
+      "currentPrice": 2030,
+      "quantity": 10,
+      "stopLoss": 1970,
+      "target1": 2060,
+      "target2": 2090,
+      "trailingStop": 2019.6,
+      "trailingHighWater": 2040,
+      "unrealizedPnL": 0,
+      "unrealizedPnLPercent": 0,
+      "status": "CLOSED",
+      "entryTime": "2026-08-25T05:18:31.565Z",
+      "orderReferenceId": "SIM-ORD-1787635111565",
+      "exitPrice": 2065,
+      "exitTime": "2026-08-25T05:18:31.568Z",
+      "exitReason": "Target Hit",
+      "realizedPnL": 650
+    },
+    {
+      "id": "PAPER-1787634342832-INFY",
+      "symbol": "INFY",
+      "exchange": "NSE",
+      "side": "LONG",
+      "mode": "PAPER",
+      "entryPrice": 2000,
+      "currentPrice": 2030,
+      "quantity": 10,
+      "stopLoss": 1970,
+      "target1": 2060,
+      "target2": 2090,
+      "trailingStop": 2019.6,
+      "trailingHighWater": 2040,
+      "unrealizedPnL": 0,
+      "unrealizedPnLPercent": 0,
+      "status": "CLOSED",
+      "entryTime": "2026-08-25T05:05:42.832Z",
+      "orderReferenceId": "SIM-ORD-1787634342832",
+      "exitPrice": 2065,
+      "exitTime": "2026-08-25T05:05:42.836Z",
+      "exitReason": "Target Hit",
+      "realizedPnL": 650
+    },
+    {
+      "id": "PAPER-1787633418515-INFY",
+      "symbol": "INFY",
+      "exchange": "NSE",
+      "side": "LONG",
+      "mode": "PAPER",
+      "entryPrice": 2000,
+      "currentPrice": 2030,
+      "quantity": 10,
+      "stopLoss": 1970,
+      "target1": 2060,
+      "target2": 2090,
+      "trailingStop": 2019.6,
+      "trailingHighWater": 2040,
+      "unrealizedPnL": 0,
+      "unrealizedPnLPercent": 0,
+      "status": "CLOSED",
+      "entryTime": "2026-08-25T04:50:18.515Z",
+      "orderReferenceId": "SIM-ORD-1787633418515",
+      "exitPrice": 2065,
+      "exitTime": "2026-08-25T04:50:18.523Z",
+      "exitReason": "Target Hit",
+      "realizedPnL": 650
+    },
+    {
+      "id": "PAPER-1787633161932-INFY",
+      "symbol": "INFY",
+      "exchange": "NSE",
+      "side": "LONG",
+      "mode": "PAPER",
+      "entryPrice": 2000,
+      "currentPrice": 2030,
+      "quantity": 10,
+      "stopLoss": 1970,
+      "target1": 2060,
+      "target2": 2090,
+      "trailingStop": 2019.6,
+      "trailingHighWater": 2040,
+      "unrealizedPnL": 0,
+      "unrealizedPnLPercent": 0,
+      "status": "CLOSED",
+      "entryTime": "2026-08-25T04:46:01.932Z",
+      "orderReferenceId": "SIM-ORD-1787633161932",
+      "exitPrice": 2065,
+      "exitTime": "2026-08-25T04:46:01.937Z",
+      "exitReason": "Target Hit",
+      "realizedPnL": 650
+    },
+    {
+      "id": "PAPER-1787632287144-INFY",
+      "symbol": "INFY",
+      "exchange": "NSE",
+      "side": "LONG",
+      "mode": "PAPER",
+      "entryPrice": 2000,
+      "currentPrice": 2030,
+      "quantity": 10,
+      "stopLoss": 1970,
+      "target1": 2060,
+      "target2": 2090,
+      "trailingStop": 2019.6,
+      "trailingHighWater": 2040,
+      "unrealizedPnL": 0,
+      "unrealizedPnLPercent": 0,
+      "status": "CLOSED",
+      "entryTime": "2026-08-25T04:31:27.144Z",
+      "orderReferenceId": "SIM-ORD-1787632287144",
+      "exitPrice": 2065,
+      "exitTime": "2026-08-25T04:31:27.148Z",
+      "exitReason": "Target Hit",
+      "realizedPnL": 650
+    },
+    {
+      "id": "PAPER-1787632123631-INFY",
+      "symbol": "INFY",
+      "exchange": "NSE",
+      "side": "LONG",
+      "mode": "PAPER",
+      "entryPrice": 2000,
+      "currentPrice": 2030,
+      "quantity": 10,
+      "stopLoss": 1970,
+      "target1": 2060,
+      "target2": 2090,
+      "trailingStop": 2019.6,
+      "trailingHighWater": 2040,
+      "unrealizedPnL": 0,
+      "unrealizedPnLPercent": 0,
+      "status": "CLOSED",
+      "entryTime": "2026-08-25T04:28:43.631Z",
+      "orderReferenceId": "SIM-ORD-1787632123631",
+      "exitPrice": 2065,
+      "exitTime": "2026-08-25T04:28:43.636Z",
+      "exitReason": "Target Hit",
+      "realizedPnL": 650
+    },
+    {
+      "id": "PAPER-1787632032697-INFY",
+      "symbol": "INFY",
+      "exchange": "NSE",
+      "side": "LONG",
+      "mode": "PAPER",
+      "entryPrice": 2000,
+      "currentPrice": 2030,
+      "quantity": 10,
+      "stopLoss": 1970,
+      "target1": 2060,
+      "target2": 2090,
+      "trailingStop": 2019.6,
+      "trailingHighWater": 2040,
+      "unrealizedPnL": 0,
+      "unrealizedPnLPercent": 0,
+      "status": "CLOSED",
+      "entryTime": "2026-08-25T04:27:12.697Z",
+      "orderReferenceId": "SIM-ORD-1787632032697",
+      "exitPrice": 2065,
+      "exitTime": "2026-08-25T04:27:12.702Z",
+      "exitReason": "Target Hit",
+      "realizedPnL": 650
+    },
+    {
+      "id": "PAPER-1787631126976-INFY",
+      "symbol": "INFY",
+      "exchange": "NSE",
+      "side": "LONG",
+      "mode": "PAPER",
+      "entryPrice": 2000,
+      "currentPrice": 2030,
+      "quantity": 10,
+      "stopLoss": 1970,
+      "target1": 2060,
+      "target2": 2090,
+      "trailingStop": 2019.6,
+      "trailingHighWater": 2040,
+      "unrealizedPnL": 0,
+      "unrealizedPnLPercent": 0,
+      "status": "CLOSED",
+      "entryTime": "2026-08-25T04:12:06.976Z",
+      "orderReferenceId": "SIM-ORD-1787631126976",
+      "exitPrice": 2065,
+      "exitTime": "2026-08-25T04:12:06.980Z",
+      "exitReason": "Target Hit",
+      "realizedPnL": 650
+    },
+    {
+      "id": "PAPER-1787630668160-INFY",
+      "symbol": "INFY",
+      "exchange": "NSE",
+      "side": "LONG",
+      "mode": "PAPER",
+      "entryPrice": 2000,
+      "currentPrice": 2030,
+      "quantity": 10,
+      "stopLoss": 1970,
+      "target1": 2060,
+      "target2": 2090,
+      "trailingStop": 2019.6,
+      "trailingHighWater": 2040,
+      "unrealizedPnL": 0,
+      "unrealizedPnLPercent": 0,
+      "status": "CLOSED",
+      "entryTime": "2026-08-25T04:04:28.160Z",
+      "orderReferenceId": "SIM-ORD-1787630668160",
+      "exitPrice": 2065,
+      "exitTime": "2026-08-25T04:04:28.164Z",
+      "exitReason": "Target Hit",
+      "realizedPnL": 650
+    },
+    {
+      "id": "PAPER-1787629302589-INFY",
+      "symbol": "INFY",
+      "exchange": "NSE",
+      "side": "LONG",
+      "mode": "PAPER",
+      "entryPrice": 2000,
+      "currentPrice": 2030,
+      "quantity": 10,
+      "stopLoss": 1970,
+      "target1": 2060,
+      "target2": 2090,
+      "trailingStop": 2019.6,
+      "trailingHighWater": 2040,
+      "unrealizedPnL": 0,
+      "unrealizedPnLPercent": 0,
+      "status": "CLOSED",
+      "entryTime": "2026-08-25T03:41:42.589Z",
+      "orderReferenceId": "SIM-ORD-1787629302589",
+      "exitPrice": 2065,
+      "exitTime": "2026-08-25T03:41:42.593Z",
+      "exitReason": "Target Hit",
+      "realizedPnL": 650
+    },
+    {
+      "id": "PAPER-1787589236435-INFY",
+      "symbol": "INFY",
+      "exchange": "NSE",
+      "side": "LONG",
+      "mode": "PAPER",
+      "entryPrice": 2000,
+      "currentPrice": 2030,
+      "quantity": 10,
+      "stopLoss": 1970,
+      "target1": 2060,
+      "target2": 2090,
+      "trailingStop": 2019.6,
+      "trailingHighWater": 2040,
+      "unrealizedPnL": 0,
+      "unrealizedPnLPercent": 0,
+      "status": "CLOSED",
+      "entryTime": "2026-08-24T16:33:56.435Z",
+      "orderReferenceId": "SIM-ORD-1787589236436",
+      "exitPrice": 2065,
+      "exitTime": "2026-08-24T16:33:56.440Z",
+      "exitReason": "Target Hit",
+      "realizedPnL": 650
+    },
+    {
+      "id": "PAPER-1787587857824-INFY",
+      "symbol": "INFY",
+      "exchange": "NSE",
+      "side": "LONG",
+      "mode": "PAPER",
+      "entryPrice": 2000,
+      "currentPrice": 2030,
+      "quantity": 10,
+      "stopLoss": 1970,
+      "target1": 2060,
+      "target2": 2090,
+      "trailingStop": 2019.6,
+      "trailingHighWater": 2040,
+      "unrealizedPnL": 0,
+      "unrealizedPnLPercent": 0,
+      "status": "CLOSED",
+      "entryTime": "2026-08-24T16:10:57.824Z",
+      "orderReferenceId": "SIM-ORD-1787587857824",
+      "exitPrice": 2065,
+      "exitTime": "2026-08-24T16:10:57.829Z",
+      "exitReason": "Target Hit",
+      "realizedPnL": 650
+    },
+    {
+      "id": "PAPER-1787587556635-INFY",
+      "symbol": "INFY",
+      "exchange": "NSE",
+      "side": "LONG",
+      "mode": "PAPER",
+      "entryPrice": 2000,
+      "currentPrice": 2030,
+      "quantity": 10,
+      "stopLoss": 1970,
+      "target1": 2060,
+      "target2": 2090,
+      "trailingStop": 2019.6,
+      "trailingHighWater": 2040,
+      "unrealizedPnL": 0,
+      "unrealizedPnLPercent": 0,
+      "status": "CLOSED",
+      "entryTime": "2026-08-24T16:05:56.635Z",
+      "orderReferenceId": "SIM-ORD-1787587556635",
+      "exitPrice": 2065,
+      "exitTime": "2026-08-24T16:05:56.641Z",
+      "exitReason": "Target Hit",
+      "realizedPnL": 650
+    },
+    {
+      "id": "PAPER-1787587494114-INFY",
+      "symbol": "INFY",
+      "exchange": "NSE",
+      "side": "LONG",
+      "mode": "PAPER",
+      "entryPrice": 2000,
+      "currentPrice": 2030,
+      "quantity": 10,
+      "stopLoss": 1970,
+      "target1": 2060,
+      "target2": 2090,
+      "trailingStop": 2019.6,
+      "trailingHighWater": 2040,
+      "unrealizedPnL": 0,
+      "unrealizedPnLPercent": 0,
+      "status": "CLOSED",
+      "entryTime": "2026-08-24T16:04:54.114Z",
+      "orderReferenceId": "SIM-ORD-1787587494115",
+      "exitPrice": 2065,
+      "exitTime": "2026-08-24T16:04:54.119Z",
+      "exitReason": "Target Hit",
+      "realizedPnL": 650
+    },
+    {
+      "id": "PAPER-1787585456763-INFY",
+      "symbol": "INFY",
+      "exchange": "NSE",
+      "side": "LONG",
+      "mode": "PAPER",
+      "entryPrice": 2000,
+      "currentPrice": 2030,
+      "quantity": 10,
+      "stopLoss": 1970,
+      "target1": 2060,
+      "target2": 2090,
+      "trailingStop": 2019.6,
+      "trailingHighWater": 2040,
+      "unrealizedPnL": 0,
+      "unrealizedPnLPercent": 0,
+      "status": "CLOSED",
+      "entryTime": "2026-08-24T15:30:56.763Z",
+      "orderReferenceId": "SIM-ORD-1787585456763",
+      "exitPrice": 2065,
+      "exitTime": "2026-08-24T15:30:56.768Z",
+      "exitReason": "Target Hit",
+      "realizedPnL": 650
+    },
+    {
+      "id": "PAPER-1787575232182-MANAPPURAM",
+      "symbol": "MANAPPURAM",
+      "exchange": "NSE",
+      "side": "LONG",
+      "mode": "PAPER",
+      "entryPrice": 365.05,
+      "currentPrice": 365.05,
+      "quantity": 68,
+      "stopLoss": 361.2,
+      "target1": 372.75,
+      "target2": 376.6,
+      "trailingStop": 361.2,
+      "trailingHighWater": 365.05,
+      "unrealizedPnL": 0,
+      "unrealizedPnLPercent": 0,
+      "status": "CLOSED",
+      "entryTime": "2026-08-24T12:40:32.182Z",
+      "orderReferenceId": "SIM-ORD-1787575232182",
+      "exitPrice": 365.05,
+      "exitTime": "2026-08-24T12:45:13.077Z",
+      "exitReason": "Manual Exit",
+      "realizedPnL": 0
+    },
+    {
+      "id": "PAPER-1787574677123-TATASTEEL",
+      "symbol": "TATASTEEL",
+      "exchange": "NSE",
+      "side": "LONG",
+      "mode": "PAPER",
+      "entryPrice": 186.3,
+      "currentPrice": 186.3,
+      "quantity": 134,
+      "stopLoss": 184.8,
+      "target1": 189.3,
+      "target2": 190.8,
+      "trailingStop": 184.8,
+      "trailingHighWater": 186.3,
+      "unrealizedPnL": 0,
+      "unrealizedPnLPercent": 0,
+      "status": "CLOSED",
+      "entryTime": "2026-08-24T12:31:17.123Z",
+      "orderReferenceId": "SIM-ORD-1787574677123",
+      "exitPrice": 186.3,
+      "exitTime": "2026-08-24T12:32:19.162Z",
+      "exitReason": "Manual Exit",
+      "realizedPnL": 0
+    },
+    {
+      "id": "PAPER-1787574673283-INFY",
+      "symbol": "INFY",
+      "exchange": "NSE",
+      "side": "LONG",
+      "mode": "PAPER",
+      "entryPrice": 1910,
+      "currentPrice": 1910,
+      "quantity": 13,
+      "stopLoss": 1898,
+      "target1": 1934,
+      "target2": 1946,
+      "trailingStop": 1898,
+      "trailingHighWater": 1910,
+      "unrealizedPnL": 0,
+      "unrealizedPnLPercent": 0,
+      "status": "CLOSED",
+      "entryTime": "2026-08-24T12:31:13.283Z",
+      "orderReferenceId": "SIM-ORD-1787574673283",
+      "exitPrice": 1910,
+      "exitTime": "2026-08-24T12:32:18.364Z",
+      "exitReason": "Manual Exit",
+      "realizedPnL": 0
+    },
+    {
+      "id": "PAPER-1787574500562-MANAPPURAM",
+      "symbol": "MANAPPURAM",
+      "exchange": "NSE",
+      "side": "LONG",
+      "mode": "PAPER",
+      "entryPrice": 365.05,
+      "currentPrice": 365.05,
+      "quantity": 68,
+      "stopLoss": 361.2,
+      "target1": 372.75,
+      "target2": 376.6,
+      "trailingStop": 361.2,
+      "trailingHighWater": 365.05,
+      "unrealizedPnL": 0,
+      "unrealizedPnLPercent": 0,
+      "status": "CLOSED",
+      "entryTime": "2026-08-24T12:28:20.562Z",
+      "orderReferenceId": "SIM-ORD-1787574500562",
+      "exitPrice": 365.05,
+      "exitTime": "2026-08-24T12:32:17.232Z",
+      "exitReason": "Manual Exit",
+      "realizedPnL": 0
+    },
+    {
+      "id": "PAPER-1787574471586-SUZLON",
+      "symbol": "SUZLON",
+      "exchange": "NSE",
+      "side": "LONG",
+      "mode": "PAPER",
+      "entryPrice": 74.5,
+      "currentPrice": 74.5,
+      "quantity": 335,
+      "stopLoss": 73.6,
+      "target1": 76.3,
+      "target2": 77.2,
+      "trailingStop": 73.6,
+      "trailingHighWater": 74.5,
+      "unrealizedPnL": 0,
+      "unrealizedPnLPercent": 0,
+      "status": "CLOSED",
+      "entryTime": "2026-08-24T12:27:51.586Z",
+      "orderReferenceId": "SIM-ORD-1787574471586",
+      "exitPrice": 74.5,
+      "exitTime": "2026-08-24T12:28:03.305Z",
+      "exitReason": "Manual Exit",
+      "realizedPnL": 0
+    },
+    {
+      "id": "PAPER-1787574159515-TATASTEEL",
+      "symbol": "TATASTEEL",
+      "exchange": "NSE",
+      "side": "LONG",
+      "mode": "PAPER",
+      "entryPrice": 186.3,
+      "currentPrice": 186.3,
+      "quantity": 50,
+      "stopLoss": 183,
+      "target1": 192.9,
+      "target2": 196.2,
+      "trailingStop": 183,
+      "trailingHighWater": 186.3,
+      "unrealizedPnL": 0,
+      "unrealizedPnLPercent": 0,
+      "status": "CLOSED",
+      "entryTime": "2026-08-24T12:22:39.515Z",
+      "orderReferenceId": "SIM-ORD-1787574159515",
+      "exitPrice": 186.3,
+      "exitTime": "2026-08-24T12:22:40.007Z",
+      "exitReason": "Manual Exit",
+      "realizedPnL": 0
+    },
+    {
+      "id": "PAPER-1787574102940-INFY",
+      "symbol": "INFY",
+      "exchange": "NSE",
+      "side": "LONG",
+      "mode": "PAPER",
+      "entryPrice": 2000,
+      "currentPrice": 2030,
+      "quantity": 10,
+      "stopLoss": 1970,
+      "target1": 2060,
+      "target2": 2090,
+      "trailingStop": 2019.6,
+      "trailingHighWater": 2040,
+      "unrealizedPnL": 0,
+      "unrealizedPnLPercent": 0,
+      "status": "CLOSED",
+      "entryTime": "2026-08-24T12:21:42.940Z",
+      "orderReferenceId": "SIM-ORD-1787574102940",
+      "exitPrice": 2065,
+      "exitTime": "2026-08-24T12:21:42.942Z",
+      "exitReason": "Target Hit",
+      "realizedPnL": 650
+    },
+    {
+      "id": "PAPER-1787574041511-TATASTEEL",
+      "symbol": "TATASTEEL",
+      "exchange": "NSE",
+      "side": "LONG",
+      "mode": "PAPER",
+      "entryPrice": 186.3,
+      "currentPrice": 186.3,
+      "quantity": 50,
+      "stopLoss": 183,
+      "target1": 192.9,
+      "target2": 196.2,
+      "trailingStop": 183,
+      "trailingHighWater": 186.3,
+      "unrealizedPnL": 0,
+      "unrealizedPnLPercent": 0,
+      "status": "CLOSED",
+      "entryTime": "2026-08-24T12:20:41.511Z",
+      "orderReferenceId": "SIM-ORD-1787574041511",
+      "exitPrice": 186.3,
+      "exitTime": "2026-08-24T12:20:41.926Z",
+      "exitReason": "Manual Exit",
+      "realizedPnL": 0
+    },
+    {
+      "id": "PAPER-1787573887169-TATASTEEL",
+      "symbol": "TATASTEEL",
+      "exchange": "NSE",
+      "side": "LONG",
+      "mode": "PAPER",
+      "entryPrice": 186.3,
+      "currentPrice": 186.3,
+      "quantity": 50,
+      "stopLoss": 183,
+      "target1": 192.9,
+      "target2": 196.2,
+      "trailingStop": 183,
+      "trailingHighWater": 186.3,
+      "unrealizedPnL": 0,
+      "unrealizedPnLPercent": 0,
+      "status": "CLOSED",
+      "entryTime": "2026-08-24T12:18:07.169Z",
+      "orderReferenceId": "SIM-ORD-1787573887169",
+      "exitPrice": 186.3,
+      "exitTime": "2026-08-24T12:18:07.429Z",
+      "exitReason": "Manual Exit",
+      "realizedPnL": 0
+    },
+    {
+      "id": "PAPER-1787573463072-INFY",
+      "symbol": "INFY",
+      "exchange": "NSE",
+      "side": "LONG",
+      "mode": "PAPER",
+      "entryPrice": 2000,
+      "currentPrice": 2030,
+      "quantity": 10,
+      "stopLoss": 1970,
+      "target1": 2060,
+      "target2": 2090,
+      "trailingStop": 2019.6,
+      "trailingHighWater": 2040,
+      "unrealizedPnL": 0,
+      "unrealizedPnLPercent": 0,
+      "status": "CLOSED",
+      "entryTime": "2026-08-24T12:11:03.072Z",
+      "orderReferenceId": "SIM-ORD-1787573463072",
+      "exitPrice": 2065,
+      "exitTime": "2026-08-24T12:11:03.076Z",
+      "exitReason": "Target Hit",
+      "realizedPnL": 650
+    }
+  ],
+  "stats": {
+    "date": "2026-08-25",
+    "tradesToday": 12,
+    "winningTrades": 12,
+    "losingTrades": 0,
+    "winRate": 100,
+    "realizedPnL": 7800,
+    "unrealizedPnL": 0,
+    "maxDailyLoss": 2000,
+    "remainingRiskLimit": 9800,
+    "dailyTarget": 2000,
+    "targetReached": true,
+    "maxLossHit": false
+  },
+  "logs": [
+    {
+      "id": "log-1787651790617-891",
+      "timestamp": "2026-08-25T09:56:30.617Z",
+      "timeString": "15:26:30",
+      "level": "SUCCESS",
+      "category": "POSITION",
+      "symbol": "INFY",
+      "message": "CLOSED INFY @ ₹2065 | Realized P&L: ₹650.00 (Target Hit)",
+      "details": {
+        "realizedPnL": 650,
+        "exitPrice": 2065,
+        "reason": "Target Hit"
+      }
+    },
+    {
+      "id": "log-1787651790612-328",
+      "timestamp": "2026-08-25T09:56:30.612Z",
+      "timeString": "15:26:30",
+      "level": "SUCCESS",
+      "category": "ORDER",
+      "symbol": "INFY",
+      "message": "PAPER BUY 10 shares of INFY @ ₹2000 (SL: ₹1970, Target: ₹2060)",
+      "details": {
+        "quantity": 10,
+        "entryPrice": 2000,
+        "stopLoss": 1970,
+        "target": 2060
+      }
+    },
+    {
+      "id": "log-1787635275798-356",
+      "timestamp": "2026-08-25T05:21:15.798Z",
+      "timeString": "10:51:15",
+      "level": "SUCCESS",
+      "category": "POSITION",
+      "symbol": "INFY",
+      "message": "CLOSED INFY @ ₹2065 | Realized P&L: ₹650.00 (Target Hit)",
+      "details": {
+        "realizedPnL": 650,
+        "exitPrice": 2065,
+        "reason": "Target Hit"
+      }
+    },
+    {
+      "id": "log-1787635275794-840",
+      "timestamp": "2026-08-25T05:21:15.794Z",
+      "timeString": "10:51:15",
+      "level": "SUCCESS",
+      "category": "ORDER",
+      "symbol": "INFY",
+      "message": "PAPER BUY 10 shares of INFY @ ₹2000 (SL: ₹1970, Target: ₹2060)",
+      "details": {
+        "quantity": 10,
+        "entryPrice": 2000,
+        "stopLoss": 1970,
+        "target": 2060
+      }
+    },
+    {
+      "id": "log-1787635111569-184",
+      "timestamp": "2026-08-25T05:18:31.569Z",
+      "timeString": "10:48:31",
+      "level": "SUCCESS",
+      "category": "POSITION",
+      "symbol": "INFY",
+      "message": "CLOSED INFY @ ₹2065 | Realized P&L: ₹650.00 (Target Hit)",
+      "details": {
+        "realizedPnL": 650,
+        "exitPrice": 2065,
+        "reason": "Target Hit"
+      }
+    },
+    {
+      "id": "log-1787635111566-778",
+      "timestamp": "2026-08-25T05:18:31.566Z",
+      "timeString": "10:48:31",
+      "level": "SUCCESS",
+      "category": "ORDER",
+      "symbol": "INFY",
+      "message": "PAPER BUY 10 shares of INFY @ ₹2000 (SL: ₹1970, Target: ₹2060)",
+      "details": {
+        "quantity": 10,
+        "entryPrice": 2000,
+        "stopLoss": 1970,
+        "target": 2060
+      }
+    },
+    {
+      "id": "log-1787635054472-290",
+      "timestamp": "2026-08-25T05:17:34.472Z",
+      "timeString": "10:47:34",
+      "level": "INFO",
+      "category": "SYSTEM",
+      "message": "Emergency Kill Switch DEACTIVATED. New trades enabled."
+    },
+    {
+      "id": "log-1787635051551-719",
+      "timestamp": "2026-08-25T05:17:31.551Z",
+      "timeString": "10:47:31",
+      "level": "ALERT",
+      "category": "SYSTEM",
+      "message": "Emergency Kill Switch ACTIVATED. All new trades HALTED."
+    },
+    {
+      "id": "log-1787635045745-707",
+      "timestamp": "2026-08-25T05:17:25.745Z",
+      "timeString": "10:47:25",
+      "level": "ALERT",
+      "category": "SYSTEM",
+      "message": "Trading mode switched to PAPER TRADING."
+    },
+    {
+      "id": "log-1787634755060-593",
+      "timestamp": "2026-08-25T05:12:35.060Z",
+      "timeString": "10:42:35",
+      "level": "ERROR",
+      "category": "ORDER",
+      "symbol": "QUINT",
+      "message": "Groww LIVE order rejected: Access forbidden for this request."
+    },
+    {
+      "id": "log-1787634754875-709",
+      "timestamp": "2026-08-25T05:12:34.875Z",
+      "timeString": "10:42:34",
+      "level": "ALERT",
+      "category": "ORDER",
+      "symbol": "QUINT",
+      "message": "Submitting LIVE BUY order for 1x QUINT @ ₹43.99 to Groww API..."
+    },
+    {
+      "id": "log-1787634718455-187",
+      "timestamp": "2026-08-25T05:11:58.455Z",
+      "timeString": "10:41:58",
+      "level": "ERROR",
+      "category": "ORDER",
+      "symbol": "PHOENXINTL",
+      "message": "Groww LIVE order rejected: Access forbidden for this request."
+    },
+    {
+      "id": "log-1787634718123-345",
+      "timestamp": "2026-08-25T05:11:58.123Z",
+      "timeString": "10:41:58",
+      "level": "ALERT",
+      "category": "ORDER",
+      "symbol": "PHOENXINTL",
+      "message": "Submitting LIVE BUY order for 10x PHOENXINTL @ ₹32.58 to Groww API..."
+    },
+    {
+      "id": "log-1787634342837-585",
+      "timestamp": "2026-08-25T05:05:42.837Z",
+      "timeString": "10:35:42",
+      "level": "SUCCESS",
+      "category": "POSITION",
+      "symbol": "INFY",
+      "message": "CLOSED INFY @ ₹2065 | Realized P&L: ₹650.00 (Target Hit)",
+      "details": {
+        "realizedPnL": 650,
+        "exitPrice": 2065,
+        "reason": "Target Hit"
+      }
+    },
+    {
+      "id": "log-1787634342833-633",
+      "timestamp": "2026-08-25T05:05:42.833Z",
+      "timeString": "10:35:42",
+      "level": "SUCCESS",
+      "category": "ORDER",
+      "symbol": "INFY",
+      "message": "PAPER BUY 10 shares of INFY @ ₹2000 (SL: ₹1970, Target: ₹2060)",
+      "details": {
+        "quantity": 10,
+        "entryPrice": 2000,
+        "stopLoss": 1970,
+        "target": 2060
+      }
+    },
+    {
+      "id": "log-1787634210198-61",
+      "timestamp": "2026-08-25T05:03:30.198Z",
+      "timeString": "10:33:30",
+      "level": "ERROR",
+      "category": "ORDER",
+      "symbol": "SUPTANERY",
+      "message": "Groww LIVE order rejected: [object Object]"
+    },
+    {
+      "id": "log-1787634210029-924",
+      "timestamp": "2026-08-25T05:03:30.029Z",
+      "timeString": "10:33:30",
+      "level": "ALERT",
+      "category": "ORDER",
+      "symbol": "SUPTANERY",
+      "message": "Submitting LIVE BUY order for 13x SUPTANERY @ ₹11.57 to Groww API..."
+    },
+    {
+      "id": "log-1787634189838-971",
+      "timestamp": "2026-08-25T05:03:09.838Z",
+      "timeString": "10:33:09",
+      "level": "ERROR",
+      "category": "ORDER",
+      "symbol": "SUPTANERY",
+      "message": "Groww LIVE order rejected: [object Object]"
+    },
+    {
+      "id": "log-1787634189677-761",
+      "timestamp": "2026-08-25T05:03:09.677Z",
+      "timeString": "10:33:09",
+      "level": "ALERT",
+      "category": "ORDER",
+      "symbol": "SUPTANERY",
+      "message": "Submitting LIVE BUY order for 14x SUPTANERY @ ₹11.57 to Groww API..."
+    },
+    {
+      "id": "log-1787634174196-816",
+      "timestamp": "2026-08-25T05:02:54.196Z",
+      "timeString": "10:32:54",
+      "level": "ALERT",
+      "category": "SYSTEM",
+      "message": "Trading mode switched to LIVE TRADING."
+    },
+    {
+      "id": "log-1787633418524-484",
+      "timestamp": "2026-08-25T04:50:18.524Z",
+      "timeString": "10:20:18",
+      "level": "SUCCESS",
+      "category": "POSITION",
+      "symbol": "INFY",
+      "message": "CLOSED INFY @ ₹2065 | Realized P&L: ₹650.00 (Target Hit)",
+      "details": {
+        "realizedPnL": 650,
+        "exitPrice": 2065,
+        "reason": "Target Hit"
+      }
+    },
+    {
+      "id": "log-1787633418519-740",
+      "timestamp": "2026-08-25T04:50:18.518Z",
+      "timeString": "10:20:18",
+      "level": "SUCCESS",
+      "category": "ORDER",
+      "symbol": "INFY",
+      "message": "PAPER BUY 10 shares of INFY @ ₹2000 (SL: ₹1970, Target: ₹2060)",
+      "details": {
+        "quantity": 10,
+        "entryPrice": 2000,
+        "stopLoss": 1970,
+        "target": 2060
+      }
+    },
+    {
+      "id": "log-1787633161939-593",
+      "timestamp": "2026-08-25T04:46:01.938Z",
+      "timeString": "10:16:01",
+      "level": "SUCCESS",
+      "category": "POSITION",
+      "symbol": "INFY",
+      "message": "CLOSED INFY @ ₹2065 | Realized P&L: ₹650.00 (Target Hit)",
+      "details": {
+        "realizedPnL": 650,
+        "exitPrice": 2065,
+        "reason": "Target Hit"
+      }
+    },
+    {
+      "id": "log-1787633161934-932",
+      "timestamp": "2026-08-25T04:46:01.934Z",
+      "timeString": "10:16:01",
+      "level": "SUCCESS",
+      "category": "ORDER",
+      "symbol": "INFY",
+      "message": "PAPER BUY 10 shares of INFY @ ₹2000 (SL: ₹1970, Target: ₹2060)",
+      "details": {
+        "quantity": 10,
+        "entryPrice": 2000,
+        "stopLoss": 1970,
+        "target": 2060
+      }
+    },
+    {
+      "id": "log-1787632287149-627",
+      "timestamp": "2026-08-25T04:31:27.149Z",
+      "timeString": "10:01:27",
+      "level": "SUCCESS",
+      "category": "POSITION",
+      "symbol": "INFY",
+      "message": "CLOSED INFY @ ₹2065 | Realized P&L: ₹650.00 (Target Hit)",
+      "details": {
+        "realizedPnL": 650,
+        "exitPrice": 2065,
+        "reason": "Target Hit"
+      }
+    },
+    {
+      "id": "log-1787632287146-21",
+      "timestamp": "2026-08-25T04:31:27.146Z",
+      "timeString": "10:01:27",
+      "level": "SUCCESS",
+      "category": "ORDER",
+      "symbol": "INFY",
+      "message": "PAPER BUY 10 shares of INFY @ ₹2000 (SL: ₹1970, Target: ₹2060)",
+      "details": {
+        "quantity": 10,
+        "entryPrice": 2000,
+        "stopLoss": 1970,
+        "target": 2060
+      }
+    },
+    {
+      "id": "log-1787632123637-929",
+      "timestamp": "2026-08-25T04:28:43.637Z",
+      "timeString": "09:58:43",
+      "level": "SUCCESS",
+      "category": "POSITION",
+      "symbol": "INFY",
+      "message": "CLOSED INFY @ ₹2065 | Realized P&L: ₹650.00 (Target Hit)",
+      "details": {
+        "realizedPnL": 650,
+        "exitPrice": 2065,
+        "reason": "Target Hit"
+      }
+    },
+    {
+      "id": "log-1787632123633-924",
+      "timestamp": "2026-08-25T04:28:43.633Z",
+      "timeString": "09:58:43",
+      "level": "SUCCESS",
+      "category": "ORDER",
+      "symbol": "INFY",
+      "message": "PAPER BUY 10 shares of INFY @ ₹2000 (SL: ₹1970, Target: ₹2060)",
+      "details": {
+        "quantity": 10,
+        "entryPrice": 2000,
+        "stopLoss": 1970,
+        "target": 2060
+      }
+    },
+    {
+      "id": "log-1787632032702-241",
+      "timestamp": "2026-08-25T04:27:12.702Z",
+      "timeString": "09:57:12",
+      "level": "SUCCESS",
+      "category": "POSITION",
+      "symbol": "INFY",
+      "message": "CLOSED INFY @ ₹2065 | Realized P&L: ₹650.00 (Target Hit)",
+      "details": {
+        "realizedPnL": 650,
+        "exitPrice": 2065,
+        "reason": "Target Hit"
+      }
+    },
+    {
+      "id": "log-1787632032699-38",
+      "timestamp": "2026-08-25T04:27:12.699Z",
+      "timeString": "09:57:12",
+      "level": "SUCCESS",
+      "category": "ORDER",
+      "symbol": "INFY",
+      "message": "PAPER BUY 10 shares of INFY @ ₹2000 (SL: ₹1970, Target: ₹2060)",
+      "details": {
+        "quantity": 10,
+        "entryPrice": 2000,
+        "stopLoss": 1970,
+        "target": 2060
+      }
+    },
+    {
+      "id": "log-1787631484450-155",
+      "timestamp": "2026-08-25T04:18:04.450Z",
+      "timeString": "09:48:04",
+      "level": "ALERT",
+      "category": "SYSTEM",
+      "message": "Trading mode switched to PAPER TRADING."
+    },
+    {
+      "id": "log-1787631126981-718",
+      "timestamp": "2026-08-25T04:12:06.981Z",
+      "timeString": "09:42:06",
+      "level": "SUCCESS",
+      "category": "POSITION",
+      "symbol": "INFY",
+      "message": "CLOSED INFY @ ₹2065 | Realized P&L: ₹650.00 (Target Hit)",
+      "details": {
+        "realizedPnL": 650,
+        "exitPrice": 2065,
+        "reason": "Target Hit"
+      }
+    },
+    {
+      "id": "log-1787631126977-712",
+      "timestamp": "2026-08-25T04:12:06.977Z",
+      "timeString": "09:42:06",
+      "level": "SUCCESS",
+      "category": "ORDER",
+      "symbol": "INFY",
+      "message": "PAPER BUY 10 shares of INFY @ ₹2000 (SL: ₹1970, Target: ₹2060)",
+      "details": {
+        "quantity": 10,
+        "entryPrice": 2000,
+        "stopLoss": 1970,
+        "target": 2060
+      }
+    },
+    {
+      "id": "log-1787630668164-539",
+      "timestamp": "2026-08-25T04:04:28.164Z",
+      "timeString": "09:34:28",
+      "level": "SUCCESS",
+      "category": "POSITION",
+      "symbol": "INFY",
+      "message": "CLOSED INFY @ ₹2065 | Realized P&L: ₹650.00 (Target Hit)",
+      "details": {
+        "realizedPnL": 650,
+        "exitPrice": 2065,
+        "reason": "Target Hit"
+      }
+    },
+    {
+      "id": "log-1787630668162-826",
+      "timestamp": "2026-08-25T04:04:28.162Z",
+      "timeString": "09:34:28",
+      "level": "SUCCESS",
+      "category": "ORDER",
+      "symbol": "INFY",
+      "message": "PAPER BUY 10 shares of INFY @ ₹2000 (SL: ₹1970, Target: ₹2060)",
+      "details": {
+        "quantity": 10,
+        "entryPrice": 2000,
+        "stopLoss": 1970,
+        "target": 2060
+      }
+    },
+    {
+      "id": "log-1787629443466-771",
+      "timestamp": "2026-08-25T03:44:03.466Z",
+      "timeString": "09:14:03",
+      "level": "ALERT",
+      "category": "SYSTEM",
+      "message": "Trading mode switched to LIVE TRADING."
+    },
+    {
+      "id": "log-1787629439975-955",
+      "timestamp": "2026-08-25T03:43:59.975Z",
+      "timeString": "09:13:59",
+      "level": "ALERT",
+      "category": "SYSTEM",
+      "message": "Trading mode switched to PAPER TRADING."
+    },
+    {
+      "id": "log-1787629302594-428",
+      "timestamp": "2026-08-25T03:41:42.594Z",
+      "timeString": "09:11:42",
+      "level": "SUCCESS",
+      "category": "POSITION",
+      "symbol": "INFY",
+      "message": "CLOSED INFY @ ₹2065 | Realized P&L: ₹650.00 (Target Hit)",
+      "details": {
+        "realizedPnL": 650,
+        "exitPrice": 2065,
+        "reason": "Target Hit"
+      }
+    },
+    {
+      "id": "log-1787629302591-848",
+      "timestamp": "2026-08-25T03:41:42.591Z",
+      "timeString": "09:11:42",
+      "level": "SUCCESS",
+      "category": "ORDER",
+      "symbol": "INFY",
+      "message": "PAPER BUY 10 shares of INFY @ ₹2000 (SL: ₹1970, Target: ₹2060)",
+      "details": {
+        "quantity": 10,
+        "entryPrice": 2000,
+        "stopLoss": 1970,
+        "target": 2060
+      }
+    },
+    {
+      "id": "log-1787628914787-314",
+      "timestamp": "2026-08-25T03:35:14.787Z",
+      "timeString": "09:05:14",
+      "level": "ALERT",
+      "category": "SYSTEM",
+      "message": "Trading mode switched to LIVE TRADING."
+    },
+    {
+      "id": "log-1787628911105-658",
+      "timestamp": "2026-08-25T03:35:11.105Z",
+      "timeString": "09:05:11",
+      "level": "ALERT",
+      "category": "SYSTEM",
+      "message": "Trading mode switched to PAPER TRADING."
+    },
+    {
+      "id": "log-1787627777687-777",
+      "timestamp": "2026-08-25T03:16:17.687Z",
+      "timeString": "08:46:17",
+      "level": "ALERT",
+      "category": "SYSTEM",
+      "message": "Trading mode switched to LIVE TRADING."
+    },
+    {
+      "id": "log-1787589236441-69",
+      "timestamp": "2026-08-24T16:33:56.441Z",
+      "timeString": "22:03:56",
+      "level": "SUCCESS",
+      "category": "POSITION",
+      "symbol": "INFY",
+      "message": "CLOSED INFY @ ₹2065 | Realized P&L: ₹650.00 (Target Hit)",
+      "details": {
+        "realizedPnL": 650,
+        "exitPrice": 2065,
+        "reason": "Target Hit"
+      }
+    },
+    {
+      "id": "log-1787589236437-943",
+      "timestamp": "2026-08-24T16:33:56.437Z",
+      "timeString": "22:03:56",
+      "level": "SUCCESS",
+      "category": "ORDER",
+      "symbol": "INFY",
+      "message": "PAPER BUY 10 shares of INFY @ ₹2000 (SL: ₹1970, Target: ₹2060)",
+      "details": {
+        "quantity": 10,
+        "entryPrice": 2000,
+        "stopLoss": 1970,
+        "target": 2060
+      }
+    },
+    {
+      "id": "log-1787588287770-152",
+      "timestamp": "2026-08-24T16:18:07.770Z",
+      "timeString": "21:48:07",
+      "level": "ALERT",
+      "category": "SYSTEM",
+      "message": "Trading mode switched to PAPER TRADING."
+    },
+    {
+      "id": "log-1787588278529-136",
+      "timestamp": "2026-08-24T16:17:58.529Z",
+      "timeString": "21:47:58",
+      "level": "ALERT",
+      "category": "SYSTEM",
+      "message": "Trading mode switched to LIVE TRADING."
+    },
+    {
+      "id": "log-1787588206859-353",
+      "timestamp": "2026-08-24T16:16:46.859Z",
+      "timeString": "21:46:46",
+      "level": "INFO",
+      "category": "SYSTEM",
+      "message": "Emergency Kill Switch DEACTIVATED. New trades enabled."
+    },
+    {
+      "id": "log-1787588201370-136",
+      "timestamp": "2026-08-24T16:16:41.369Z",
+      "timeString": "21:46:41",
+      "level": "ALERT",
+      "category": "SYSTEM",
+      "message": "Emergency Kill Switch ACTIVATED. All new trades HALTED."
+    },
+    {
+      "id": "log-1787587857829-0",
+      "timestamp": "2026-08-24T16:10:57.829Z",
+      "timeString": "21:40:57",
+      "level": "SUCCESS",
+      "category": "POSITION",
+      "symbol": "INFY",
+      "message": "CLOSED INFY @ ₹2065 | Realized P&L: ₹650.00 (Target Hit)",
+      "details": {
+        "realizedPnL": 650,
+        "exitPrice": 2065,
+        "reason": "Target Hit"
+      }
+    },
+    {
+      "id": "log-1787587857826-591",
+      "timestamp": "2026-08-24T16:10:57.826Z",
+      "timeString": "21:40:57",
+      "level": "SUCCESS",
+      "category": "ORDER",
+      "symbol": "INFY",
+      "message": "PAPER BUY 10 shares of INFY @ ₹2000 (SL: ₹1970, Target: ₹2060)",
+      "details": {
+        "quantity": 10,
+        "entryPrice": 2000,
+        "stopLoss": 1970,
+        "target": 2060
+      }
+    },
+    {
+      "id": "log-1787587651392-767",
+      "timestamp": "2026-08-24T16:07:31.392Z",
+      "timeString": "21:37:31",
+      "level": "WARNING",
+      "category": "RISK",
+      "symbol": "RATNAMANI",
+      "message": "Order rejected: Daily trade limit (10 trades) reached for today. (RATNAMANI)",
+      "details": {
+        "code": "MAX_DAILY_TRADES_REACHED",
+        "reason": "Daily trade limit (10 trades) reached for today."
+      }
+    },
+    {
+      "id": "log-1787587556642-355",
+      "timestamp": "2026-08-24T16:05:56.642Z",
+      "timeString": "21:35:56",
+      "level": "SUCCESS",
+      "category": "POSITION",
+      "symbol": "INFY",
+      "message": "CLOSED INFY @ ₹2065 | Realized P&L: ₹650.00 (Target Hit)",
+      "details": {
+        "realizedPnL": 650,
+        "exitPrice": 2065,
+        "reason": "Target Hit"
+      }
+    },
+    {
+      "id": "log-1787587556638-618",
+      "timestamp": "2026-08-24T16:05:56.638Z",
+      "timeString": "21:35:56",
+      "level": "SUCCESS",
+      "category": "ORDER",
+      "symbol": "INFY",
+      "message": "PAPER BUY 10 shares of INFY @ ₹2000 (SL: ₹1970, Target: ₹2060)",
+      "details": {
+        "quantity": 10,
+        "entryPrice": 2000,
+        "stopLoss": 1970,
+        "target": 2060
+      }
+    },
+    {
+      "id": "log-1787587494120-81",
+      "timestamp": "2026-08-24T16:04:54.120Z",
+      "timeString": "21:34:54",
+      "level": "SUCCESS",
+      "category": "POSITION",
+      "symbol": "INFY",
+      "message": "CLOSED INFY @ ₹2065 | Realized P&L: ₹650.00 (Target Hit)",
+      "details": {
+        "realizedPnL": 650,
+        "exitPrice": 2065,
+        "reason": "Target Hit"
+      }
+    },
+    {
+      "id": "log-1787587494117-322",
+      "timestamp": "2026-08-24T16:04:54.117Z",
+      "timeString": "21:34:54",
+      "level": "SUCCESS",
+      "category": "ORDER",
+      "symbol": "INFY",
+      "message": "PAPER BUY 10 shares of INFY @ ₹2000 (SL: ₹1970, Target: ₹2060)",
+      "details": {
+        "quantity": 10,
+        "entryPrice": 2000,
+        "stopLoss": 1970,
+        "target": 2060
+      }
+    },
+    {
+      "id": "log-1787585456769-686",
+      "timestamp": "2026-08-24T15:30:56.769Z",
+      "timeString": "21:00:56",
+      "level": "SUCCESS",
+      "category": "POSITION",
+      "symbol": "INFY",
+      "message": "CLOSED INFY @ ₹2065 | Realized P&L: ₹650.00 (Target Hit)",
+      "details": {
+        "realizedPnL": 650,
+        "exitPrice": 2065,
+        "reason": "Target Hit"
+      }
+    },
+    {
+      "id": "log-1787585456765-18",
+      "timestamp": "2026-08-24T15:30:56.765Z",
+      "timeString": "21:00:56",
+      "level": "SUCCESS",
+      "category": "ORDER",
+      "symbol": "INFY",
+      "message": "PAPER BUY 10 shares of INFY @ ₹2000 (SL: ₹1970, Target: ₹2060)",
+      "details": {
+        "quantity": 10,
+        "entryPrice": 2000,
+        "stopLoss": 1970,
+        "target": 2060
+      }
+    },
+    {
+      "id": "log-1787582552117-412",
+      "timestamp": "2026-08-24T14:42:32.117Z",
+      "timeString": "20:12:32",
+      "level": "WARNING",
+      "category": "RISK",
+      "symbol": "NMDC",
+      "message": "Order rejected: Daily trade limit (10 trades) reached for today. (NMDC)",
+      "details": {
+        "code": "MAX_DAILY_TRADES_REACHED",
+        "reason": "Daily trade limit (10 trades) reached for today."
+      }
+    },
+    {
+      "id": "log-1787581913032-437",
+      "timestamp": "2026-08-24T14:31:53.032Z",
+      "timeString": "20:01:53",
+      "level": "WARNING",
+      "category": "RISK",
+      "symbol": "MANAPPURAM",
+      "message": "Order rejected: Daily trade limit (10 trades) reached for today. (MANAPPURAM)",
+      "details": {
+        "code": "MAX_DAILY_TRADES_REACHED",
+        "reason": "Daily trade limit (10 trades) reached for today."
+      }
+    },
+    {
+      "id": "log-1787581880667-56",
+      "timestamp": "2026-08-24T14:31:20.667Z",
+      "timeString": "20:01:20",
+      "level": "WARNING",
+      "category": "RISK",
+      "symbol": "MANAPPURAM",
+      "message": "Order rejected: Daily trade limit (10 trades) reached for today. (MANAPPURAM)",
+      "details": {
+        "code": "MAX_DAILY_TRADES_REACHED",
+        "reason": "Daily trade limit (10 trades) reached for today."
+      }
+    },
+    {
+      "id": "log-1787581872218-889",
+      "timestamp": "2026-08-24T14:31:12.218Z",
+      "timeString": "20:01:12",
+      "level": "WARNING",
+      "category": "RISK",
+      "symbol": "SUZLON",
+      "message": "Order rejected: Daily trade limit (10 trades) reached for today. (SUZLON)",
+      "details": {
+        "code": "MAX_DAILY_TRADES_REACHED",
+        "reason": "Daily trade limit (10 trades) reached for today."
+      }
+    },
+    {
+      "id": "log-1787580260519-398",
+      "timestamp": "2026-08-24T14:04:20.519Z",
+      "timeString": "19:34:20",
+      "level": "WARNING",
+      "category": "RISK",
+      "symbol": "SUZLON",
+      "message": "Order rejected: Daily trade limit (10 trades) reached for today. (SUZLON)",
+      "details": {
+        "code": "MAX_DAILY_TRADES_REACHED",
+        "reason": "Daily trade limit (10 trades) reached for today."
+      }
+    },
+    {
+      "id": "log-1787580235259-325",
+      "timestamp": "2026-08-24T14:03:55.259Z",
+      "timeString": "19:33:55",
+      "level": "WARNING",
+      "category": "RISK",
+      "symbol": "SUZLON",
+      "message": "Order rejected: Daily trade limit (10 trades) reached for today. (SUZLON)",
+      "details": {
+        "code": "MAX_DAILY_TRADES_REACHED",
+        "reason": "Daily trade limit (10 trades) reached for today."
+      }
+    },
+    {
+      "id": "log-1787580235071-848",
+      "timestamp": "2026-08-24T14:03:55.071Z",
+      "timeString": "19:33:55",
+      "level": "WARNING",
+      "category": "RISK",
+      "symbol": "SUZLON",
+      "message": "Order rejected: Daily trade limit (10 trades) reached for today. (SUZLON)",
+      "details": {
+        "code": "MAX_DAILY_TRADES_REACHED",
+        "reason": "Daily trade limit (10 trades) reached for today."
+      }
+    },
+    {
+      "id": "log-1787580234612-829",
+      "timestamp": "2026-08-24T14:03:54.612Z",
+      "timeString": "19:33:54",
+      "level": "WARNING",
+      "category": "RISK",
+      "symbol": "SUZLON",
+      "message": "Order rejected: Daily trade limit (10 trades) reached for today. (SUZLON)",
+      "details": {
+        "code": "MAX_DAILY_TRADES_REACHED",
+        "reason": "Daily trade limit (10 trades) reached for today."
+      }
+    },
+    {
+      "id": "log-1787580233426-269",
+      "timestamp": "2026-08-24T14:03:53.426Z",
+      "timeString": "19:33:53",
+      "level": "WARNING",
+      "category": "RISK",
+      "symbol": "SUZLON",
+      "message": "Order rejected: Daily trade limit (10 trades) reached for today. (SUZLON)",
+      "details": {
+        "code": "MAX_DAILY_TRADES_REACHED",
+        "reason": "Daily trade limit (10 trades) reached for today."
+      }
+    },
+    {
+      "id": "log-1787580230697-437",
+      "timestamp": "2026-08-24T14:03:50.697Z",
+      "timeString": "19:33:50",
+      "level": "INFO",
+      "category": "SYSTEM",
+      "message": "Emergency Kill Switch DEACTIVATED. New trades enabled."
+    },
+    {
+      "id": "log-1787580229297-101",
+      "timestamp": "2026-08-24T14:03:49.297Z",
+      "timeString": "19:33:49",
+      "level": "ALERT",
+      "category": "SYSTEM",
+      "message": "Emergency Kill Switch ACTIVATED. All new trades HALTED."
+    },
+    {
+      "id": "log-1787580224768-107",
+      "timestamp": "2026-08-24T14:03:44.768Z",
+      "timeString": "19:33:44",
+      "level": "ALERT",
+      "category": "SYSTEM",
+      "message": "Trading mode switched to PAPER TRADING."
+    },
+    {
+      "id": "log-1787580216348-415",
+      "timestamp": "2026-08-24T14:03:36.348Z",
+      "timeString": "19:33:36",
+      "level": "WARNING",
+      "category": "RISK",
+      "symbol": "RELIANCE",
+      "message": "Order rejected: Cannot place live order: NSE market is currently CLOSED (Open: 09:15 - 15:30 IST). (RELIANCE)",
+      "details": {
+        "code": "MARKET_CLOSED",
+        "reason": "Cannot place live order: NSE market is currently CLOSED (Open: 09:15 - 15:30 IST)."
+      }
+    },
+    {
+      "id": "log-1787580215495-372",
+      "timestamp": "2026-08-24T14:03:35.495Z",
+      "timeString": "19:33:35",
+      "level": "WARNING",
+      "category": "RISK",
+      "symbol": "RELIANCE",
+      "message": "Order rejected: Cannot place live order: NSE market is currently CLOSED (Open: 09:15 - 15:30 IST). (RELIANCE)",
+      "details": {
+        "code": "MARKET_CLOSED",
+        "reason": "Cannot place live order: NSE market is currently CLOSED (Open: 09:15 - 15:30 IST)."
+      }
+    },
+    {
+      "id": "log-1787580211888-771",
+      "timestamp": "2026-08-24T14:03:31.888Z",
+      "timeString": "19:33:31",
+      "level": "ALERT",
+      "category": "SYSTEM",
+      "message": "Trading mode switched to LIVE TRADING."
+    },
+    {
+      "id": "log-1787580196683-128",
+      "timestamp": "2026-08-24T14:03:16.683Z",
+      "timeString": "19:33:16",
+      "level": "WARNING",
+      "category": "RISK",
+      "symbol": "RELIANCE",
+      "message": "Order rejected: Daily trade limit (10 trades) reached for today. (RELIANCE)",
+      "details": {
+        "code": "MAX_DAILY_TRADES_REACHED",
+        "reason": "Daily trade limit (10 trades) reached for today."
+      }
+    },
+    {
+      "id": "log-1787580187418-925",
+      "timestamp": "2026-08-24T14:03:07.418Z",
+      "timeString": "19:33:07",
+      "level": "WARNING",
+      "category": "RISK",
+      "symbol": "MANAPPURAM",
+      "message": "Order rejected: Daily trade limit (10 trades) reached for today. (MANAPPURAM)",
+      "details": {
+        "code": "MAX_DAILY_TRADES_REACHED",
+        "reason": "Daily trade limit (10 trades) reached for today."
+      }
+    },
+    {
+      "id": "log-1787580075847-621",
+      "timestamp": "2026-08-24T14:01:15.847Z",
+      "timeString": "19:31:15",
+      "level": "ALERT",
+      "category": "SYSTEM",
+      "message": "Trading mode switched to PAPER TRADING."
+    },
+    {
+      "id": "log-1787576693213-852",
+      "timestamp": "2026-08-24T13:04:53.213Z",
+      "timeString": "18:34:53",
+      "level": "ALERT",
+      "category": "SYSTEM",
+      "message": "Trading mode switched to LIVE TRADING."
+    },
+    {
+      "id": "log-1787576690250-770",
+      "timestamp": "2026-08-24T13:04:50.250Z",
+      "timeString": "18:34:50",
+      "level": "INFO",
+      "category": "SYSTEM",
+      "message": "Emergency Kill Switch DEACTIVATED. New trades enabled."
+    },
+    {
+      "id": "log-1787576688613-52",
+      "timestamp": "2026-08-24T13:04:48.613Z",
+      "timeString": "18:34:48",
+      "level": "ALERT",
+      "category": "SYSTEM",
+      "message": "Emergency Kill Switch ACTIVATED. All new trades HALTED."
+    },
+    {
+      "id": "log-1787576687911-223",
+      "timestamp": "2026-08-24T13:04:47.911Z",
+      "timeString": "18:34:47",
+      "level": "INFO",
+      "category": "SYSTEM",
+      "message": "Emergency Kill Switch DEACTIVATED. New trades enabled."
+    },
+    {
+      "id": "log-1787576687695-432",
+      "timestamp": "2026-08-24T13:04:47.695Z",
+      "timeString": "18:34:47",
+      "level": "ALERT",
+      "category": "SYSTEM",
+      "message": "Emergency Kill Switch ACTIVATED. All new trades HALTED."
+    },
+    {
+      "id": "log-1787576687512-147",
+      "timestamp": "2026-08-24T13:04:47.512Z",
+      "timeString": "18:34:47",
+      "level": "INFO",
+      "category": "SYSTEM",
+      "message": "Emergency Kill Switch DEACTIVATED. New trades enabled."
+    },
+    {
+      "id": "log-1787576687360-906",
+      "timestamp": "2026-08-24T13:04:47.360Z",
+      "timeString": "18:34:47",
+      "level": "ALERT",
+      "category": "SYSTEM",
+      "message": "Emergency Kill Switch ACTIVATED. All new trades HALTED."
+    },
+    {
+      "id": "log-1787576687359-507",
+      "timestamp": "2026-08-24T13:04:47.358Z",
+      "timeString": "18:34:47",
+      "level": "ALERT",
+      "category": "SYSTEM",
+      "message": "Emergency Kill Switch ACTIVATED. All new trades HALTED."
+    },
+    {
+      "id": "log-1787575513078-453",
+      "timestamp": "2026-08-24T12:45:13.078Z",
+      "timeString": "18:15:13",
+      "level": "WARNING",
+      "category": "POSITION",
+      "symbol": "MANAPPURAM",
+      "message": "CLOSED MANAPPURAM @ ₹365.05 | Realized P&L: ₹0.00 (Manual Exit)",
+      "details": {
+        "realizedPnL": 0,
+        "exitPrice": 365.05,
+        "reason": "Manual Exit"
+      }
+    },
+    {
+      "id": "log-1787575232183-54",
+      "timestamp": "2026-08-24T12:40:32.183Z",
+      "timeString": "18:10:32",
+      "level": "SUCCESS",
+      "category": "ORDER",
+      "symbol": "MANAPPURAM",
+      "message": "PAPER BUY 68 shares of MANAPPURAM @ ₹365.05 (SL: ₹361.2, Target: ₹372.75)",
+      "details": {
+        "quantity": 68,
+        "entryPrice": 365.05,
+        "stopLoss": 361.2,
+        "target": 372.75
+      }
+    },
+    {
+      "id": "log-1787575227893-268",
+      "timestamp": "2026-08-24T12:40:27.893Z",
+      "timeString": "18:10:27",
+      "level": "ALERT",
+      "category": "SYSTEM",
+      "message": "Trading mode switched to PAPER TRADING."
+    },
+    {
+      "id": "log-1787575216269-175",
+      "timestamp": "2026-08-24T12:40:16.269Z",
+      "timeString": "18:10:16",
+      "level": "WARNING",
+      "category": "RISK",
+      "symbol": "MANAPPURAM",
+      "message": "Order rejected: Cannot place live order: NSE market is currently CLOSED (Open: 09:15 - 15:30 IST). (MANAPPURAM)",
+      "details": {
+        "code": "MARKET_CLOSED",
+        "reason": "Cannot place live order: NSE market is currently CLOSED (Open: 09:15 - 15:30 IST)."
+      }
+    },
+    {
+      "id": "log-1787574915938-248",
+      "timestamp": "2026-08-24T12:35:15.938Z",
+      "timeString": "18:05:15",
+      "level": "ALERT",
+      "category": "SYSTEM",
+      "message": "Trading mode switched to LIVE TRADING."
+    },
+    {
+      "id": "log-1787574913238-590",
+      "timestamp": "2026-08-24T12:35:13.238Z",
+      "timeString": "18:05:13",
+      "level": "ALERT",
+      "category": "SYSTEM",
+      "message": "Trading mode switched to PAPER TRADING."
+    },
+    {
+      "id": "log-1787574739163-664",
+      "timestamp": "2026-08-24T12:32:19.163Z",
+      "timeString": "18:02:19",
+      "level": "WARNING",
+      "category": "POSITION",
+      "symbol": "TATASTEEL",
+      "message": "CLOSED TATASTEEL @ ₹186.3 | Realized P&L: ₹0.00 (Manual Exit)",
+      "details": {
+        "realizedPnL": 0,
+        "exitPrice": 186.3,
+        "reason": "Manual Exit"
+      }
+    },
+    {
+      "id": "log-1787574738365-133",
+      "timestamp": "2026-08-24T12:32:18.365Z",
+      "timeString": "18:02:18",
+      "level": "WARNING",
+      "category": "POSITION",
+      "symbol": "INFY",
+      "message": "CLOSED INFY @ ₹1910 | Realized P&L: ₹0.00 (Manual Exit)",
+      "details": {
+        "realizedPnL": 0,
+        "exitPrice": 1910,
+        "reason": "Manual Exit"
+      }
+    },
+    {
+      "id": "log-1787574737233-913",
+      "timestamp": "2026-08-24T12:32:17.233Z",
+      "timeString": "18:02:17",
+      "level": "WARNING",
+      "category": "POSITION",
+      "symbol": "MANAPPURAM",
+      "message": "CLOSED MANAPPURAM @ ₹365.05 | Realized P&L: ₹0.00 (Manual Exit)",
+      "details": {
+        "realizedPnL": 0,
+        "exitPrice": 365.05,
+        "reason": "Manual Exit"
+      }
+    },
+    {
+      "id": "log-1787574677124-995",
+      "timestamp": "2026-08-24T12:31:17.124Z",
+      "timeString": "18:01:17",
+      "level": "SUCCESS",
+      "category": "ORDER",
+      "symbol": "TATASTEEL",
+      "message": "PAPER BUY 134 shares of TATASTEEL @ ₹186.3 (SL: ₹184.8, Target: ₹189.3)",
+      "details": {
+        "quantity": 134,
+        "entryPrice": 186.3,
+        "stopLoss": 184.8,
+        "target": 189.3
+      }
+    },
+    {
+      "id": "log-1787574673284-93",
+      "timestamp": "2026-08-24T12:31:13.284Z",
+      "timeString": "18:01:13",
+      "level": "SUCCESS",
+      "category": "ORDER",
+      "symbol": "INFY",
+      "message": "PAPER BUY 13 shares of INFY @ ₹1910 (SL: ₹1898, Target: ₹1934)",
+      "details": {
+        "quantity": 13,
+        "entryPrice": 1910,
+        "stopLoss": 1898,
+        "target": 1934
+      }
+    },
+    {
+      "id": "log-1787574656361-760",
+      "timestamp": "2026-08-24T12:30:56.361Z",
+      "timeString": "18:00:56",
+      "level": "ALERT",
+      "category": "SYSTEM",
+      "message": "Trading mode switched to PAPER TRADING."
+    },
+    {
+      "id": "log-1787574650453-374",
+      "timestamp": "2026-08-24T12:30:50.453Z",
+      "timeString": "18:00:50",
+      "level": "WARNING",
+      "category": "RISK",
+      "symbol": "MANAPPURAM",
+      "message": "Order rejected: Cannot place live order: NSE market is currently CLOSED (Open: 09:15 - 15:30 IST). (MANAPPURAM)",
+      "details": {
+        "code": "MARKET_CLOSED",
+        "reason": "Cannot place live order: NSE market is currently CLOSED (Open: 09:15 - 15:30 IST)."
+      }
+    },
+    {
+      "id": "log-1787574650277-823",
+      "timestamp": "2026-08-24T12:30:50.277Z",
+      "timeString": "18:00:50",
+      "level": "WARNING",
+      "category": "RISK",
+      "symbol": "MANAPPURAM",
+      "message": "Order rejected: Cannot place live order: NSE market is currently CLOSED (Open: 09:15 - 15:30 IST). (MANAPPURAM)",
+      "details": {
+        "code": "MARKET_CLOSED",
+        "reason": "Cannot place live order: NSE market is currently CLOSED (Open: 09:15 - 15:30 IST)."
+      }
+    },
+    {
+      "id": "log-1787574650000-823",
+      "timestamp": "2026-08-24T12:30:50.000Z",
+      "timeString": "18:00:50",
+      "level": "WARNING",
+      "category": "RISK",
+      "symbol": "MANAPPURAM",
+      "message": "Order rejected: Cannot place live order: NSE market is currently CLOSED (Open: 09:15 - 15:30 IST). (MANAPPURAM)",
+      "details": {
+        "code": "MARKET_CLOSED",
+        "reason": "Cannot place live order: NSE market is currently CLOSED (Open: 09:15 - 15:30 IST)."
+      }
+    },
+    {
+      "id": "log-1787574649516-406",
+      "timestamp": "2026-08-24T12:30:49.516Z",
+      "timeString": "18:00:49",
+      "level": "WARNING",
+      "category": "RISK",
+      "symbol": "MANAPPURAM",
+      "message": "Order rejected: Cannot place live order: NSE market is currently CLOSED (Open: 09:15 - 15:30 IST). (MANAPPURAM)",
+      "details": {
+        "code": "MARKET_CLOSED",
+        "reason": "Cannot place live order: NSE market is currently CLOSED (Open: 09:15 - 15:30 IST)."
+      }
+    },
+    {
+      "id": "log-1787574648745-563",
+      "timestamp": "2026-08-24T12:30:48.745Z",
+      "timeString": "18:00:48",
+      "level": "WARNING",
+      "category": "RISK",
+      "symbol": "MANAPPURAM",
+      "message": "Order rejected: Cannot place live order: NSE market is currently CLOSED (Open: 09:15 - 15:30 IST). (MANAPPURAM)",
+      "details": {
+        "code": "MARKET_CLOSED",
+        "reason": "Cannot place live order: NSE market is currently CLOSED (Open: 09:15 - 15:30 IST)."
+      }
+    },
+    {
+      "id": "log-1787574647761-219",
+      "timestamp": "2026-08-24T12:30:47.761Z",
+      "timeString": "18:00:47",
+      "level": "WARNING",
+      "category": "RISK",
+      "symbol": "MANAPPURAM",
+      "message": "Order rejected: Cannot place live order: NSE market is currently CLOSED (Open: 09:15 - 15:30 IST). (MANAPPURAM)",
+      "details": {
+        "code": "MARKET_CLOSED",
+        "reason": "Cannot place live order: NSE market is currently CLOSED (Open: 09:15 - 15:30 IST)."
+      }
+    },
+    {
+      "id": "log-1787574644176-333",
+      "timestamp": "2026-08-24T12:30:44.176Z",
+      "timeString": "18:00:44",
+      "level": "ALERT",
+      "category": "SYSTEM",
+      "message": "Trading mode switched to LIVE TRADING."
+    },
+    {
+      "id": "log-1787574565623-254",
+      "timestamp": "2026-08-24T12:29:25.623Z",
+      "timeString": "17:59:25",
+      "level": "ALERT",
+      "category": "SYSTEM",
+      "message": "Trading mode switched to PAPER TRADING."
+    },
+    {
+      "id": "log-1787574526244-503",
+      "timestamp": "2026-08-24T12:28:46.244Z",
+      "timeString": "17:58:46",
+      "level": "ALERT",
+      "category": "SYSTEM",
+      "message": "Trading mode switched to LIVE TRADING."
+    },
+    {
+      "id": "log-1787574500563-997",
+      "timestamp": "2026-08-24T12:28:20.563Z",
+      "timeString": "17:58:20",
+      "level": "SUCCESS",
+      "category": "ORDER",
+      "symbol": "MANAPPURAM",
+      "message": "PAPER BUY 68 shares of MANAPPURAM @ ₹365.05 (SL: ₹361.2, Target: ₹372.75)",
+      "details": {
+        "quantity": 68,
+        "entryPrice": 365.05,
+        "stopLoss": 361.2,
+        "target": 372.75
+      }
+    },
+    {
+      "id": "log-1787574483307-688",
+      "timestamp": "2026-08-24T12:28:03.307Z",
+      "timeString": "17:58:03",
+      "level": "WARNING",
+      "category": "POSITION",
+      "symbol": "SUZLON",
+      "message": "CLOSED SUZLON @ ₹74.5 | Realized P&L: ₹0.00 (Manual Exit)",
+      "details": {
+        "realizedPnL": 0,
+        "exitPrice": 74.5,
+        "reason": "Manual Exit"
+      }
+    },
+    {
+      "id": "log-1787574471588-581",
+      "timestamp": "2026-08-24T12:27:51.588Z",
+      "timeString": "17:57:51",
+      "level": "SUCCESS",
+      "category": "ORDER",
+      "symbol": "SUZLON",
+      "message": "PAPER BUY 335 shares of SUZLON @ ₹74.5 (SL: ₹73.6, Target: ₹76.3)",
+      "details": {
+        "quantity": 335,
+        "entryPrice": 74.5,
+        "stopLoss": 73.6,
+        "target": 76.3
+      }
+    },
+    {
+      "id": "log-1787574160206-302",
+      "timestamp": "2026-08-24T12:22:40.206Z",
+      "timeString": "17:52:40",
+      "level": "INFO",
+      "category": "SYSTEM",
+      "message": "Emergency Kill Switch DEACTIVATED. New trades enabled."
+    },
+    {
+      "id": "log-1787574160013-501",
+      "timestamp": "2026-08-24T12:22:40.013Z",
+      "timeString": "17:52:40",
+      "level": "ALERT",
+      "category": "SYSTEM",
+      "message": "Emergency Kill Switch ACTIVATED. All new trades HALTED."
+    },
+    {
+      "id": "log-1787574160008-760",
+      "timestamp": "2026-08-24T12:22:40.007Z",
+      "timeString": "17:52:40",
+      "level": "WARNING",
+      "category": "POSITION",
+      "symbol": "TATASTEEL",
+      "message": "CLOSED TATASTEEL @ ₹186.3 | Realized P&L: ₹0.00 (Manual Exit)",
+      "details": {
+        "realizedPnL": 0,
+        "exitPrice": 186.3,
+        "reason": "Manual Exit"
+      }
+    },
+    {
+      "id": "log-1787574159516-623",
+      "timestamp": "2026-08-24T12:22:39.516Z",
+      "timeString": "17:52:39",
+      "level": "SUCCESS",
+      "category": "ORDER",
+      "symbol": "TATASTEEL",
+      "message": "PAPER BUY 50 shares of TATASTEEL @ ₹186.3 (SL: ₹183, Target: ₹192.9)",
+      "details": {
+        "quantity": 50,
+        "entryPrice": 186.3,
+        "stopLoss": 183,
+        "target": 192.9
+      }
+    },
+    {
+      "id": "log-1787574102943-245",
+      "timestamp": "2026-08-24T12:21:42.943Z",
+      "timeString": "17:51:42",
+      "level": "SUCCESS",
+      "category": "POSITION",
+      "symbol": "INFY",
+      "message": "CLOSED INFY @ ₹2065 | Realized P&L: ₹650.00 (Target Hit)",
+      "details": {
+        "realizedPnL": 650,
+        "exitPrice": 2065,
+        "reason": "Target Hit"
+      }
+    },
+    {
+      "id": "log-1787574102941-429",
+      "timestamp": "2026-08-24T12:21:42.941Z",
+      "timeString": "17:51:42",
+      "level": "SUCCESS",
+      "category": "ORDER",
+      "symbol": "INFY",
+      "message": "PAPER BUY 10 shares of INFY @ ₹2000 (SL: ₹1970, Target: ₹2060)",
+      "details": {
+        "quantity": 10,
+        "entryPrice": 2000,
+        "stopLoss": 1970,
+        "target": 2060
+      }
+    },
+    {
+      "id": "log-1787574042143-907",
+      "timestamp": "2026-08-24T12:20:42.143Z",
+      "timeString": "17:50:42",
+      "level": "INFO",
+      "category": "SYSTEM",
+      "message": "Emergency Kill Switch DEACTIVATED. New trades enabled."
+    },
+    {
+      "id": "log-1787574041932-493",
+      "timestamp": "2026-08-24T12:20:41.932Z",
+      "timeString": "17:50:41",
+      "level": "ALERT",
+      "category": "SYSTEM",
+      "message": "Emergency Kill Switch ACTIVATED. All new trades HALTED."
+    },
+    {
+      "id": "log-1787574041926-709",
+      "timestamp": "2026-08-24T12:20:41.926Z",
+      "timeString": "17:50:41",
+      "level": "WARNING",
+      "category": "POSITION",
+      "symbol": "TATASTEEL",
+      "message": "CLOSED TATASTEEL @ ₹186.3 | Realized P&L: ₹0.00 (Manual Exit)",
+      "details": {
+        "realizedPnL": 0,
+        "exitPrice": 186.3,
+        "reason": "Manual Exit"
+      }
+    },
+    {
+      "id": "log-1787574041512-969",
+      "timestamp": "2026-08-24T12:20:41.512Z",
+      "timeString": "17:50:41",
+      "level": "SUCCESS",
+      "category": "ORDER",
+      "symbol": "TATASTEEL",
+      "message": "PAPER BUY 50 shares of TATASTEEL @ ₹186.3 (SL: ₹183, Target: ₹192.9)",
+      "details": {
+        "quantity": 50,
+        "entryPrice": 186.3,
+        "stopLoss": 183,
+        "target": 192.9
+      }
+    },
+    {
+      "id": "log-1787573887611-900",
+      "timestamp": "2026-08-24T12:18:07.611Z",
+      "timeString": "17:48:07",
+      "level": "INFO",
+      "category": "SYSTEM",
+      "message": "Emergency Kill Switch DEACTIVATED. New trades enabled."
+    },
+    {
+      "id": "log-1787573887435-961",
+      "timestamp": "2026-08-24T12:18:07.435Z",
+      "timeString": "17:48:07",
+      "level": "ALERT",
+      "category": "SYSTEM",
+      "message": "Emergency Kill Switch ACTIVATED. All new trades HALTED."
+    },
+    {
+      "id": "log-1787573887430-925",
+      "timestamp": "2026-08-24T12:18:07.430Z",
+      "timeString": "17:48:07",
+      "level": "WARNING",
+      "category": "POSITION",
+      "symbol": "TATASTEEL",
+      "message": "CLOSED TATASTEEL @ ₹186.3 | Realized P&L: ₹0.00 (Manual Exit)",
+      "details": {
+        "realizedPnL": 0,
+        "exitPrice": 186.3,
+        "reason": "Manual Exit"
+      }
+    },
+    {
+      "id": "log-1787573887170-904",
+      "timestamp": "2026-08-24T12:18:07.170Z",
+      "timeString": "17:48:07",
+      "level": "SUCCESS",
+      "category": "ORDER",
+      "symbol": "TATASTEEL",
+      "message": "PAPER BUY 50 shares of TATASTEEL @ ₹186.3 (SL: ₹183, Target: ₹192.9)",
+      "details": {
+        "quantity": 50,
+        "entryPrice": 186.3,
+        "stopLoss": 183,
+        "target": 192.9
+      }
+    },
+    {
+      "id": "log-1787573463076-375",
+      "timestamp": "2026-08-24T12:11:03.076Z",
+      "timeString": "17:41:03",
+      "level": "SUCCESS",
+      "category": "POSITION",
+      "symbol": "INFY",
+      "message": "CLOSED INFY @ ₹2065 | Realized P&L: ₹650.00 (Target Hit)",
+      "details": {
+        "realizedPnL": 650,
+        "exitPrice": 2065,
+        "reason": "Target Hit"
+      }
+    },
+    {
+      "id": "log-1787573463073-100",
+      "timestamp": "2026-08-24T12:11:03.073Z",
+      "timeString": "17:41:03",
+      "level": "SUCCESS",
+      "category": "ORDER",
+      "symbol": "INFY",
+      "message": "PAPER BUY 10 shares of INFY @ ₹2000 (SL: ₹1970, Target: ₹2060)",
+      "details": {
+        "quantity": 10,
+        "entryPrice": 2000,
+        "stopLoss": 1970,
+        "target": 2060
+      }
+    }
+  ]
+}

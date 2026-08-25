@@ -21,7 +21,6 @@ const SCANNER_TABS = [
   { key: 'breakout', label: '🚀 Breakout' },
   { key: 'active', label: '📊 Most Active' },
   { key: 'industries', label: '🏭 Strong Industries' },
-  { key: 'avoid', label: '⚠️ Avoid Today' },
   { key: 'learning', label: '📚 Learning Mode' },
 ];
 
@@ -1062,7 +1061,6 @@ export default function AdvancedIntradayScanner() {
     if (activeTab === 'bullish') return analyses.filter((row) => row.buyScore >= 80).filter(industryFilter);
     if (activeTab === 'breakout') return analyses.filter((row) => row.resistanceBreakout).filter(industryFilter);
     if (activeTab === 'active') return analyses.slice().sort((a, b) => b.volume - a.volume).filter(industryFilter).slice(0, 20);
-    if (activeTab === 'avoid') return analyses.filter((row) => !row.hasRequiredData || row.setupLabel.includes('AVOID')).filter(industryFilter);
     if (activeTab === 'industries') return analyses.filter(industryFilter);
     return analyses.filter(industryFilter).slice(0, 10);
   }, [activeTab, analyses, selectedIndustry]);

@@ -378,55 +378,20 @@ export function calcMACD(closes) {
   return { macd: macdVal, signal: signalVal, histogram: hist, status: 'valid' };
 }
 
+import { detectAllCandlePatterns, analyzeCandleAnatomy, CANDLESTICK_PATTERNS_INFO } from './candlestickPatterns.js';
+
 /* ── Candle patterns ───────────────────────────────────── */
 
 export function detectCandlePattern(candles) {
-  if (!Array.isArray(candles) || candles.length < 2) return null;
-  const last = candles.at(-1);
-  const prev = candles.at(-2);
-
-  const body     = (c) => Math.abs(c.close - c.open);
-  const range    = (c) => Math.max(c.high - c.low, 0.001);
-  const bullish  = (c) => c.close >= c.open;
-  const bodyHigh = (c) => Math.max(c.open, c.close);
-  const bodyLow  = (c) => Math.min(c.open, c.close);
-
-  if (!bullish(prev) && bullish(last) && bodyHigh(last) >= bodyHigh(prev) && bodyLow(last) <= bodyLow(prev))
-    return 'Bullish Engulfing';
-
-  const lowerWick = bodyLow(last) - last.low;
-  const upperWick = last.high - bodyHigh(last);
-  if (lowerWick > body(last) * 2 && upperWick <= body(last) * 0.5 && bullish(last))
-    return 'Hammer';
-
-  if (upperWick > body(last) * 2 && lowerWick <= body(last) * 0.5 && !bullish(last))
-    return 'Shooting Star';
-
-  if (body(last) / range(last) < 0.15)
-    return 'Doji';
-
-  if (!bullish(prev) && bullish(last) && bodyHigh(last) < bodyHigh(prev) && bodyLow(last) > bodyLow(prev))
-    return 'Bullish Harami';
-
-  if (bullish(last) && body(last) / range(last) > 0.7)
-    return 'Strong Bullish Candle';
-
-  if (!bullish(last) && body(last) / range(last) > 0.7)
-    return 'Strong Bearish Candle';
-
-  if (bodyHigh(last) <= bodyHigh(prev) && bodyLow(last) >= bodyLow(prev))
-    return 'Inside Bar';
-
-  if (candles.length >= 3) {
-    const third = candles.at(-3);
-    if (!bullish(third) && body(prev) / range(prev) < 0.35 && bullish(last) && last.close > (third.open + third.close) / 2)
-      return 'Morning Star';
-    if (bullish(third) && bullish(prev) && bullish(last) && last.close > prev.close && prev.close > third.close)
-      return 'Three White Soldiers';
+  if (!Array.isArray(candles) || candles.length < 1) return null;
+  const patterns = detectAllCandlePatterns(candles);
+  if (patterns.length > 0) {
+    return patterns[0].name;
   }
-
   return null;
 }
+
+export { detectAllCandlePatterns, analyzeCandleAnatomy, CANDLESTICK_PATTERNS_INFO };
 
 /* ── Master compute ────────────────────────────────────── */
 
