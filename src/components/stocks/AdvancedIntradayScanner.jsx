@@ -655,7 +655,7 @@ function TradingChart({ analysis, candles, timeframe, onTimeframeChange }) {
 
     if (!displayCandles.length) {
       ctx.fillStyle = '#94a3b8';
-      ctx.font = '600 14px Poppins, sans-serif';
+      ctx.font = '600 14px Montserrat, sans-serif';
       ctx.fillText('Insufficient OHLC data for chart', 24, 48);
       return;
     }
@@ -696,7 +696,7 @@ function TradingChart({ analysis, candles, timeframe, onTimeframeChange }) {
       ctx.stroke();
       ctx.setLineDash([]);
       ctx.fillStyle = color;
-      ctx.font = '700 11px Poppins, sans-serif';
+      ctx.font = '700 11px Montserrat, sans-serif';
       ctx.fillText(label, pad.left + 4, y - 4);
       ctx.restore();
     }
@@ -753,14 +753,14 @@ function TradingChart({ analysis, candles, timeframe, onTimeframeChange }) {
       ctx.fillStyle = analysis.marker.type === 'BUY' ? '#16a34a' : analysis.marker.type === 'SELL' ? '#dc2626' : '#eab308';
       ctx.fillRect(x - 26, y - 15, 52, 22);
       ctx.fillStyle = '#fff';
-      ctx.font = '800 10px Poppins, sans-serif';
+      ctx.font = '800 10px Montserrat, sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText(analysis.marker.type, x, y);
       ctx.textAlign = 'left';
     }
 
     ctx.fillStyle = '#cbd5e1';
-    ctx.font = '700 11px Poppins, sans-serif';
+    ctx.font = '700 11px Montserrat, sans-serif';
     ctx.fillText('VWAP', width - 206, 18);
     ctx.fillStyle = '#facc15';
     ctx.fillText('EMA 9', width - 162, 18);

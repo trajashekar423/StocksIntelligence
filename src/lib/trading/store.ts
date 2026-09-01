@@ -196,3 +196,22 @@ export function recalculateStats() {
   const unPnL = inMemoryStore.positions.reduce((sum, p) => sum + (p.unrealizedPnL || 0), 0);
   inMemoryStore.stats.unrealizedPnL = Number(unPnL.toFixed(2));
 }
+
+export function resetStore(capital = 50000) {
+  inMemoryStore.positions = [];
+  inMemoryStore.closedPositions = [];
+  inMemoryStore.stats = getInitialStats();
+  inMemoryStore.config.capital = capital;
+  inMemoryStore.logs = [
+    {
+      id: `log-${Date.now()}`,
+      timestamp: new Date().toISOString(),
+      timeString: new Date().toTimeString().split(' ')[0],
+      level: 'INFO',
+      category: 'SYSTEM',
+      message: `🔄 Paper Trading Journal Reset. Virtual balance initialized to ₹${capital.toLocaleString('en-IN')}.`,
+    },
+  ];
+  saveToFile();
+  return inMemoryStore;
+}

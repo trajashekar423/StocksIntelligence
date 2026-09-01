@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import StockDetailModal from './StockDetailModal';
 
 // Storage key for user's personal stocks
@@ -16,6 +16,24 @@ const SYMBOL_ALIASES = {
 // Default initial starter stocks (clean user stocks)
 const INITIAL_STARTER_STOCKS = [
   {
+    symbol: 'WEL',
+    companyName: 'Wonder Electricals Limited',
+    price: 157.4,
+    previousClose: 134.02,
+    dayHigh: 160.0,
+    dayLow: 133.0,
+    sharesOwned: 360,
+    buyPrice: 152.5,
+    support: 152.5,
+    resistance: 160.82,
+    target1: 165.0,
+    target2: 172.0,
+    target3: 175.0,
+    stopLoss: 153.0,
+    riskReward: 3.57,
+    lastUpdated: 'Live',
+  },
+  {
     symbol: 'RAMBHAJO',
     companyName: 'Advit Jewels Limited',
     price: 228.25,
@@ -28,7 +46,7 @@ const INITIAL_STARTER_STOCKS = [
     resistance: 241.02,
     target1: 236.08,
     target2: 240.44,
-    target3: 244.80,
+    target3: 244.8,
     stopLoss: 225.18,
     riskReward: 2.63,
     lastUpdated: 'Live',
@@ -65,6 +83,11 @@ export default function PersonalPortfolio({ onQuickTrade = null }) {
   const [editQty, setEditQty] = useState(100);
   const [editBuyPrice, setEditBuyPrice] = useState('');
 
+  const portfolioRef = useRef(portfolio);
+  useEffect(() => {
+    portfolioRef.current = portfolio;
+  }, [portfolio]);
+
   // 1. Load User Selected Stocks from LocalStorage on mount
   useEffect(() => {
     setMounted(true);
@@ -79,7 +102,7 @@ export default function PersonalPortfolio({ onQuickTrade = null }) {
             return { ...s, symbol: sym };
           });
           setPortfolio(normalized);
-          return;
+          portfolioRef.current = normalized;
         }
       }
     } catch {
@@ -89,7 +112,7 @@ export default function PersonalPortfolio({ onQuickTrade = null }) {
 
   // 2. Save to LocalStorage whenever portfolio changes
   useEffect(() => {
-    if (mounted) {
+    if (mounted && Array.isArray(portfolio) && portfolio.length > 0) {
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(portfolio));
       } catch {
@@ -98,12 +121,13 @@ export default function PersonalPortfolio({ onQuickTrade = null }) {
     }
   }, [portfolio, mounted]);
 
-  // 3. Fetch Real-time Live Prices & Setups for User's Selected Stocks
+  // 3. Fetch Real-time Live Prices & Setups for User's Selected Stocks (Stable Reference)
   const refreshLivePrices = useCallback(async () => {
-    if (!portfolio.length) return;
+    const currentList = portfolioRef.current;
+    if (!currentList || !currentList.length) return;
     try {
       const updated = await Promise.all(
-        portfolio.map(async (stk) => {
+        currentList.map(async (stk) => {
           const sym = SYMBOL_ALIASES[stk.symbol] || stk.symbol;
           try {
             const res = await fetch(`/api/nse/quote-equity?symbol=${sym}`);
@@ -143,20 +167,28 @@ export default function PersonalPortfolio({ onQuickTrade = null }) {
           return { ...stk, symbol: sym };
         })
       );
-      setPortfolio(updated);
+
+      // Only update state if prices or values actually changed to eliminate shaking/re-render jitter
+      setPortfolio((prev) => {
+        const isDifferent = updated.some((u, idx) => {
+          const p = prev[idx];
+          return !p || p.price !== u.price || p.symbol !== u.symbol || p.dayHigh !== u.dayHigh;
+        });
+        return isDifferent ? updated : prev;
+      });
     } catch {
       // ignore
     }
-  }, [portfolio]);
+  }, []);
 
-  // Periodic Auto-refresh (Every 15 seconds during live market)
+  // Periodic Auto-refresh (Strict 15-second interval, no render loop)
   useEffect(() => {
-    if (portfolio.length > 0 && mounted) {
+    if (!mounted) return;
+    const timer = setInterval(() => {
       refreshLivePrices();
-      const timer = setInterval(refreshLivePrices, 15000);
-      return () => clearInterval(timer);
-    }
-  }, [mounted, portfolio.length, refreshLivePrices]);
+    }, 15000);
+    return () => clearInterval(timer);
+  }, [mounted, refreshLivePrices]);
 
   // Compute Portfolio Metrics
   const { totalInvested, currentValue, totalPnL, totalPnLPct } = useMemo(() => {

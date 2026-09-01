@@ -20,6 +20,8 @@ import {
 import { ScannerStock, Position, DailyStats, TradingConfig, TradingLog, TradeSignal } from '@/src/types/trading';
 import { GrowwAuthStatus } from '@/src/types/groww';
 import StockDetailModal from '@/src/components/stocks/StockDetailModal.jsx';
+import LivePositionRiskMonitor from './LivePositionRiskMonitor';
+import { registerNewOpenPosition } from '@/src/services/risk/positionTracker';
 
 const formatMsg = (val: any, fallback = 'Operation failed.'): string => {
   if (!val) return fallback;
@@ -146,9 +148,23 @@ export default function IntradayTradingModule() {
 
       const data = await res.json();
       if (res.ok && data.success) {
+        const orderQty = typeof customQuantity === 'number' && customQuantity > 0 ? customQuantity : selectedStock.suggestedQty || 10;
+        try {
+          registerNewOpenPosition(
+            selectedStock.symbol,
+            selectedStock.companyName,
+            orderQty,
+            selectedStock.ltp,
+            selectedStock.stopLoss,
+            'MIS'
+          );
+        } catch {
+          // Ignore registration error
+        }
+
         setActionMessage({
           type: 'success',
-          text: `Order placed successfully! Position opened for ${selectedStock.symbol} (${data.position?.mode} Mode).`,
+          text: `Order placed successfully! Position opened for ${selectedStock.symbol} (${data.position?.mode} Mode) with Active Risk Monitoring.`,
         });
         loadStatus();
       } else {
@@ -249,6 +265,33 @@ export default function IntradayTradingModule() {
     }
   };
 
+  // Reset Paper Trading Mode
+  const handleResetPaperMode = async () => {
+    if (
+      !window.confirm(
+        'Reset Paper Trading Journal? This will clear active positions, reset Realized P&L to ₹0.00, and restore virtual capital to ₹50,000.'
+      )
+    ) {
+      return;
+    }
+    try {
+      const res = await fetch('/api/trading/reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ capital: 50000 }),
+      });
+      if (res.ok) {
+        await loadStatus();
+        setActionMessage({
+          type: 'success',
+          text: '✓ Paper Trading Journal Reset! Virtual balance restored to ₹50,000 (0 trades, ₹0.00 P&L).',
+        });
+      }
+    } catch {
+      setActionMessage({ type: 'error', text: 'Failed to reset paper trading mode.' });
+    }
+  };
+
   const isLive = config?.mode === 'LIVE';
 
   return (
@@ -329,6 +372,18 @@ export default function IntradayTradingModule() {
                 </button>
               </div>
 
+              {/* Reset Paper Journal Button (Only in Paper Mode) */}
+              {!isLive && (
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline-secondary rounded-3 fw-semibold d-flex align-items-center gap-1 shadow-sm"
+                  onClick={handleResetPaperMode}
+                  title="Reset Virtual Balance to ₹50,000 and clear trade history"
+                >
+                  <FiRefreshCw size={12} /> Reset Paper Journal
+                </button>
+              )}
+
               {/* Kill Switch Toggle */}
               <button
                 type="button"
@@ -354,7 +409,29 @@ export default function IntradayTradingModule() {
               className={`alert alert-${actionMessage.type === 'error' ? 'danger' : actionMessage.type === 'success' ? 'success' : 'info'} alert-dismissible fade show mt-3 mb-0 small`}
               role="alert"
             >
-              <strong>{actionMessage.type === 'error' ? '⚠️ ' : '✓ '}</strong> {formatMsg(actionMessage.text)}
+              <div className="d-flex flex-column gap-1">
+                <div>
+                  <strong>{actionMessage.type === 'error' ? '⚠️ ' : '✓ '}</strong> {formatMsg(actionMessage.text)}
+                </div>
+                {actionMessage.text && actionMessage.text.includes('403 Forbidden') && (
+                  <div className="mt-2 p-2 rounded-2 bg-dark text-white d-flex flex-wrap align-items-center justify-content-between gap-2">
+                    <div>
+                      <span className="text-warning fw-bold">Your Outbound IP:</span>{' '}
+                      <code className="text-info bg-black px-2 py-0.5 rounded user-select-all">183.83.231.209</code>
+                      <div className="text-white-50 mt-0.5" style={{ fontSize: 11 }}>
+                        Add this IP in Groww Developer Console → API Keys → Allowed IPs to enable LIVE trading.
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-warning fw-bold px-3 py-1 text-dark"
+                      onClick={() => handleSwitchMode('PAPER')}
+                    >
+                      🟡 Switch to Paper Mode (Instant)
+                    </button>
+                  </div>
+                )}
+              </div>
               <button
                 type="button"
                 className="btn-close"
@@ -666,12 +743,27 @@ export default function IntradayTradingModule() {
         </div>
       </div>
 
+      {/* ── LIVE OPEN POSITION RISK & EXIT ALERT ENGINE ── */}
+      <LivePositionRiskMonitor />
+
       {/* ── OPEN POSITIONS & RECENT TRADES ── */}
       <div className="card border-0 shadow-sm mb-4" style={{ borderRadius: 16 }}>
         <div className="card-header bg-transparent border-0 pt-3 px-3">
-          <div className="d-flex justify-content-between align-items-center">
+          <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
             <h5 className="fw-bold mb-0">📊 Active Open Positions ({positions.length})</h5>
-            <span className="small text-muted">Auto-trailing Stop & Target Monitored</span>
+            <div className="d-flex align-items-center gap-2">
+              <span className="small text-muted">Auto-trailing Stop & Target Monitored</span>
+              {!isLive && (
+                <button
+                  type="button"
+                  className="btn btn-outline-secondary btn-sm rounded-pill px-2.5 py-0.5 small"
+                  onClick={handleResetPaperMode}
+                  title="Reset Virtual Journal"
+                >
+                  🔄 Reset Journal
+                </button>
+              )}
+            </div>
           </div>
         </div>
 

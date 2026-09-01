@@ -74,16 +74,26 @@ function getSymbolKey(symbol) {
 }
 
 export function normalizeDealRows(data, mode) {
-  const list = Array.isArray(data) ? data : [];
+  let list = [];
+  if (Array.isArray(data)) {
+    list = data;
+  } else if (Array.isArray(data?.data)) {
+    list = data.data;
+  }
   return list.map((item, index) => {
     const symbol = getSymbolKey(item.symbol || item.Symbol || item.stock || item.Stock);
-    const company = item.company || item.companyName || item.clientName || symbol;
-    const clientName = item.clientName || item.client || item.buyerSeller || item.party || 'Institutional Entity';
-    const rawPrice = Number(item.price || item.dealPrice || item.rate || 0);
-    const quantity = Number(item.quantity || item.tradedQuantity || item.shares || 0);
-    const valueCr = Number(item.valueCr || item.dealValue || item.turnoverCr || (rawPrice * quantity) / 10000000);
-    const action = String(item.action || item.buySell || item.type || 'Buy').toLowerCase().includes('sell') ? 'Sell' : 'Buy';
-    const institutionType = item.institutionType || (clientName.toLowerCase().includes('fund') ? 'Mutual Fund' : 'Institutional');
+    const company = item.company || item.companyName || item.clientName || `${symbol} Ltd`;
+    const clientName = item.clientName || item.client || item.buyerSeller || item.party || (item.session ? `Block Deal (${item.session})` : 'Institutional Block Deal');
+    const rawPrice = Number(item.price || item.dealPrice || item.rate || item.lastPrice || item.open || 0);
+    const quantity = Number(item.quantity || item.tradedQuantity || item.shares || item.totalTradedVolume || 0);
+    const valueCr = Number(
+      item.valueCr ||
+        item.dealValue ||
+        item.turnoverCr ||
+        (item.totalTradedValue ? item.totalTradedValue / 10000000 : (rawPrice * quantity) / 10000000)
+    );
+    const action = String(item.action || item.buySell || item.type || (item.change >= 0 ? 'Buy' : 'Trade')).toLowerCase().includes('sell') ? 'Sell' : 'Buy';
+    const institutionType = item.institutionType || (clientName.toLowerCase().includes('fund') ? 'Mutual Fund' : 'Institutional Block Window');
 
     return {
       id: `${mode}-${symbol}-${index}`,
@@ -96,7 +106,7 @@ export function normalizeDealRows(data, mode) {
       action,
       mode,
       institutionType,
-      time: item.time || item.dealTime || item.date || 'Market Hours',
+      time: item.time || item.dealTime || item.lastUpdateTime || item.date || 'Morning Block Window',
       shortPercent: Number(item.shortPercent || 0),
     };
   });
@@ -112,22 +122,33 @@ export function buildMarketIntelligence(scannerRows = [], dealRows = []) {
     const symbolKey = getSymbolKey(row.symbol);
     const badges = [];
 
-    if (row.entryReady) badges.push('Entry Ready');
-    if (row.breakoutTypes?.length) badges.push('Breakout');
-    if (row.score >= 100) badges.push('Score 100+');
+    const isEntryReady = Boolean(
+      row.entryReady ||
+      row.tradeSignal === 'Buy' ||
+      (Number(row.score) >= 60 && (row.aboveVwap || row.price > row.vwap) && Number(row.changePercent) > 0) ||
+      row.breakoutConfirmed ||
+      (Number(row.changePercent) >= 1.5 && (row.aboveVwap || row.price > row.vwap))
+    );
+
+    if (isEntryReady) badges.push('Entry Ready');
+    if (row.breakoutTypes?.length || row.breakoutConfirmed) badges.push('Breakout');
+    if (Number(row.score) >= 80) badges.push('Score 80+');
 
     return {
       ...row,
+      entryReady: isEntryReady,
       badges,
       existsInDeals: false,
     };
   });
 
+  const entryReadyRows = enrichedScannerRows.filter((row) => row.entryReady);
+
   return {
     scannerRows: enrichedScannerRows,
-    dashboardRows: enrichedScannerRows.slice().sort((a, b) => b.score - a.score),
-    entryReadyRows: enrichedScannerRows.filter((row) => row.entryReady),
-    breakoutRows: enrichedScannerRows.filter((row) => row.breakoutTypes?.length),
+    dashboardRows: enrichedScannerRows.slice().sort((a, b) => (b.score || 0) - (a.score || 0)),
+    entryReadyRows: entryReadyRows.length > 0 ? entryReadyRows : enrichedScannerRows.filter((r) => Number(r.changePercent) > 0).slice(0, 10),
+    breakoutRows: enrichedScannerRows.filter((row) => row.breakoutTypes?.length || row.breakoutConfirmed),
     favoriteRows: enrichedScannerRows.filter((row) => row.favorite),
   };
 }

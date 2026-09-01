@@ -1,5 +1,5 @@
 /* ── Base ── */
-* { font-family: 'Poppins', sans-serif; }
+* { font-family: 'Montserrat', sans-serif; }
 
 /* ════════════════════════════════════════
    LOGIN PAGE
@@ -110,7 +110,7 @@
   color: #fff !important;
   border-radius: 11px !important;
   font-size: 0.875rem !important;
-  font-family: 'Poppins', sans-serif !important;
+  font-family: 'Montserrat', sans-serif !important;
   padding: 0.65rem 0.9rem !important;
   transition: border-color 0.2s, box-shadow 0.2s;
   height: auto !important;
@@ -169,7 +169,7 @@
   border-radius: 11px;
   font-size: 0.875rem;
   font-weight: 500;
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Montserrat', sans-serif;
   transition: opacity 0.18s, transform 0.15s, box-shadow 0.18s;
   letter-spacing: 0.01em;
   box-shadow: 0 4px 16px rgba(14,165,233,0.25);
@@ -292,7 +292,7 @@
   border: none;
   cursor: pointer;
   padding: 0;
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Montserrat', sans-serif;
 }
 
 .rn-back-link:hover { color: #9CA3AF; }
@@ -477,7 +477,7 @@
   border: none;
   background: none;
   cursor: pointer;
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Montserrat', sans-serif;
   border-left: 3px solid transparent;
 }
 
@@ -666,7 +666,7 @@
   gap: 0.7rem;
   padding: 0.35rem 0.7rem 0.35rem 0.42rem;
   cursor: pointer;
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Montserrat', sans-serif;
   transition: background 0.18s, border-color 0.18s, box-shadow 0.18s;
 }
 
@@ -795,7 +795,7 @@
   gap: 0.65rem;
   padding: 0.7rem 0.75rem;
   cursor: pointer;
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Montserrat', sans-serif;
   font-size: 0.85rem;
   font-weight: 700;
   text-align: left;
@@ -1020,7 +1020,7 @@
   border-radius: 8px;
   font-size: 0.875rem;
   font-weight: 500;
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Montserrat', sans-serif;
   transition: background 0.18s, transform 0.15s;
   cursor: pointer;
 }
@@ -1176,7 +1176,7 @@
   border-radius: 8px;
   color: #111827;
   font-size: 0.82rem;
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Montserrat', sans-serif;
   padding: 0.55rem 0.85rem 0.55rem 2.25rem;
   width: 220px;
   transition: border-color 0.18s, box-shadow 0.18s;
@@ -1198,7 +1198,7 @@
   border-radius: 8px;
   font-size: 0.8rem;
   font-weight: 500;
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Montserrat', sans-serif;
   padding: 0.55rem 1rem;
   cursor: pointer;
   transition: background 0.18s, border-color 0.18s, color 0.18s;
@@ -1374,7 +1374,7 @@
   padding: 0.4rem 0.85rem;
   font-size: 0.78rem;
   font-weight: 500;
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Montserrat', sans-serif;
   cursor: pointer;
   transition: background 0.18s, border-color 0.18s;
   white-space: nowrap;
@@ -1429,7 +1429,7 @@
   padding: 0.6rem 1.1rem;
   font-size: 0.83rem;
   font-weight: 500;
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Montserrat', sans-serif;
   color: #6b7280;
   cursor: pointer;
   border-bottom: 2px solid transparent;
@@ -1502,7 +1502,7 @@
   border-radius: 8px;
   color: #111827;
   font-size: 0.875rem;
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Montserrat', sans-serif;
   padding: 0.55rem 0.85rem;
   outline: none;
   transition: border-color 0.18s, box-shadow 0.18s;
@@ -1964,7 +1964,7 @@
   font-weight: 500;
   color: #1d4ed8;
   cursor: pointer;
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Montserrat', sans-serif;
   padding: 0;
   text-decoration: underline;
   text-underline-offset: 2px;
@@ -1985,7 +1985,7 @@
   border-radius: 14px;
   font-size: 0.78rem;
   font-weight: 500;
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Montserrat', sans-serif;
   padding: 0.45rem 0.75rem;
   cursor: pointer;
   border: 1px solid transparent;
@@ -2089,7 +2089,7 @@
   border-radius: 14px;
   font-size: 0.8rem;
   font-weight: 600;
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Montserrat', sans-serif;
   cursor: pointer;
   transition: background 0.18s, color 0.18s, box-shadow 0.18s;
 }
@@ -2111,7 +2111,7 @@
   border-radius: 14px;
   font-size: 0.82rem;
   font-weight: 700;
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Montserrat', sans-serif;
   cursor: pointer;
   transition: box-shadow 0.18s, transform 0.15s;
   white-space: nowrap;
@@ -2387,7 +2387,7 @@
   padding: 0 0.7rem;
   font-size: 0.78rem;
   font-weight: 700;
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Montserrat', sans-serif;
   cursor: pointer;
   transition: background 0.18s, border-color 0.18s, color 0.18s;
 }
@@ -2492,7 +2492,7 @@
   color: #1a1a1a;
   font-size: 0.84rem;
   font-weight: 700;
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Montserrat', sans-serif;
   cursor: pointer;
   transition: background 0.18s, border-color 0.18s;
 }
@@ -2578,7 +2578,7 @@
   border-radius: 8px;
   font-size: 0.82rem;
   font-weight: 500;
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Montserrat', sans-serif;
   cursor: pointer;
   transition: background 0.18s, border-color 0.18s;
 }
@@ -2757,7 +2757,7 @@
   border-radius: 10px;
   color: #111827;
   font-size: 14px;
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Montserrat', sans-serif;
   padding: 12px 14px;
   outline: none;
   width: 100%;
@@ -2891,7 +2891,7 @@
   border-radius: 12px;
   background: #fff;
   cursor: pointer;
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Montserrat', sans-serif;
   transition: border-color 0.18s, background 0.18s, box-shadow 0.18s;
   text-align: center;
 }
@@ -3005,7 +3005,7 @@
   color: #9CA3AF;
   font-size: 14px;
   font-weight: 600;
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Montserrat', sans-serif;
   cursor: not-allowed;
 }
 
@@ -3033,7 +3033,7 @@
   border-radius: 10px;
   font-size: 14px;
   font-weight: 600;
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Montserrat', sans-serif;
   cursor: pointer;
   transition: background 0.18s, border-color 0.18s, color 0.18s, transform 0.15s;
 }
@@ -3145,7 +3145,7 @@
   border-radius: 8px;
   font-size: 0.82rem;
   font-weight: 500;
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Montserrat', sans-serif;
   cursor: pointer;
   transition: background 0.18s, transform 0.15s;
 }
@@ -3265,7 +3265,7 @@
   border-radius: 8px;
   color: #374151;
   font-size: 0.82rem;
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Montserrat', sans-serif;
   padding: 0.55rem 2rem 0.55rem 0.85rem;
   outline: none;
   cursor: pointer;
@@ -3289,7 +3289,7 @@
   border-radius: 8px;
   font-size: 0.8rem;
   font-weight: 500;
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Montserrat', sans-serif;
   padding: 0.55rem 1rem;
   cursor: pointer;
   transition: background 0.18s, border-color 0.18s, color 0.18s;
@@ -3574,7 +3574,7 @@
   cursor: pointer;
   transition: border-color 0.18s, background 0.18s, box-shadow 0.18s;
   text-align: left;
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Montserrat', sans-serif;
 }
 
 .fm-option-card:hover {
@@ -3622,7 +3622,7 @@
   background: #fff;
   font-size: 0.8rem;
   font-weight: 500;
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Montserrat', sans-serif;
   color: #374151;
   cursor: pointer;
   transition: border-color 0.18s, background 0.18s, color 0.18s;
@@ -3684,7 +3684,7 @@
   border-radius: 8px;
   color: #111827;
   font-size: 0.875rem;
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Montserrat', sans-serif;
   padding: 0.55rem 0.75rem;
   outline: none;
   transition: border-color 0.18s, box-shadow 0.18s;
@@ -3718,7 +3718,7 @@
   border: none;
   font-size: 0.8rem;
   font-weight: 500;
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Montserrat', sans-serif;
   color: #6b7280;
   cursor: pointer;
   padding: 0.5rem 0.25rem;
@@ -3733,7 +3733,7 @@
   border-radius: 8px;
   font-size: 0.8rem;
   font-weight: 500;
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Montserrat', sans-serif;
   color: #374151;
   padding: 0.55rem 1rem;
   cursor: pointer;
@@ -3751,7 +3751,7 @@
   border-radius: 8px;
   font-size: 0.8rem;
   font-weight: 600;
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Montserrat', sans-serif;
   color: #fff;
   padding: 0.55rem 1.1rem;
   cursor: pointer;
@@ -3836,7 +3836,7 @@
   border: none;
   font-size: 0.75rem;
   font-weight: 600;
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Montserrat', sans-serif;
   color: #3b82f6;
   cursor: pointer;
   padding: 0;
@@ -4057,7 +4057,7 @@
   gap: 0.28rem;
   padding: 0 0.8rem;
   cursor: pointer;
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Montserrat', sans-serif;
   font-size: 0.78rem;
   font-weight: 700;
   transition: background 0.18s, color 0.18s, box-shadow 0.18s;
@@ -4122,7 +4122,7 @@
   color: #374151;
   font-size: 0.84rem;
   font-weight: 600;
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Montserrat', sans-serif;
   cursor: pointer;
 }
 
@@ -4228,7 +4228,7 @@
   color: #6b7280;
   font-size: 0.8rem;
   font-weight: 600;
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Montserrat', sans-serif;
   cursor: pointer;
   transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
 }
@@ -4445,7 +4445,7 @@
   color: #fff;
   font-size: 0.84rem;
   font-weight: 700;
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Montserrat', sans-serif;
   cursor: pointer;
   box-shadow: 0 10px 24px rgba(255, 106, 61, 0.22);
   transition: background 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
@@ -4586,7 +4586,7 @@
   border-radius: 14px;
   background: #f5f6f8;
   color: #111827;
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Montserrat', sans-serif;
   font-size: 0.85rem;
   outline: none;
   padding: 0 1rem 0 2.65rem;
@@ -4616,7 +4616,7 @@
   background: transparent;
   color: #6b7280;
   cursor: pointer;
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Montserrat', sans-serif;
   font-size: 0.8rem;
   font-weight: 600;
   padding: 0 0.95rem;
@@ -4823,7 +4823,7 @@
   background: #fff;
   color: #374151;
   cursor: pointer;
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Montserrat', sans-serif;
   transition: background 0.18s, border-color 0.18s, color 0.18s, box-shadow 0.18s;
 }
 
@@ -5024,7 +5024,7 @@
   border-radius: 14px;
   background: #fff;
   color: #111827;
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Montserrat', sans-serif;
   font-size: 0.88rem;
   outline: none;
   padding: 0.78rem 0.9rem;
@@ -5069,7 +5069,7 @@
   height: 40px;
   border-radius: 14px;
   cursor: pointer;
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Montserrat', sans-serif;
   font-size: 0.82rem;
   font-weight: 700;
   padding: 0 1rem;
@@ -5240,7 +5240,7 @@
   padding: 0.65rem 1.1rem;
   font-size: 0.85rem;
   font-weight: 600;
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Montserrat', sans-serif;
   color: #9ca3af;
   cursor: pointer;
   transition: color 0.18s, border-color 0.18s;
@@ -5305,7 +5305,7 @@
   border-radius: 12px;
   color: #111827;
   font-size: 0.875rem;
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Montserrat', sans-serif;
   padding: 0.65rem 1rem;
   outline: none;
   transition: border-color 0.18s, box-shadow 0.18s, background 0.18s;
@@ -5369,7 +5369,7 @@
   border-radius: 14px;
   font-size: 0.8rem;
   font-weight: 700;
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Montserrat', sans-serif;
   cursor: pointer;
   transition: background 0.18s, box-shadow 0.18s;
   box-shadow: 0 6px 16px rgba(255, 106, 61, 0.22);
@@ -5529,7 +5529,7 @@
   color: #374151;
   font-size: 0.85rem;
   font-weight: 600;
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Montserrat', sans-serif;
   cursor: pointer;
   transition: background 0.18s, border-color 0.18s;
 }
@@ -5552,7 +5552,7 @@
   color: #fff;
   font-size: 0.85rem;
   font-weight: 700;
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Montserrat', sans-serif;
   cursor: pointer;
   box-shadow: 0 8px 20px rgba(255, 106, 61, 0.28);
   transition: box-shadow 0.18s, transform 0.15s;
@@ -5658,7 +5658,7 @@
   border-radius: 12px;
   color: #111827;
   font-size: 0.875rem;
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Montserrat', sans-serif;
   padding: 0.7rem 1rem;
   outline: none;
   transition: border-color 0.18s, box-shadow 0.18s, background 0.18s;
@@ -5816,7 +5816,7 @@
   border: 0;
   background: transparent;
   color: #8b95a1;
-  font: 600 14px 'Poppins', sans-serif;
+  font: 600 14px 'Montserrat', sans-serif;
   cursor: pointer;
   padding: 0 0 2px;
 }
@@ -5952,7 +5952,7 @@
   color: #4b5563;
   border-radius: 999px;
   padding: 8px 14px;
-  font: 600 13px 'Poppins', sans-serif;
+  font: 600 13px 'Montserrat', sans-serif;
   cursor: pointer;
 }
 
@@ -6491,7 +6491,7 @@
   border-radius: 8px;
   padding: 0.45rem 0.75rem;
   cursor: pointer;
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Montserrat', sans-serif;
   font-size: 0.78rem;
   transition: background 0.15s, border-color 0.15s;
 }
@@ -6586,7 +6586,7 @@
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   cursor: pointer;
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Montserrat', sans-serif;
   font-size: 0.82rem;
   transition: background 0.15s;
 }
@@ -6604,4 +6604,49 @@
 
 @media (max-width: 640px) {
   .ms-favorable-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LIVE POSITION RISK & PROFIT PROTECTION ENGINE STYLING
+   (100% Stable — Zero Movement / No Physical Shake)
+═══════════════════════════════════════════════════════════ */
+
+.risk-card-normal {
+  border: 1px solid rgba(34, 197, 94, 0.3) !important;
+  background: linear-gradient(145deg, #0b1523 0%, #0d2137 100%) !important;
+  transform: none !important;
+}
+
+.risk-card-caution {
+  border: 1px solid rgba(234, 179, 8, 0.4) !important;
+  background: linear-gradient(145deg, #151b14 0%, #1f2516 100%) !important;
+  transform: none !important;
+}
+
+.risk-card-high-risk {
+  border: 1.5px solid rgba(249, 115, 22, 0.6) !important;
+  background: linear-gradient(145deg, #24140b 0%, #1a151b 100%) !important;
+  box-shadow: 0 0 15px rgba(249, 115, 22, 0.25) !important;
+  transform: none !important;
+}
+
+/* Exit Warning (>=66): High-visibility red border with subtle glowing shadow — 100% Rock Solid */
+.risk-card-exit-warning {
+  border: 2px solid #ef4444 !important;
+  background: linear-gradient(145deg, #290d0d 0%, #180d16 100%) !important;
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.35) !important;
+  transform: none !important;
+}
+
+/* Critical Exit (>=81): Vivid dark red border with high-contrast alert glow */
+.risk-card-critical-exit {
+  border: 2.5px solid #dc2626 !important;
+  background: linear-gradient(145deg, #380808 0%, #1f050b 100%) !important;
+  box-shadow: 0 0 25px rgba(220, 38, 38, 0.5) !important;
+  transform: none !important;
+}
+
+.risk-pulse-badge {
+  font-weight: 700;
+  letter-spacing: 0.3px;
 }
