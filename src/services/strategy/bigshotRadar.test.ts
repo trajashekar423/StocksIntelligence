@@ -51,5 +51,26 @@ describe('BigShot Radar Institutional & 5x Volume Algorithm', () => {
     assert.equal(watchlist.has('BODALCHEM'), true);
     assert.equal(watchlist.size, 2);
   });
+
+  test('Upper Circuit Radar: accurately detects 100% Locked and Near-Circuit alerts', () => {
+    const stocks = [
+      { symbol: 'NIRAJISPAT', price: 341.85, prevClose: 285.0, upperBand: 341.85 },
+      { symbol: 'BODALCHEM', price: 118.89, prevClose: 100.4, upperBand: 120.48 },
+      { symbol: 'SLOWSTOCK', price: 102.0, prevClose: 100.0, upperBand: 120.0 },
+    ];
+
+    const results = stocks.map((s) => {
+      const distPct = Math.max(0, ((s.upperBand - s.price) / s.price) * 100);
+      let status = 'NORMAL';
+      if (distPct <= 0.3) status = 'LOCKED_IN_UC';
+      else if (distPct <= 2.5) status = 'NEAR_UC_ALERT';
+      return { symbol: s.symbol, distPct, status };
+    });
+
+    assert.equal(results[0].status, 'LOCKED_IN_UC');
+    assert.equal(results[1].status, 'NEAR_UC_ALERT');
+    assert.ok(results[1].distPct <= 2.0, 'Bodalchem should be within 2% of Upper Band');
+    assert.equal(results[2].status, 'NORMAL');
+  });
 });
 

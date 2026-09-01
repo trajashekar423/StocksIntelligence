@@ -1,6 +1,6 @@
 {
   "config": {
-    "mode": "PAPER",
+    "mode": "LIVE",
     "enabled": true,
     "capital": 50000,
     "riskPerTradePct": 1,
@@ -22,6 +22,54 @@
   },
   "positions": [],
   "closedPositions": [
+    {
+      "id": "PAPER-1788276442127-INFY",
+      "symbol": "INFY",
+      "exchange": "NSE",
+      "side": "LONG",
+      "mode": "PAPER",
+      "entryPrice": 2000,
+      "currentPrice": 2030,
+      "quantity": 10,
+      "stopLoss": 1970,
+      "target1": 2060,
+      "target2": 2090,
+      "trailingStop": 2019.6,
+      "trailingHighWater": 2040,
+      "unrealizedPnL": 0,
+      "unrealizedPnLPercent": 0,
+      "status": "CLOSED",
+      "entryTime": "2026-09-01T15:27:22.127Z",
+      "orderReferenceId": "SIM-ORD-1788276442128",
+      "exitPrice": 2065,
+      "exitTime": "2026-09-01T15:27:22.141Z",
+      "exitReason": "Target Hit",
+      "realizedPnL": 650
+    },
+    {
+      "id": "PAPER-1788245180557-INFY",
+      "symbol": "INFY",
+      "exchange": "NSE",
+      "side": "LONG",
+      "mode": "PAPER",
+      "entryPrice": 2000,
+      "currentPrice": 2030,
+      "quantity": 10,
+      "stopLoss": 1970,
+      "target1": 2060,
+      "target2": 2090,
+      "trailingStop": 2019.6,
+      "trailingHighWater": 2040,
+      "unrealizedPnL": 0,
+      "unrealizedPnLPercent": 0,
+      "status": "CLOSED",
+      "entryTime": "2026-09-01T06:46:20.557Z",
+      "orderReferenceId": "SIM-ORD-1788245180557",
+      "exitPrice": 2065,
+      "exitTime": "2026-09-01T06:46:20.561Z",
+      "exitReason": "Target Hit",
+      "realizedPnL": 650
+    },
     {
       "id": "PAPER-1788244563644-INFY",
       "symbol": "INFY",
@@ -265,19 +313,85 @@
   ],
   "stats": {
     "date": "2026-09-01",
-    "tradesToday": 3,
-    "winningTrades": 3,
+    "tradesToday": 5,
+    "winningTrades": 5,
     "losingTrades": 0,
     "winRate": 100,
-    "realizedPnL": 1950,
+    "realizedPnL": 3250,
     "unrealizedPnL": 0,
     "maxDailyLoss": 2000,
-    "remainingRiskLimit": 3950,
+    "remainingRiskLimit": 5250,
     "dailyTarget": 2000,
-    "targetReached": false,
+    "targetReached": true,
     "maxLossHit": false
   },
   "logs": [
+    {
+      "id": "log-1788276442142-344",
+      "timestamp": "2026-09-01T15:27:22.142Z",
+      "timeString": "20:57:22",
+      "level": "SUCCESS",
+      "category": "POSITION",
+      "symbol": "INFY",
+      "message": "CLOSED INFY @ ₹2065 | Realized P&L: ₹650.00 (Target Hit)",
+      "details": {
+        "realizedPnL": 650,
+        "exitPrice": 2065,
+        "reason": "Target Hit"
+      }
+    },
+    {
+      "id": "log-1788276442135-925",
+      "timestamp": "2026-09-01T15:27:22.135Z",
+      "timeString": "20:57:22",
+      "level": "SUCCESS",
+      "category": "ORDER",
+      "symbol": "INFY",
+      "message": "PAPER BUY 10 shares of INFY @ ₹2000 (SL: ₹1970, Target: ₹2060)",
+      "details": {
+        "quantity": 10,
+        "entryPrice": 2000,
+        "stopLoss": 1970,
+        "target": 2060
+      }
+    },
+    {
+      "id": "log-1788272227728-471",
+      "timestamp": "2026-09-01T14:17:07.728Z",
+      "timeString": "19:47:07",
+      "level": "ALERT",
+      "category": "SYSTEM",
+      "message": "Trading mode switched to LIVE TRADING."
+    },
+    {
+      "id": "log-1788245180562-473",
+      "timestamp": "2026-09-01T06:46:20.562Z",
+      "timeString": "12:16:20",
+      "level": "SUCCESS",
+      "category": "POSITION",
+      "symbol": "INFY",
+      "message": "CLOSED INFY @ ₹2065 | Realized P&L: ₹650.00 (Target Hit)",
+      "details": {
+        "realizedPnL": 650,
+        "exitPrice": 2065,
+        "reason": "Target Hit"
+      }
+    },
+    {
+      "id": "log-1788245180559-806",
+      "timestamp": "2026-09-01T06:46:20.559Z",
+      "timeString": "12:16:20",
+      "level": "SUCCESS",
+      "category": "ORDER",
+      "symbol": "INFY",
+      "message": "PAPER BUY 10 shares of INFY @ ₹2000 (SL: ₹1970, Target: ₹2060)",
+      "details": {
+        "quantity": 10,
+        "entryPrice": 2000,
+        "stopLoss": 1970,
+        "target": 2060
+      }
+    },
     {
       "id": "log-1788244563648-947",
       "timestamp": "2026-09-01T06:36:03.648Z",

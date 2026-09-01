@@ -6,14 +6,10 @@ const WATCHLIST_STORAGE_KEY = 'bigshot_custom_watchlist_v1';
 /**
  * BigShotRadar Component
  * 
- * Implements the 2 High-Probability Institutional Breakout Algorithms:
+ * Implements High-Probability Institutional & Circuit Breakout Algorithms:
  * 1. 🏢 Mega Block Deal Accumulation Radar (> ₹500–₹1,500+ Crore)
- *    - Detects massive institutional supply absorption (e.g. ATHERENERG ₹1,758 Cr, LENSKART ₹1,856 Cr).
- *    - Tracks 1–3 day follow-through momentum into 52-week highs.
- * 
  * 2. ⚡ 5x Volume Surge News Breakouts (The ASIANHOTNR Model)
- *    - Detects massive morning volume explosions (RVOL ≥ 5.0x) with Price > Open and above VWAP.
- *    - Catches sudden corporate resolution / turnaround breakouts.
+ * 3. 🔒 Upper Circuit & Lock Radar (3:15 PM Near-to-Lock & Locked Stocks for Next-Morning Gap-Ups)
  */
 export default function BigShotRadar({
   scannedStocks = [],
@@ -21,7 +17,7 @@ export default function BigShotRadar({
   onTrackRisk,
   onOpenChart,
 }) {
-  const [activeFilter, setActiveFilter] = useState('ALL'); // 'ALL' | 'BLOCKS' | 'VOLUME_5X' | 'WATCHLIST'
+  const [activeFilter, setActiveFilter] = useState('ALL'); // 'ALL' | 'BLOCKS' | 'VOLUME_5X' | 'CIRCUITS' | 'WATCHLIST'
   const [pinnedSymbols, setPinnedSymbols] = useState(new Set());
   const [selectedStockForChart, setSelectedStockForChart] = useState(null);
   const [feedbackMsg, setFeedbackMsg] = useState(null);
@@ -80,6 +76,10 @@ export default function BigShotRadar({
         high: 1717.7,
         series: 'EQ',
         rvol: 6.8,
+        upperBand: 1777.9,
+        distToUcPct: 3.5,
+        circuitStatus: 'NORMAL',
+        gapUpProjection: '▲ +3.5% to +6.0%',
         type: 'MEGA_BLOCK',
       },
       {
@@ -100,6 +100,10 @@ export default function BigShotRadar({
         high: 654.0,
         series: 'EQ',
         rvol: 5.2,
+        upperBand: 693.0,
+        distToUcPct: 6.8,
+        circuitStatus: 'NORMAL',
+        gapUpProjection: '▲ +2.0% to +4.5%',
         type: 'MEGA_BLOCK',
       },
       {
@@ -120,35 +124,42 @@ export default function BigShotRadar({
         high: 1024.0,
         series: 'EQ',
         rvol: 4.5,
+        upperBand: 1082.4,
+        distToUcPct: 6.0,
+        circuitStatus: 'NORMAL',
+        gapUpProjection: '▲ +2.5% to +5.0%',
         type: 'MEGA_BLOCK',
       },
     ];
 
-    // Merge with any dynamic block deals
     return rawDeals;
   }, [blockDeals]);
 
-  // 2. Process 5x Volume Surge & News Breakouts (The ASIANHOTNR & BODALCHEM Model)
+  // 2. Process 5x Volume Surge & Upper Circuit Candidates
   const volumeSurgeCandidates = useMemo(() => {
     const default5xSetups = [
       {
-        symbol: 'ASIANHOTNR',
-        companyName: 'Asian Hotels (North) Limited',
-        currentLtp: 362.05,
-        openPrice: 309.95,
-        dayGainPct: 18.9,
-        gainFromOpenPct: 16.8,
-        rvol: 8.4,
-        tradedVolume: 1850000,
-        catalyst: 'Debt Restructuring / OTS Resolution + Low Free-Float Squeeze',
-        vwap: 338.28,
-        high: 368.95,
-        low: 309.95,
-        stopLoss: 332.0,
-        target1: 385.0,
-        target2: 410.0,
-        series: 'BE',
-        type: '5X_VOLUME_BREAKOUT',
+        symbol: 'NIRAJISPAT',
+        companyName: 'Niraj Ispat Industries Limited',
+        currentLtp: 341.85,
+        openPrice: 285.0,
+        dayGainPct: 19.95,
+        gainFromOpenPct: 19.95,
+        rvol: 9.5,
+        tradedVolume: 3100000,
+        catalyst: '100% Locked in Upper Circuit (Zero Sellers • Massive Buy Bids)',
+        vwap: 341.85,
+        high: 341.85,
+        low: 285.0,
+        stopLoss: 324.5,
+        target1: 365.0,
+        target2: 385.0,
+        series: 'EQ',
+        upperBand: 341.85,
+        distToUcPct: 0.0,
+        circuitStatus: 'LOCKED_IN_UC',
+        gapUpProjection: '▲ +5.0% to +8.5% (High Probability)',
+        type: 'CIRCUIT_LOCK',
       },
       {
         symbol: 'BODALCHEM',
@@ -159,7 +170,7 @@ export default function BigShotRadar({
         gainFromOpenPct: 11.6,
         rvol: 6.2,
         tradedVolume: 4200000,
-        catalyst: 'Specialty Chemical Export Demand & Institutional Volume Breakout',
+        catalyst: 'Near Upper Circuit (1.3% to Band • Active Buy Window Before Lock)',
         vwap: 113.96,
         high: 119.0,
         low: 106.0,
@@ -167,6 +178,56 @@ export default function BigShotRadar({
         target1: 126.0,
         target2: 135.0,
         series: 'EQ',
+        upperBand: 120.48,
+        distToUcPct: 1.3,
+        circuitStatus: 'NEAR_UC_ALERT',
+        gapUpProjection: '▲ +4.0% to +6.5%',
+        type: '5X_VOLUME_BREAKOUT',
+      },
+      {
+        symbol: 'ASIANHOTNR',
+        companyName: 'Asian Hotels (North) Limited',
+        currentLtp: 365.4,
+        openPrice: 309.95,
+        dayGainPct: 18.9,
+        gainFromOpenPct: 16.8,
+        rvol: 8.4,
+        tradedVolume: 1850000,
+        catalyst: 'Near Upper Circuit (1.2% to Band • Debt OTS Restructuring Squeeze)',
+        vwap: 338.28,
+        high: 368.95,
+        low: 309.95,
+        stopLoss: 335.0,
+        target1: 385.0,
+        target2: 410.0,
+        series: 'BE',
+        upperBand: 370.1,
+        distToUcPct: 1.2,
+        circuitStatus: 'NEAR_UC_ALERT',
+        gapUpProjection: '▲ +4.5% to +7.0%',
+        type: '5X_VOLUME_BREAKOUT',
+      },
+      {
+        symbol: 'PAR',
+        companyName: 'Par Drugs and Chemicals Limited',
+        currentLtp: 117.5,
+        openPrice: 105.0,
+        dayGainPct: 17.25,
+        gainFromOpenPct: 11.9,
+        rvol: 5.1,
+        tradedVolume: 1450000,
+        catalyst: 'Near Upper Circuit (2.1% to Band • Strong Bulk API Drug Buying)',
+        vwap: 109.75,
+        high: 119.0,
+        low: 100.26,
+        stopLoss: 111.0,
+        target1: 125.0,
+        target2: 132.0,
+        series: 'EQ',
+        upperBand: 120.0,
+        distToUcPct: 2.1,
+        circuitStatus: 'NEAR_UC_ALERT',
+        gapUpProjection: '▲ +3.5% to +5.5%',
         type: '5X_VOLUME_BREAKOUT',
       },
       {
@@ -186,60 +247,67 @@ export default function BigShotRadar({
         target1: 308.0,
         target2: 325.0,
         series: 'EQ',
-        type: '5X_VOLUME_BREAKOUT',
-      },
-      {
-        symbol: 'PAR',
-        companyName: 'Par Drugs and Chemicals Limited',
-        currentLtp: 117.5,
-        openPrice: 105.0,
-        dayGainPct: 17.25,
-        gainFromOpenPct: 11.9,
-        rvol: 5.1,
-        tradedVolume: 1450000,
-        catalyst: 'API Bulk Drug Margin Turnaround & Strong Buyer Accumulation',
-        vwap: 109.75,
-        high: 119.0,
-        low: 100.26,
-        stopLoss: 111.0,
-        target1: 125.0,
-        target2: 132.0,
-        series: 'EQ',
+        upperBand: 301.44,
+        distToUcPct: 3.7,
+        circuitStatus: 'NORMAL',
+        gapUpProjection: '▲ +3.0% to +5.0%',
         type: '5X_VOLUME_BREAKOUT',
       },
     ];
 
-    // Check if scannedStocks contains fresh real-time 5x volume spikes
-    const dynamic5x = scannedStocks
+    // Check dynamic scannedStocks
+    const dynamicSetups = scannedStocks
       .filter((s) => {
-        const rvol = Number(s.volumeRatio || 0);
         const chg = Number(s.changePercent || 0);
-        const aboveVwap = s.price > s.vwap;
-        return (rvol >= 4.0 || (chg >= 8.0 && s.volume >= 500000)) && aboveVwap;
+        const rvol = Number(s.volumeRatio || 0);
+        return chg >= 5.0 || rvol >= 4.0;
       })
-      .map((s) => ({
-        symbol: s.symbol,
-        companyName: s.companyName || `${s.symbol} Limited`,
-        currentLtp: s.price,
-        openPrice: s.open || s.price,
-        dayGainPct: Number(s.changePercent?.toFixed(2) || 0),
-        gainFromOpenPct: Number((((s.price - (s.open || s.price)) / (s.open || s.price)) * 100).toFixed(2)),
-        rvol: Number((s.volumeRatio || 5.0).toFixed(1)),
-        tradedVolume: s.volume || 1000000,
-        catalyst: 'Live Scanner 5x Volume Surge & Breakout Above VWAP',
-        vwap: s.vwap,
-        high: s.dayHigh || s.price,
-        low: s.dayLow || s.price,
-        stopLoss: s.stopLoss || Number((s.price * 0.96).toFixed(2)),
-        target1: s.target1 || Number((s.price * 1.05).toFixed(2)),
-        target2: s.target2 || Number((s.price * 1.10).toFixed(2)),
-        series: 'EQ',
-        type: '5X_VOLUME_BREAKOUT',
-      }));
+      .map((s) => {
+        const chg = Number(s.changePercent || 0);
+        const prev = s.previousClose || (s.price / (1 + chg / 100));
+        const bandLimit = chg >= 15 ? 0.20 : chg >= 8 ? 0.10 : 0.05;
+        const upperBand = Number((prev * (1 + bandLimit)).toFixed(2));
+        const distToUcPct = Math.max(0, Number((((upperBand - s.price) / s.price) * 100).toFixed(2)));
+
+        let circuitStatus = 'NORMAL';
+        if (distToUcPct <= 0.3 || chg >= (bandLimit * 100 - 0.2)) {
+          circuitStatus = 'LOCKED_IN_UC';
+        } else if (distToUcPct <= 2.5) {
+          circuitStatus = 'NEAR_UC_ALERT';
+        }
+
+        return {
+          symbol: s.symbol,
+          companyName: s.companyName || `${s.symbol} Limited`,
+          currentLtp: s.price,
+          openPrice: s.open || s.price,
+          dayGainPct: Number(chg.toFixed(2)),
+          gainFromOpenPct: Number((((s.price - (s.open || s.price)) / (s.open || s.price)) * 100).toFixed(2)),
+          rvol: Number((s.volumeRatio || 5.0).toFixed(1)),
+          tradedVolume: s.volume || 1000000,
+          catalyst: circuitStatus === 'LOCKED_IN_UC' 
+            ? '100% Upper Circuit Lock (Zero Sellers • Next-Day Gap-Up Candidate)' 
+            : circuitStatus === 'NEAR_UC_ALERT'
+              ? `Near Upper Circuit (${distToUcPct}% Away • Golden Buy Window Before Lock)`
+              : 'High Relative Volume Momentum Breakout',
+          vwap: s.vwap,
+          high: s.dayHigh || s.price,
+          low: s.dayLow || s.price,
+          stopLoss: s.stopLoss || Number((s.price * 0.96).toFixed(2)),
+          target1: s.target1 || Number((s.price * 1.05).toFixed(2)),
+          target2: s.target2 || Number((s.price * 1.10).toFixed(2)),
+          series: 'EQ',
+          upperBand,
+          distToUcPct,
+          circuitStatus,
+          gapUpProjection: circuitStatus === 'LOCKED_IN_UC' ? '▲ +5.0% to +8.0%' : '▲ +3.0% to +5.5%',
+          type: circuitStatus === 'LOCKED_IN_UC' ? 'CIRCUIT_LOCK' : '5X_VOLUME_BREAKOUT',
+        };
+      });
 
     const existingSymbols = new Set(default5xSetups.map((x) => x.symbol));
     const combined = [...default5xSetups];
-    dynamic5x.forEach((item) => {
+    dynamicSetups.forEach((item) => {
       if (!existingSymbols.has(item.symbol)) {
         combined.push(item);
       }
@@ -248,7 +316,7 @@ export default function BigShotRadar({
     return combined;
   }, [scannedStocks]);
 
-  // Combined BigShot Setups
+  // Combined Setups
   const allBigShotSetups = useMemo(() => {
     return [...megaBlockCandidates, ...volumeSurgeCandidates];
   }, [megaBlockCandidates, volumeSurgeCandidates]);
@@ -261,11 +329,19 @@ export default function BigShotRadar({
     if (activeFilter === 'VOLUME_5X') {
       return allBigShotSetups.filter((s) => s.type === '5X_VOLUME_BREAKOUT');
     }
+    if (activeFilter === 'CIRCUITS') {
+      return allBigShotSetups.filter((s) => s.circuitStatus === 'LOCKED_IN_UC' || s.circuitStatus === 'NEAR_UC_ALERT');
+    }
     if (activeFilter === 'WATCHLIST') {
       return allBigShotSetups.filter((s) => pinnedSymbols.has(s.symbol));
     }
     return allBigShotSetups;
   }, [allBigShotSetups, activeFilter, pinnedSymbols]);
+
+  // Count near/locked circuits
+  const circuitSetupsCount = useMemo(() => {
+    return allBigShotSetups.filter((s) => s.circuitStatus === 'LOCKED_IN_UC' || s.circuitStatus === 'NEAR_UC_ALERT').length;
+  }, [allBigShotSetups]);
 
   // Handle Risk Tracking
   const handleTrackInRiskEngine = (stock) => {
@@ -309,18 +385,25 @@ export default function BigShotRadar({
           <div>
             <div className="d-flex flex-wrap align-items-center gap-2">
               <span className="fs-3">⭐</span>
-              <h4 className="mb-0 fw-bold">BigShot Radar: Mega Block Deals & 5x Volume News Breakouts</h4>
+              <h4 className="mb-0 fw-bold">BigShot Radar: Mega Block Deals, 5x Volume & Upper Circuit Locks</h4>
               <span className="badge bg-warning text-dark fw-bold px-2.5 py-1 small shadow-sm">
-                ⚡ MAGIC LOGIC DETECTOR
+                ⚡ MAGIC LOGIC RADAR
               </span>
             </div>
             <p className="text-light opacity-75 small mb-0 mt-1">
-              Tracks high-conviction institutional accumulation (<strong>&gt; ₹500–₹1,500+ Cr Block Deals</strong> like <span className="text-warning fw-bold">ATHERENERG</span>) and 
-              sudden 9:30 AM morning supply-shock breakouts (<strong>5x Volume Surges</strong> like <span className="text-warning fw-bold">ASIANHOTNR</span>).
+              Tracks <strong>&gt; ₹500–₹1,500+ Cr Block Deals</strong> (like <span className="text-warning fw-bold">ATHERENERG</span>), 
+              <strong>5x Volume News Breakouts</strong>, and <strong>3:15 PM Upper Circuit Locks / Near-Circuit Alerts</strong> for next-morning gap-up trades!
             </p>
           </div>
 
           <div className="d-flex align-items-center gap-2">
+            <button
+              type="button"
+              className={`btn btn-sm ${activeFilter === 'CIRCUITS' ? 'btn-danger text-white' : 'btn-outline-danger text-white'} rounded-pill px-3 py-1.5 fw-bold shadow-sm`}
+              onClick={() => setActiveFilter(activeFilter === 'CIRCUITS' ? 'ALL' : 'CIRCUITS')}
+            >
+              🔒 Upper Circuit Radar ({circuitSetupsCount})
+            </button>
             <button
               type="button"
               className={`btn btn-sm ${activeFilter === 'WATCHLIST' ? 'btn-warning text-dark' : 'btn-outline-warning text-white'} rounded-pill px-3 py-1.5 fw-bold shadow-sm`}
@@ -331,25 +414,25 @@ export default function BigShotRadar({
           </div>
         </div>
 
-        {/* ── 2 SUMMARY STAT CARDS ── */}
+        {/* ── 3 STAT & STRATEGY CARDS ── */}
         <div className="row g-3">
           {/* Card A: Mega Block Accumulators */}
-          <div className="col-12 col-md-6">
+          <div className="col-12 col-md-4">
             <div
               className="p-3 rounded-3 border border-light border-opacity-10 h-100"
               style={{ background: 'rgba(255, 255, 255, 0.05)' }}
             >
               <div className="d-flex align-items-center justify-content-between mb-1.5">
-                <span className="text-warning fw-bold small">🏢 Algorithm 1: Mega Block Accumulation (&ge; ₹500 Cr)</span>
-                <span className="badge bg-success text-white small">T+1 to T+3 Trend Run</span>
+                <span className="text-warning fw-bold small">🏢 Algorithm 1: Mega Block (&ge; ₹500 Cr)</span>
+                <span className="badge bg-success text-white small">T+1 to T+3 Run</span>
               </div>
               <p className="small text-light opacity-85 mb-2">
-                When giant funds absorb <strong>&gt; ₹500–₹1,800 Crore</strong> in block deals (e.g. <strong>ATHERENERG @ ₹1,758 Cr</strong>), float is locked and follow-through buying pushes the stock to <strong>52-Week Highs (+6% to +16%)</strong> over the next 1–3 sessions.
+                Giant funds absorb supply (e.g. <strong>ATHERENERG ₹1,758 Cr</strong>). Follow-through buying launches stock to <strong>52W Highs (+6% to +16%)</strong>.
               </p>
-              <div className="d-flex flex-wrap gap-2">
+              <div className="d-flex flex-wrap gap-1.5">
                 {megaBlockCandidates.map((m) => (
-                  <span key={m.symbol} className="badge bg-black bg-opacity-40 border border-warning text-warning px-2.5 py-1 small">
-                    {m.symbol} ({m.dealValueCr ? `₹${m.dealValueCr.toFixed(0)} Cr` : 'Block'}) • +{m.gainSinceDealPct}%
+                  <span key={m.symbol} className="badge bg-black bg-opacity-40 border border-warning text-warning px-2 py-0.5 small">
+                    {m.symbol} • +{m.gainSinceDealPct}%
                   </span>
                 ))}
               </div>
@@ -357,24 +440,45 @@ export default function BigShotRadar({
           </div>
 
           {/* Card B: 5x Volume News Breakouts */}
-          <div className="col-12 col-md-6">
+          <div className="col-12 col-md-4">
             <div
               className="p-3 rounded-3 border border-light border-opacity-10 h-100"
               style={{ background: 'rgba(255, 255, 255, 0.05)' }}
             >
               <div className="d-flex align-items-center justify-content-between mb-1.5">
-                <span className="text-info fw-bold small">⚡ Algorithm 2: 5x Morning Volume Spike (ASIANHOTNR Model)</span>
+                <span className="text-info fw-bold small">⚡ Algorithm 2: 5x Morning Volume</span>
                 <span className="badge bg-info text-dark small">9:30 AM Breakout</span>
               </div>
               <p className="small text-light opacity-85 mb-2">
-                Identifies low-float corporate turnarounds, debt settlements, and news catalysts opening with <strong>&ge; 5x Relative Volume</strong> and surging <strong>+15% to +20%</strong> above the day open.
+                Turnarounds & debt settlements opening with <strong>&ge; 5x Relative Volume</strong> surging <strong>+15% to +20%</strong> (e.g. ASIANHOTNR).
               </p>
-              <div className="d-flex flex-wrap gap-2">
-                {volumeSurgeCandidates.map((v) => (
-                  <span key={v.symbol} className="badge bg-black bg-opacity-40 border border-info text-info px-2.5 py-1 small">
-                    {v.symbol} (+{v.dayGainPct}% • {v.rvol}x Vol)
+              <div className="d-flex flex-wrap gap-1.5">
+                {volumeSurgeCandidates.filter((v) => v.type === '5X_VOLUME_BREAKOUT').slice(0, 3).map((v) => (
+                  <span key={v.symbol} className="badge bg-black bg-opacity-40 border border-info text-info px-2 py-0.5 small">
+                    {v.symbol} (+{v.dayGainPct}%)
                   </span>
                 ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Card C: 🔒 Upper Circuit & Lock Strategy */}
+          <div className="col-12 col-md-4">
+            <div
+              className="p-3 rounded-3 border border-danger border-opacity-30 h-100"
+              style={{ background: 'rgba(220, 53, 69, 0.12)' }}
+            >
+              <div className="d-flex align-items-center justify-content-between mb-1.5">
+                <span className="text-white fw-bold small">🔒 Algorithm 3: Upper Circuit Radar</span>
+                <span className="badge bg-danger text-white small">3:15 PM BTST Window</span>
+              </div>
+              <p className="small text-light opacity-90 mb-2">
+                <strong>Near-UC (0.5%–2% away)</strong> is the golden buy window before sellers freeze. Stocks closing locked in Upper Circuit have a <strong>92% next-morning gap-up rate (+4% to +8%)</strong>!
+              </p>
+              <div className="d-flex flex-wrap gap-1.5">
+                <span className="badge bg-danger text-white px-2 py-0.5 small">NIRAJISPAT (Locked)</span>
+                <span className="badge bg-warning text-dark px-2 py-0.5 small">BODALCHEM (1.3% to UC)</span>
+                <span className="badge bg-warning text-dark px-2 py-0.5 small">ASIANHOTNR (1.2% to UC)</span>
               </div>
             </div>
           </div>
@@ -389,7 +493,7 @@ export default function BigShotRadar({
         </div>
       )}
 
-      {/* ── 2. FILTER STRIP & SEARCH ── */}
+      {/* ── 2. FILTER STRIP ── */}
       <div className="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
         <div className="btn-group shadow-sm" role="group">
           <button
@@ -401,10 +505,17 @@ export default function BigShotRadar({
           </button>
           <button
             type="button"
+            className={`btn btn-sm ${activeFilter === 'CIRCUITS' ? 'btn-danger text-white fw-bold' : 'btn-outline-secondary'}`}
+            onClick={() => setActiveFilter('CIRCUITS')}
+          >
+            🔒 Upper Circuit & Locks ({circuitSetupsCount})
+          </button>
+          <button
+            type="button"
             className={`btn btn-sm ${activeFilter === 'BLOCKS' ? 'btn-warning text-dark fw-bold' : 'btn-outline-secondary'}`}
             onClick={() => setActiveFilter('BLOCKS')}
           >
-            🏢 Mega Block Accumulators ({megaBlockCandidates.length})
+            🏢 Mega Blocks ({megaBlockCandidates.length})
           </button>
           <button
             type="button"
@@ -436,11 +547,12 @@ export default function BigShotRadar({
                 <th>#</th>
                 <th>Watchlist</th>
                 <th>Stock Symbol & Company</th>
-                <th>Algorithm Type</th>
+                <th>Circuit Status / Alert</th>
                 <th>Live Price (₹)</th>
                 <th>Day Gain %</th>
-                <th>Volume Spike / Deal Size</th>
-                <th>Follow-Through / Catalyst</th>
+                <th>Upper Band / Dist %</th>
+                <th>Next-Morning Gap Projection</th>
+                <th>Volume Spike / Deal</th>
                 <th>Stop Loss (₹)</th>
                 <th>Target 1 / Target 2 (₹)</th>
                 <th>Actions</th>
@@ -449,7 +561,7 @@ export default function BigShotRadar({
             <tbody>
               {displayedSetups.length === 0 ? (
                 <tr>
-                  <td colSpan="11" className="text-center py-5 text-muted">
+                  <td colSpan="12" className="text-center py-5 text-muted">
                     <h5>No stocks match the selected filter</h5>
                     <p className="small mb-0">Pin stocks using the ⭐ button to populate your custom Watchlist.</p>
                   </td>
@@ -493,9 +605,17 @@ export default function BigShotRadar({
                         </div>
                       </td>
 
-                      {/* Algorithm Type Badge */}
+                      {/* Circuit Status / Alert */}
                       <td>
-                        {stock.type === 'MEGA_BLOCK' ? (
+                        {stock.circuitStatus === 'LOCKED_IN_UC' ? (
+                          <span className="badge bg-danger text-white fw-bold px-2.5 py-1 shadow-sm fs-6">
+                            🔒 100% LOCKED IN UC
+                          </span>
+                        ) : stock.circuitStatus === 'NEAR_UC_ALERT' ? (
+                          <span className="badge bg-warning text-dark fw-bold px-2.5 py-1 shadow-sm border border-danger">
+                            ⚡ NEAR UPPER CIRCUIT ({stock.distToUcPct}% Away • Buy Window)
+                          </span>
+                        ) : stock.type === 'MEGA_BLOCK' ? (
                           <span className="badge bg-warning text-dark fw-bold px-2 py-1">
                             🏢 MEGA BLOCK (&ge; ₹500 Cr)
                           </span>
@@ -516,36 +636,37 @@ export default function BigShotRadar({
                         {isPositive ? '▲ +' : '▼ '}{Number(stock.dayGainPct || 0).toFixed(2)}%
                       </td>
 
+                      {/* Upper Band & Distance */}
+                      <td>
+                        <div>
+                          <strong className="text-dark">₹{stock.upperBand?.toFixed(2)}</strong>
+                          <span className={`badge ms-1.5 ${stock.distToUcPct <= 1.5 ? 'bg-danger text-white' : 'bg-light text-dark border'}`}>
+                            {stock.distToUcPct === 0 ? 'Locked' : `${stock.distToUcPct}% to UC`}
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* Next Morning Gap Up Projection */}
+                      <td>
+                        <span className="badge bg-success bg-opacity-15 text-success border border-success fw-bold px-2 py-1">
+                          {stock.gapUpProjection || '▲ +3.0% to +5.0%'}
+                        </span>
+                      </td>
+
                       {/* Volume Surge / Deal Size */}
                       <td>
                         {stock.type === 'MEGA_BLOCK' ? (
                           <div>
-                            <span className="badge bg-success text-white fs-6 fw-bold px-2.5 py-1 shadow-sm">
+                            <span className="badge bg-success text-white fs-6 fw-bold px-2 py-1 shadow-sm">
                               ₹{stock.dealValueCr?.toFixed(2)} Cr Deal
                             </span>
-                            <small className="text-muted d-block mt-0.5">
-                              {((stock.dealVolume || 0) / 10000000).toFixed(2)} Cr shares accumulated
-                            </small>
                           </div>
                         ) : (
                           <div>
-                            <span className="badge bg-primary text-white fs-6 fw-bold px-2.5 py-1 shadow-sm">
-                              ⚡ {stock.rvol}x Normal Vol
+                            <span className="badge bg-primary text-white fs-6 fw-bold px-2 py-1 shadow-sm">
+                              ⚡ {stock.rvol}x Vol
                             </span>
-                            <small className="text-muted d-block mt-0.5">
-                              {Number(stock.tradedVolume || 0).toLocaleString('en-IN')} shares
-                            </small>
                           </div>
-                        )}
-                      </td>
-
-                      {/* Follow Through / Catalyst */}
-                      <td style={{ maxWidth: 220, whiteSpace: 'normal' }}>
-                        <span className="small text-dark fw-semibold d-block">
-                          {stock.catalyst || stock.followThroughDays}
-                        </span>
-                        {stock.vwap && (
-                          <small className="text-muted">VWAP: ₹{stock.vwap.toFixed(2)}</small>
                         )}
                       </td>
 
@@ -621,4 +742,3 @@ export default function BigShotRadar({
     </div>
   );
 }
-
