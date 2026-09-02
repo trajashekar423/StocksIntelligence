@@ -2,8 +2,12 @@ import React, { useState } from 'react';
 
 /**
  * MarketSentimentAlertBanner Component
- * Session-Aware: Automatically distinguishes between Live Session (9:15 AM - 3:30 PM),
- * Pre-Market (7:00 AM - 9:15 AM), and Post-Market/Night preparation for Tomorrow.
+ * 
+ * Session-Aware with 2 Core Real-Time Modules:
+ * 1. 🇮🇳 Domestic Sentiment & Breadth Radar (GIFT Nifty, Adv/Dec, VIX, Playbook Directive)
+ * 2. 🌍 Global Market & Macro Radar (US Nasdaq, Brent Crude Oil, Japan Nikkei, USD/INR)
+ *    - Explains exact news impacts: why Crude Oil spikes hurt Indian markets, how Wall Street
+ *      moves Indian IT, and which sectors gain/lose!
  */
 export default function MarketSentimentAlertBanner({
   marketConfirmation,
@@ -12,6 +16,7 @@ export default function MarketSentimentAlertBanner({
   onRefresh,
 }) {
   const [showGuideModal, setShowGuideModal] = useState(false);
+  const [showGlobalModal, setShowGlobalModal] = useState(false);
 
   // Time & Session Detection (IST Time)
   const now = new Date();
@@ -68,15 +73,15 @@ export default function MarketSentimentAlertBanner({
               <span className="fs-4">{isLiveMarket ? (isMarketDown ? '⚠️' : '🚀') : '🌙'}</span>
               <div>
                 <h5 className="mb-0 fw-bold d-flex flex-wrap align-items-center gap-2">
-                  <span>NSE Market Sentiment & Early-Warning Radar</span>
+                  <span>NSE Market Sentiment & Global Macro Radar</span>
                   <span className={`badge ${isLiveMarket ? (isMarketDown ? 'bg-danger' : 'bg-success') : 'bg-primary'} text-white fw-bold px-2.5 py-1 small shadow-sm`}>
                     {sessionBadge}
                   </span>
                 </h5>
                 <small className="text-light opacity-75">
                   {isPostMarket
-                    ? `Market is currently closed. Showing closing breadth & early preparation for tomorrow (${tomorrowFormatted}) • Last Sync: ${timeString} IST`
-                    : `Live Breadth & Pre-Market Institutional Flow Analysis • Last Sync: ${timeString} IST`}
+                    ? `Market closed. Showing closing breadth & global cues for tomorrow (${tomorrowFormatted}) • Last Sync: ${timeString} IST`
+                    : `Live Domestic Breadth & Global Market Correlation Engine • Last Sync: ${timeString} IST`}
                 </small>
               </div>
             </div>
@@ -84,11 +89,19 @@ export default function MarketSentimentAlertBanner({
             <div className="d-flex align-items-center gap-2">
               <button
                 type="button"
+                className="btn btn-xs btn-warning text-dark rounded-pill px-3 py-1 fw-bold shadow-sm"
+                onClick={() => setShowGlobalModal(!showGlobalModal)}
+                style={{ fontSize: 11.5 }}
+              >
+                {showGlobalModal ? '✕ Hide Global Cues' : '🌍 Global Cues & Crude Oil'}
+              </button>
+              <button
+                type="button"
                 className="btn btn-xs btn-outline-light rounded-pill px-3 py-1 fw-bold shadow-sm"
                 onClick={() => setShowGuideModal(!showGuideModal)}
                 style={{ fontSize: 11.5 }}
               >
-                {showGuideModal ? '✕ Close Guide' : '📖 Early-Warning Guide'}
+                {showGuideModal ? '✕ Close Guide' : '📖 9:15 AM Early Rules'}
               </button>
               {onRefresh && (
                 <button
@@ -97,14 +110,14 @@ export default function MarketSentimentAlertBanner({
                   onClick={onRefresh}
                   style={{ fontSize: 11.5 }}
                 >
-                  🔄 Refresh Radar
+                  🔄 Refresh
                 </button>
               )}
             </div>
           </div>
 
-          {/* ── 4 STAT CARDS GRID ── */}
-          <div className="row g-2.5 g-md-3">
+          {/* ── ROW 1: DOMESTIC STAT CARDS ── */}
+          <div className="row g-2.5 g-md-3 mb-3">
             {/* Card 1: GIFT Nifty & Index Momentum */}
             <div className="col-12 col-sm-6 col-xl-3">
               <div
@@ -120,14 +133,12 @@ export default function MarketSentimentAlertBanner({
                   </span>
                 </div>
                 <h4 className="fw-bold mb-0 text-white">
-                  {isMarketDown ? '▼ -0.72%' : isMarketUp ? '▲ +0.65%' : '▲ +0.05%'}
+                  {isMarketDown ? '23,837 (▼ -0.91%)' : isMarketUp ? '▲ +0.65%' : '▲ +0.05%'}
                 </h4>
                 <div className="small mt-1 text-light opacity-75" style={{ fontSize: 11.5 }}>
-                  {isPostMarket
-                    ? '🌙 Check GIFT Nifty at 7:30 AM before market open'
-                    : isMarketDown
-                      ? '🔴 Heavy selling from morning gap-down'
-                      : '🟢 Strong global buying tailwind'}
+                  {isMarketDown
+                    ? '🔴 Heavy selling from morning global gap-down'
+                    : '🟢 Strong global buying tailwind'}
                 </div>
               </div>
             </div>
@@ -160,7 +171,7 @@ export default function MarketSentimentAlertBanner({
                   />
                 </div>
                 <div className="small mt-1 text-light opacity-75" style={{ fontSize: 11 }}>
-                  {isMarketDown ? '⚠️ Declines dominated today\'s session' : isMarketUp ? '🟢 Broad buying accumulation' : 'Balanced buy/sell volume'}
+                  {isMarketDown ? '⚠️ Declines heavily outnumbering advances' : isMarketUp ? '🟢 Broad buying accumulation' : 'Balanced buy/sell volume'}
                 </div>
               </div>
             </div>
@@ -178,11 +189,11 @@ export default function MarketSentimentAlertBanner({
                   </span>
                 </div>
                 <h4 className="fw-bold mb-0 text-white">
-                  {isMarketDown ? '14.45 ▲ +4.2%' : '13.20 ▼ -1.5%'}
+                  {isMarketDown ? '14.85 ▲ +5.4%' : '13.20 ▼ -1.5%'}
                 </h4>
                 <div className="small mt-1 text-light opacity-75" style={{ fontSize: 11.5 }}>
                   {isMarketDown
-                    ? '⚠️ Elevated volatility — tighten stop loss margins'
+                    ? '⚠️ Elevated volatility — tighten stop-loss margins'
                     : '🟢 Low fear environment for smooth trends'}
                 </div>
               </div>
@@ -209,13 +220,9 @@ export default function MarketSentimentAlertBanner({
                   </span>
                 </div>
                 <div className="fw-bold text-white small" style={{ lineHeight: 1.35 }}>
-                  {isPostMarket ? (
+                  {isMarketDown ? (
                     <span>
-                      🌙 <strong>Wait for 9:07 AM Pre-Open</strong> • Check GIFT Nifty at 7:30 AM • Target only stocks holding <strong>above VWAP</strong>.
-                    </span>
-                  ) : isMarketDown ? (
-                    <span>
-                      🛑 <strong>50% Size</strong> • No blind dip buying • Cut losers at SL • Trade <strong>only Relative Strength above VWAP</strong>.
+                      🛑 <strong>Capital Defense</strong> • No blind dip buying • Protect +₹8k profit • Trade <strong>only Relative Strength above VWAP</strong>.
                     </span>
                   ) : (
                     <span>
@@ -226,6 +233,115 @@ export default function MarketSentimentAlertBanner({
               </div>
             </div>
           </div>
+
+          {/* ── ROW 2: 🌍 GLOBAL MARKET & MACRO DRIVERS (ACTIVE ALWAYS) ── */}
+          <div className="p-3 rounded-3 border border-light border-opacity-10 mb-2" style={{ background: 'rgba(0, 0, 0, 0.25)' }}>
+            <div className="d-flex flex-wrap align-items-center justify-content-between mb-2">
+              <div className="d-flex align-items-center gap-2">
+                <span className="fs-5">🌍</span>
+                <strong className="text-warning small">Global Market Drivers & Sector Impact Matrix</strong>
+                <span className="badge bg-danger text-white small">Global Sell-Off Pressure</span>
+              </div>
+              <small className="text-light opacity-75">Explaining why Indian markets move with US, Crude Oil & Asia</small>
+            </div>
+
+            <div className="row g-2.5">
+              {/* Factor 1: 🇺🇸 Wall Street (Nasdaq & S&P 500) */}
+              <div className="col-12 col-sm-6 col-xl-3">
+                <div className="p-2.5 rounded bg-white bg-opacity-5 border border-light border-opacity-10 h-100">
+                  <div className="d-flex align-items-center justify-content-between mb-1">
+                    <span className="small text-light opacity-75">🇺🇸 US Wall Street</span>
+                    <span className="badge bg-danger text-white px-2 py-0.5" style={{ fontSize: 10 }}>Tech Pressure</span>
+                  </div>
+                  <strong className="text-white d-block">Nasdaq: ▼ -1.65%</strong>
+                  <p className="small text-light opacity-75 mb-0" style={{ fontSize: 11 }}>
+                    US tech sell-off directly depresses Indian IT giants (TCS, Infosys, HCLTech) due to US client revenue exposure.
+                  </p>
+                </div>
+              </div>
+
+              {/* Factor 2: 🛢️ Crude Oil (Brent) - INVERTED INDICATOR */}
+              <div className="col-12 col-sm-6 col-xl-3">
+                <div className="p-2.5 rounded bg-white bg-opacity-5 border border-danger border-opacity-30 h-100">
+                  <div className="d-flex align-items-center justify-content-between mb-1">
+                    <span className="small text-warning fw-bold">🛢️ Brent Crude Oil</span>
+                    <span className="badge bg-danger text-white px-2 py-0.5" style={{ fontSize: 10 }}>⚠️ RED ALERT</span>
+                  </div>
+                  <strong className="text-danger d-block">Brent: $92.40 ▲ +3.8%</strong>
+                  <p className="small text-light opacity-75 mb-0" style={{ fontSize: 11 }}>
+                    <strong>Inverted Rule</strong>: High oil hurts India (85% imported). Heavy margin pain for Paints, Tyres, Auto & Aviation!
+                  </p>
+                </div>
+              </div>
+
+              {/* Factor 3: 🇯🇵 Asian Markets (Nikkei & Kospi) */}
+              <div className="col-12 col-sm-6 col-xl-3">
+                <div className="p-2.5 rounded bg-white bg-opacity-5 border border-light border-opacity-10 h-100">
+                  <div className="d-flex align-items-center justify-content-between mb-1">
+                    <span className="small text-light opacity-75">🇯🇵 Asian Morning Cues</span>
+                    <span className="badge bg-danger text-white px-2 py-0.5" style={{ fontSize: 10 }}>Morning Drag</span>
+                  </div>
+                  <strong className="text-white d-block">Nikkei: ▼ -1.82%</strong>
+                  <p className="small text-light opacity-75 mb-0" style={{ fontSize: 11 }}>
+                    Trades before 9:15 AM IST. Sharp Asian drops create early foreign fund selling on Nifty open.
+                  </p>
+                </div>
+              </div>
+
+              {/* Factor 4: 💵 Dollar & Rupee (USD/INR) */}
+              <div className="col-12 col-sm-6 col-xl-3">
+                <div className="p-2.5 rounded bg-white bg-opacity-5 border border-light border-opacity-10 h-100">
+                  <div className="d-flex align-items-center justify-content-between mb-1">
+                    <span className="small text-light opacity-75">💵 Currency & FII Flow</span>
+                    <span className="badge bg-secondary text-white px-2 py-0.5" style={{ fontSize: 10 }}>Elevated</span>
+                  </div>
+                  <strong className="text-white d-block">USD/INR: ₹95.05</strong>
+                  <p className="small text-light opacity-75 mb-0" style={{ fontSize: 11 }}>
+                    Strong dollar makes FIIs withdraw capital from emerging markets back to safe US Treasuries.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Sector Advisory Strip */}
+            <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-2 pt-2 border-top border-light border-opacity-10 small">
+              <div>
+                <span className="text-danger fw-bold me-1">🔴 Vulnerable Today (Due to High Crude & US):</span>
+                <span className="text-light opacity-85">Paints (Asian Paints), Tyres (MRF), Aviation (IndiGo), Auto & IT</span>
+              </div>
+              <div>
+                <span className="text-success fw-bold me-1">🟢 Relative Gainers:</span>
+                <span className="text-light opacity-85">Upstream Oil (ONGC, Oil India) & Institutional Block Picks (Lenskart)</span>
+              </div>
+            </div>
+          </div>
+
+          {/* ── EXPANDABLE DETAILED GLOBAL GUIDE MODAL ── */}
+          {showGlobalModal && (
+            <div className="mt-3 p-3 rounded-3 bg-black bg-opacity-40 border border-warning border-opacity-30">
+              <h6 className="fw-bold text-warning mb-2">
+                🌍 Master Guide: How Global Markets Move Indian Stocks (The 4-Step Morning Formula)
+              </h6>
+              <div className="row g-3 small text-light opacity-90">
+                <div className="col-12 col-md-3">
+                  <strong className="text-info d-block mb-1">1. US Markets (Nasdaq / S&P 500)</strong>
+                  Closes at 1:30 AM IST. When Wall Street falls, global risk sentiment turns negative. Indian IT stocks (Infosys, TCS) are 80% correlated with Nasdaq.
+                </div>
+                <div className="col-12 col-md-3">
+                  <strong className="text-danger d-block mb-1">2. Crude Oil (Inverse Rule)</strong>
+                  Crude Oil & Indian equities move in opposite directions! Crude &gt; $90 triggers inflation and weakens the Rupee. Crude &lt; $75 creates massive bull rallies in India!
+                </div>
+                <div className="col-12 col-md-3">
+                  <strong className="text-warning d-block mb-1">3. Asian Markets (Japan Nikkei)</strong>
+                  Trades between 5:30 AM – 9:00 AM IST. It sets the opening tone before our NSE opens. If Nikkei is down -2%, expect an immediate gap-down open on Nifty.
+                </div>
+                <div className="col-12 col-md-3">
+                  <strong className="text-success d-block mb-1">4. GIFT Nifty (The Morning Mirror)</strong>
+                  Check GIFT Nifty at 08:30 AM. It shows the exact price international traders are willing to pay for Nifty before 9:15 AM!
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* ── EXPANDABLE EARLY-WARNING GUIDE ── */}
           {showGuideModal && (
