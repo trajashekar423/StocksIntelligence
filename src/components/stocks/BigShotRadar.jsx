@@ -420,14 +420,14 @@ export default function BigShotRadar({
     <div className="bigshot-radar-module w-100 mb-5">
       {/* ── 1. HEADER BANNER ── */}
       <div
-        className="card border-0 shadow-sm rounded-4 overflow-hidden text-white mb-4 p-4"
+        className="card border-0 shadow-sm rounded-4 overflow-hidden text-white mb-4 p-3 p-md-4"
         style={{ background: 'linear-gradient(135deg, #09131d 0%, #102a45 50%, #1e4570 100%)' }}
       >
-        <div className="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+        <div className="d-flex flex-column flex-lg-row align-items-start align-items-lg-center justify-content-between gap-3 mb-3">
           <div>
             <div className="d-flex flex-wrap align-items-center gap-2">
               <span className="fs-3">⭐</span>
-              <h4 className="mb-0 fw-bold">BigShot Radar: Mega Block Deals, 5x Volume & Upper Circuit Locks</h4>
+              <h4 className="mb-0 fw-bold fs-5 fs-md-4">BigShot Radar: Mega Block Deals, 5x Volume & Upper Circuit Locks</h4>
               <span className="badge bg-warning text-dark fw-bold px-2.5 py-1 small shadow-sm">
                 ⚡ MAGIC LOGIC RADAR
               </span>
@@ -438,37 +438,37 @@ export default function BigShotRadar({
             </p>
           </div>
 
-          <div className="d-flex align-items-center gap-2">
+          <div className="d-flex flex-wrap align-items-center gap-2 w-100 w-lg-auto">
             <button
               type="button"
-              className="btn btn-sm btn-outline-info text-white rounded-pill px-3 py-1.5 fw-bold shadow-sm"
+              className="btn btn-sm btn-outline-info text-white rounded-pill px-3 py-1.5 fw-bold shadow-sm flex-grow-1 flex-sm-grow-0"
               onClick={() => setShowMistakeGuide(!showMistakeGuide)}
             >
               {showMistakeGuide ? '✕ Close Lesson' : '🧠 Ather Energy Lesson & Limit Profit Rules'}
             </button>
             <button
               type="button"
-              className={`btn btn-sm ${activeFilter === 'CIRCUITS' ? 'btn-danger text-white' : 'btn-outline-danger text-white'} rounded-pill px-3 py-1.5 fw-bold shadow-sm`}
+              className={`btn btn-sm ${activeFilter === 'CIRCUITS' ? 'btn-danger text-white' : 'btn-outline-danger text-white'} rounded-pill px-3 py-1.5 fw-bold shadow-sm flex-grow-1 flex-sm-grow-0`}
               onClick={() => setActiveFilter(activeFilter === 'CIRCUITS' ? 'ALL' : 'CIRCUITS')}
             >
-              🔒 Upper Circuit Radar ({circuitSetupsCount})
+              🔒 Upper Circuit ({circuitSetupsCount})
             </button>
             <button
               type="button"
-              className={`btn btn-sm ${activeFilter === 'WATCHLIST' ? 'btn-warning text-dark' : 'btn-outline-warning text-white'} rounded-pill px-3 py-1.5 fw-bold shadow-sm`}
+              className={`btn btn-sm ${activeFilter === 'WATCHLIST' ? 'btn-warning text-dark' : 'btn-outline-warning text-white'} rounded-pill px-3 py-1.5 fw-bold shadow-sm flex-grow-1 flex-sm-grow-0`}
               onClick={() => setActiveFilter(activeFilter === 'WATCHLIST' ? 'ALL' : 'WATCHLIST')}
             >
-              ⭐ My Pinned Watchlist ({pinnedSymbols.size})
+              ⭐ Watchlist ({pinnedSymbols.size})
             </button>
           </div>
         </div>
 
         {/* ── EXPANDABLE ATHER ENERGY MISTAKE & LIMIT PROFIT GUIDE ── */}
         {showMistakeGuide && (
-          <div className="p-3.5 rounded-3 mb-3 border border-warning border-opacity-40" style={{ background: '#0b1622' }}>
+          <div className="p-3 p-md-3.5 rounded-3 mb-3 border border-warning border-opacity-40" style={{ background: '#0b1622' }}>
             <div className="d-flex align-items-center gap-2 mb-2 pb-2 border-bottom border-secondary border-opacity-30">
               <span className="fs-4">🛡️</span>
-              <h5 className="text-warning fw-bold mb-0">Case Study: What Went Wrong in Ather Energy & The "Limit Profit" Rules</h5>
+              <h5 className="text-warning fw-bold mb-0 fs-6 fs-md-5">Case Study: What Went Wrong in Ather Energy & The "Limit Profit" Rules</h5>
             </div>
 
             <div className="row g-3 small">
@@ -512,7 +512,7 @@ export default function BigShotRadar({
         )}
 
         {/* ── 3 STAT & STRATEGY CARDS ── */}
-        <div className="row g-3">
+        <div className="row g-2.5 g-md-3">
           {/* Card A: Mega Block Accumulators */}
           <div className="col-12 col-md-4">
             <div
@@ -590,53 +590,53 @@ export default function BigShotRadar({
         </div>
       )}
 
-      {/* ── 2. FILTER STRIP ── */}
-      <div className="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
-        <div className="btn-group shadow-sm" role="group">
+      {/* ── 2. RESPONSIVE FILTER STRIP ── */}
+      <div className="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-2.5 mb-3">
+        <div className="d-flex flex-wrap gap-2" role="group">
           <button
             type="button"
-            className={`btn btn-sm ${activeFilter === 'ALL' ? 'btn-primary fw-bold' : 'btn-outline-secondary'}`}
+            className={`btn btn-sm rounded-pill px-3 py-1.5 fw-bold shadow-sm ${activeFilter === 'ALL' ? 'btn-primary' : 'btn-outline-secondary text-dark'}`}
             onClick={() => setActiveFilter('ALL')}
           >
             🔥 All Setups ({allBigShotSetups.length})
           </button>
           <button
             type="button"
-            className={`btn btn-sm ${activeFilter === 'CIRCUITS' ? 'btn-danger text-white fw-bold' : 'btn-outline-secondary'}`}
+            className={`btn btn-sm rounded-pill px-3 py-1.5 fw-bold shadow-sm ${activeFilter === 'CIRCUITS' ? 'btn-danger text-white' : 'btn-outline-danger'}`}
             onClick={() => setActiveFilter('CIRCUITS')}
           >
-            🔒 Upper Circuit & Locks ({circuitSetupsCount})
+            🔒 Upper Circuit ({circuitSetupsCount})
           </button>
           <button
             type="button"
-            className={`btn btn-sm ${activeFilter === 'BLOCKS' ? 'btn-warning text-dark fw-bold' : 'btn-outline-secondary'}`}
+            className={`btn btn-sm rounded-pill px-3 py-1.5 fw-bold shadow-sm ${activeFilter === 'BLOCKS' ? 'btn-warning text-dark' : 'btn-outline-warning text-dark'}`}
             onClick={() => setActiveFilter('BLOCKS')}
           >
             🏢 Mega Blocks ({megaBlockCandidates.length})
           </button>
           <button
             type="button"
-            className={`btn btn-sm ${activeFilter === 'VOLUME_5X' ? 'btn-info text-dark fw-bold' : 'btn-outline-secondary'}`}
+            className={`btn btn-sm rounded-pill px-3 py-1.5 fw-bold shadow-sm ${activeFilter === 'VOLUME_5X' ? 'btn-info text-dark' : 'btn-outline-info text-dark'}`}
             onClick={() => setActiveFilter('VOLUME_5X')}
           >
             ⚡ 5x Volume Breakouts ({volumeSurgeCandidates.length})
           </button>
           <button
             type="button"
-            className={`btn btn-sm ${activeFilter === 'WATCHLIST' ? 'btn-success fw-bold text-white' : 'btn-outline-secondary'}`}
+            className={`btn btn-sm rounded-pill px-3 py-1.5 fw-bold shadow-sm ${activeFilter === 'WATCHLIST' ? 'btn-success text-white' : 'btn-outline-success'}`}
             onClick={() => setActiveFilter('WATCHLIST')}
           >
             ⭐ Pinned Watchlist ({pinnedSymbols.size})
           </button>
         </div>
 
-        <div className="small text-muted">
-          Showing <strong>{displayedSetups.length}</strong> qualified setups
+        <div className="small text-muted fw-semibold">
+          Showing <strong>{displayedSetups.length}</strong> setups
         </div>
       </div>
 
-      {/* ── 3. RESULTS TABLE ── */}
-      <div className="card border-0 shadow-sm rounded-4 overflow-hidden">
+      {/* ── 3A. DESKTOP RESULTS TABLE (Large Screens) ── */}
+      <div className="d-none d-lg-block card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
         <div className="table-responsive">
           <table className="table table-hover align-middle table-striped table-sm small mb-0 text-nowrap">
             <thead className="table-dark">
@@ -686,7 +686,7 @@ export default function BigShotRadar({
                           title={isPinned ? 'Remove from Watchlist' : 'Add to My Watchlist'}
                           style={{ fontSize: 11 }}
                         >
-                          {isPinned ? '⭐ Pinned' : '☆ Add to Watchlist'}
+                          {isPinned ? '⭐ Pinned' : '☆ Watchlist'}
                         </button>
                       </td>
 
@@ -809,6 +809,162 @@ export default function BigShotRadar({
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* ── 3B. MOBILE & TABLET RESPONSIVE CARDS (Small Screens) ── */}
+      <div className="d-lg-none mb-4">
+        {displayedSetups.length === 0 ? (
+          <div className="card p-4 text-center text-muted rounded-4 shadow-sm">
+            <h5>No stocks match the selected filter</h5>
+            <p className="small mb-0">Pin stocks using the ⭐ button to populate your custom Watchlist.</p>
+          </div>
+        ) : (
+          <div className="d-flex flex-column gap-3">
+            {displayedSetups.map((stock, idx) => {
+              const isPinned = pinnedSymbols.has(stock.symbol);
+              const isPositive = Number(stock.dayGainPct || 0) >= 0;
+              const isBelowVwap = stock.vwap ? stock.currentLtp < stock.vwap : false;
+
+              return (
+                <div
+                  key={`mobile-${stock.symbol}-${idx}`}
+                  className="card border shadow-sm rounded-4 overflow-hidden p-3"
+                  style={{
+                    background: isBelowVwap ? '#fff8f8' : '#ffffff',
+                    borderColor: isBelowVwap ? '#f8d7da' : '#e2e8f0',
+                  }}
+                >
+                  {/* Card Header: Symbol, Company, Watchlist Pin & Price */}
+                  <div className="d-flex align-items-start justify-content-between gap-2 pb-2 mb-2 border-bottom">
+                    <div className="d-flex align-items-center gap-2">
+                      <span className="badge bg-dark fw-bold">#{idx + 1}</span>
+                      <div>
+                        <div className="d-flex align-items-center gap-1.5">
+                          <strong className="fs-6 text-dark">{stock.symbol}</strong>
+                          <span className="badge bg-secondary text-white px-1.5 py-0.5" style={{ fontSize: 10 }}>
+                            {stock.series || 'EQ'}
+                          </span>
+                        </div>
+                        <small className="text-muted d-block text-truncate" style={{ maxWidth: 180 }}>
+                          {stock.companyName}
+                        </small>
+                      </div>
+                    </div>
+
+                    <div className="text-end">
+                      <div className="fw-bold fs-5 text-primary">
+                        ₹{Number(stock.currentLtp || 0).toFixed(2)}
+                      </div>
+                      <div className={isPositive ? 'text-success fw-bold small' : 'text-danger fw-bold small'}>
+                        {isPositive ? '▲ +' : '▼ '}{Number(stock.dayGainPct || 0).toFixed(2)}%
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Signal & Circuit Status Badges */}
+                  <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2.5">
+                    <div>
+                      {stock.signal === 'STRONG_SELLING' ? (
+                        <span className="badge bg-danger text-white fw-bold px-2 py-1 shadow-sm">
+                          {stock.signalText}
+                        </span>
+                      ) : stock.signal === 'LOCKED_CIRCUIT' ? (
+                        <span className="badge bg-danger text-white fw-bold px-2 py-1 shadow-sm">
+                          {stock.signalText}
+                        </span>
+                      ) : (
+                        <span className="badge bg-success text-white fw-bold px-2 py-1 shadow-sm">
+                          {stock.signalText || '🟢 STRONG BUY'}
+                        </span>
+                      )}
+                    </div>
+
+                    <button
+                      type="button"
+                      className={`btn btn-xs rounded-pill px-2.5 py-1 fw-bold shadow-sm ${
+                        isPinned ? 'btn-warning text-dark' : 'btn-outline-secondary'
+                      }`}
+                      onClick={() => togglePinWatchlist(stock.symbol)}
+                      style={{ fontSize: 11 }}
+                    >
+                      {isPinned ? '⭐ Pinned' : '☆ Watchlist'}
+                    </button>
+                  </div>
+
+                  {/* Key Metrics 4-Box Grid */}
+                  <div className="row g-2 text-center small mb-2.5">
+                    <div className="col-6 col-sm-3">
+                      <div className="p-2 rounded bg-light border">
+                        <span className="text-muted d-block" style={{ fontSize: 10.5 }}>VWAP</span>
+                        <strong className={isBelowVwap ? 'text-danger' : 'text-success'}>
+                          ₹{Number(stock.vwap || 0).toFixed(2)}
+                        </strong>
+                        <div style={{ fontSize: 9.5, color: isBelowVwap ? '#dc3545' : '#198754' }}>
+                          {isBelowVwap ? '⚠️ Below' : '✓ Above'}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="col-6 col-sm-3">
+                      <div className="p-2 rounded bg-light border">
+                        <span className="text-muted d-block" style={{ fontSize: 10.5 }}>Upper Circuit</span>
+                        <strong className="text-dark">₹{stock.upperBand?.toFixed(2)}</strong>
+                        <div className="text-danger fw-bold" style={{ fontSize: 9.5 }}>
+                          {stock.distToUcPct === 0 ? 'Locked' : `${stock.distToUcPct}% away`}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="col-6 col-sm-3">
+                      <div className="p-2 rounded bg-light border">
+                        <span className="text-muted d-block" style={{ fontSize: 10.5 }}>Stop Loss</span>
+                        <strong className="text-danger">₹{Number(stock.stopLoss || 0).toFixed(2)}</strong>
+                      </div>
+                    </div>
+                    <div className="col-6 col-sm-3">
+                      <div className="p-2 rounded bg-light border">
+                        <span className="text-muted d-block" style={{ fontSize: 10.5 }}>Target 1</span>
+                        <strong className="text-success">₹{Number(stock.target1 || 0).toFixed(2)}</strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Profit Limit Action Alert Strip */}
+                  <div
+                    className="p-2 rounded mb-2.5 small"
+                    style={{
+                      background: stock.signal === 'STRONG_SELLING' ? '#fde8e8' : '#e6f7ef',
+                      borderLeft: `4px solid ${stock.signal === 'STRONG_SELLING' ? '#dc3545' : '#198754'}`,
+                    }}
+                  >
+                    <strong className={stock.signal === 'STRONG_SELLING' ? 'text-danger' : 'text-success'}>
+                      {stock.signalAdvice}
+                    </strong>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="d-flex align-items-center gap-2 pt-1">
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline-danger fw-bold flex-grow-1 shadow-sm"
+                      onClick={() => handleTrackInRiskEngine(stock)}
+                    >
+                      🛡️ Track Risk
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline-primary fw-bold flex-grow-1 shadow-sm"
+                      onClick={() => {
+                        setSelectedStockForChart(stock);
+                        onOpenChart?.(stock.symbol);
+                      }}
+                    >
+                      📈 View Chart
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* ── CHART / DETAIL MODAL ── */}
