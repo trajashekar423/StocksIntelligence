@@ -234,55 +234,61 @@ export default function MarketSentimentAlertBanner({
             </div>
           </div>
 
-          {/* ── ROW 2: 🌍 GLOBAL MARKET & MACRO DRIVERS (ACTIVE ALWAYS) ── */}
-          <div className="p-3 rounded-3 border border-light border-opacity-10 mb-2" style={{ background: 'rgba(0, 0, 0, 0.25)' }}>
-            <div className="d-flex flex-wrap align-items-center justify-content-between mb-2">
+          {/* ── ROW 2: 🌍 GLOBAL MARKET & MACRO DRIVERS (HIGH-CONTRAST READABLE) ── */}
+          <div className="p-3.5 rounded-3 border border-secondary border-opacity-40 mb-2" style={{ background: '#0b1622' }}>
+            <div className="d-flex flex-wrap align-items-center justify-content-between mb-2.5 pb-2 border-bottom border-secondary border-opacity-30">
               <div className="d-flex align-items-center gap-2">
-                <span className="fs-5">🌍</span>
-                <strong className="text-warning small">Global Market Drivers & Sector Impact Matrix</strong>
-                <span className="badge bg-danger text-white small">Global Sell-Off Pressure</span>
+                <span className="fs-4">🌍</span>
+                <strong className="text-warning fs-6 fw-bold">Global Market Drivers & Sector Impact Matrix</strong>
+                <span className="badge bg-danger text-white fw-bold px-2.5 py-1 small shadow-sm">Global Sell-Off Pressure</span>
               </div>
-              <small className="text-light opacity-75">Explaining why Indian markets move with US, Crude Oil & Asia</small>
+              <small className="text-white fw-semibold">Explaining why Indian markets move with US, Crude Oil & Asia</small>
             </div>
 
             <div className="row g-2.5">
               {/* Factor 1: 🇺🇸 Wall Street (Nasdaq & S&P 500) */}
               <div className="col-12 col-sm-6 col-xl-3">
-                <div className="p-2.5 rounded bg-white bg-opacity-5 border border-light border-opacity-10 h-100">
-                  <div className="d-flex align-items-center justify-content-between mb-1">
-                    <span className="small text-light opacity-75">🇺🇸 US Wall Street</span>
-                    <span className="badge bg-danger text-white px-2 py-0.5" style={{ fontSize: 10 }}>Tech Pressure</span>
+                <div className="p-3 rounded-3 h-100 border border-secondary border-opacity-40 shadow-sm" style={{ background: '#162536' }}>
+                  <div className="d-flex align-items-center justify-content-between mb-1.5">
+                    <span className="text-white fw-bold" style={{ fontSize: '13px' }}>🇺🇸 US Wall Street</span>
+                    <span className="badge bg-danger text-white fw-bold px-2 py-0.5" style={{ fontSize: '10px' }}>Tech Pressure</span>
                   </div>
-                  <strong className="text-white d-block">Nasdaq: ▼ -1.65%</strong>
-                  <p className="small text-light opacity-75 mb-0" style={{ fontSize: 11 }}>
-                    US tech sell-off directly depresses Indian IT giants (TCS, Infosys, HCLTech) due to US client revenue exposure.
+                  <strong className="text-white fs-6 d-block my-1 fw-bold">
+                    Nasdaq: <span className="text-danger fw-bold">▼ -1.65%</span>
+                  </strong>
+                  <p className="text-white mb-0" style={{ fontSize: '12px', lineHeight: '1.45', opacity: 0.95 }}>
+                    US tech sell-off directly depresses Indian IT giants (<strong>TCS, Infosys, HCLTech</strong>) due to US client revenue exposure.
                   </p>
                 </div>
               </div>
 
               {/* Factor 2: 🛢️ Crude Oil (Brent) - INVERTED INDICATOR */}
               <div className="col-12 col-sm-6 col-xl-3">
-                <div className="p-2.5 rounded bg-white bg-opacity-5 border border-danger border-opacity-30 h-100">
-                  <div className="d-flex align-items-center justify-content-between mb-1">
-                    <span className="small text-warning fw-bold">🛢️ Brent Crude Oil</span>
-                    <span className="badge bg-danger text-white px-2 py-0.5" style={{ fontSize: 10 }}>⚠️ RED ALERT</span>
+                <div className="p-3 rounded-3 h-100 border border-danger border-opacity-50 shadow-sm" style={{ background: '#251319' }}>
+                  <div className="d-flex align-items-center justify-content-between mb-1.5">
+                    <span className="text-warning fw-bold" style={{ fontSize: '13px' }}>🛢️ Brent Crude Oil</span>
+                    <span className="badge bg-danger text-white fw-bold px-2 py-0.5 shadow-sm" style={{ fontSize: '10px' }}>⚠️ RED ALERT</span>
                   </div>
-                  <strong className="text-danger d-block">Brent: $92.40 ▲ +3.8%</strong>
-                  <p className="small text-light opacity-75 mb-0" style={{ fontSize: 11 }}>
-                    <strong>Inverted Rule</strong>: High oil hurts India (85% imported). Heavy margin pain for Paints, Tyres, Auto & Aviation!
+                  <strong className="text-white fs-6 d-block my-1 fw-bold">
+                    Brent: <span className="text-danger fw-bold">$92.40 ▲ +3.8%</span>
+                  </strong>
+                  <p className="text-white mb-0" style={{ fontSize: '12px', lineHeight: '1.45', opacity: 0.95 }}>
+                    <strong>Inverted Rule</strong>: High oil hurts India (&gt;85% imported). Heavy margin pain for <strong>Paints, Tyres, Auto & Aviation</strong>!
                   </p>
                 </div>
               </div>
 
               {/* Factor 3: 🇯🇵 Asian Markets (Nikkei & Kospi) */}
               <div className="col-12 col-sm-6 col-xl-3">
-                <div className="p-2.5 rounded bg-white bg-opacity-5 border border-light border-opacity-10 h-100">
-                  <div className="d-flex align-items-center justify-content-between mb-1">
-                    <span className="small text-light opacity-75">🇯🇵 Asian Morning Cues</span>
-                    <span className="badge bg-danger text-white px-2 py-0.5" style={{ fontSize: 10 }}>Morning Drag</span>
+                <div className="p-3 rounded-3 h-100 border border-secondary border-opacity-40 shadow-sm" style={{ background: '#162536' }}>
+                  <div className="d-flex align-items-center justify-content-between mb-1.5">
+                    <span className="text-white fw-bold" style={{ fontSize: '13px' }}>🇯🇵 Asian Morning Cues</span>
+                    <span className="badge bg-danger text-white fw-bold px-2 py-0.5" style={{ fontSize: '10px' }}>Morning Drag</span>
                   </div>
-                  <strong className="text-white d-block">Nikkei: ▼ -1.82%</strong>
-                  <p className="small text-light opacity-75 mb-0" style={{ fontSize: 11 }}>
+                  <strong className="text-white fs-6 d-block my-1 fw-bold">
+                    Nikkei: <span className="text-danger fw-bold">▼ -1.82%</span>
+                  </strong>
+                  <p className="text-white mb-0" style={{ fontSize: '12px', lineHeight: '1.45', opacity: 0.95 }}>
                     Trades before 9:15 AM IST. Sharp Asian drops create early foreign fund selling on Nifty open.
                   </p>
                 </div>
@@ -290,13 +296,15 @@ export default function MarketSentimentAlertBanner({
 
               {/* Factor 4: 💵 Dollar & Rupee (USD/INR) */}
               <div className="col-12 col-sm-6 col-xl-3">
-                <div className="p-2.5 rounded bg-white bg-opacity-5 border border-light border-opacity-10 h-100">
-                  <div className="d-flex align-items-center justify-content-between mb-1">
-                    <span className="small text-light opacity-75">💵 Currency & FII Flow</span>
-                    <span className="badge bg-secondary text-white px-2 py-0.5" style={{ fontSize: 10 }}>Elevated</span>
+                <div className="p-3 rounded-3 h-100 border border-secondary border-opacity-40 shadow-sm" style={{ background: '#162536' }}>
+                  <div className="d-flex align-items-center justify-content-between mb-1.5">
+                    <span className="text-white fw-bold" style={{ fontSize: '13px' }}>💵 Currency & FII Flow</span>
+                    <span className="badge bg-secondary text-white fw-bold px-2 py-0.5" style={{ fontSize: '10px' }}>Elevated</span>
                   </div>
-                  <strong className="text-white d-block">USD/INR: ₹95.05</strong>
-                  <p className="small text-light opacity-75 mb-0" style={{ fontSize: 11 }}>
+                  <strong className="text-white fs-6 d-block my-1 fw-bold">
+                    USD/INR: <span className="text-warning fw-bold">₹95.05</span>
+                  </strong>
+                  <p className="text-white mb-0" style={{ fontSize: '12px', lineHeight: '1.45', opacity: 0.95 }}>
                     Strong dollar makes FIIs withdraw capital from emerging markets back to safe US Treasuries.
                   </p>
                 </div>
@@ -304,14 +312,14 @@ export default function MarketSentimentAlertBanner({
             </div>
 
             {/* Sector Advisory Strip */}
-            <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-2 pt-2 border-top border-light border-opacity-10 small">
+            <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-2.5 pt-2.5 border-top border-secondary border-opacity-30">
               <div>
-                <span className="text-danger fw-bold me-1">🔴 Vulnerable Today (Due to High Crude & US):</span>
-                <span className="text-light opacity-85">Paints (Asian Paints), Tyres (MRF), Aviation (IndiGo), Auto & IT</span>
+                <span className="badge bg-danger text-white fw-bold px-2 py-1 me-1.5">🔴 Vulnerable Today:</span>
+                <strong className="text-white small">Paints (Asian Paints), Tyres (MRF), Aviation (IndiGo), Auto & IT</strong>
               </div>
               <div>
-                <span className="text-success fw-bold me-1">🟢 Relative Gainers:</span>
-                <span className="text-light opacity-85">Upstream Oil (ONGC, Oil India) & Institutional Block Picks (Lenskart)</span>
+                <span className="badge bg-success text-white fw-bold px-2 py-1 me-1.5">🟢 Relative Gainers:</span>
+                <strong className="text-white small">Upstream Oil (ONGC, Oil India) & Institutional Block Picks (Lenskart)</strong>
               </div>
             </div>
           </div>
