@@ -1190,15 +1190,22 @@ function buildScanner(
         );
       }
 
-      // Upper Circuit & Lock Detection
+      // Upper Circuit & Order Book Sell-Wall Detection (e.g. IFCI 70% sellers)
       const bandLimit = changePercent >= 15 ? 0.20 : changePercent >= 8 ? 0.10 : 0.05;
       const upperBand = Number((previousClose > 0 ? previousClose * (1 + bandLimit) : price * (1 + bandLimit)).toFixed(2));
       const distToUcPct = Math.max(0, Number((((upperBand - price) / price) * 100).toFixed(2)));
-      const isLockedInUC = distToUcPct <= 0.3 || changePercent >= (bandLimit * 100 - 0.2);
-      const isNearUC = !isLockedInUC && distToUcPct <= 2.0;
+
+      const totalOrders = (totalBuyQty || 0) + (totalSellQty || 0);
+      const sellPercent = totalOrders > 0 ? ((totalSellQty || 0) / totalOrders) * 100 : 0;
+      const hasHeavySellWall = sellPercent >= 60; // e.g. 70.28% sellers on Groww!
+
+      const isLockedInUC = (distToUcPct <= 0.3 || changePercent >= (bandLimit * 100 - 0.2)) && !hasHeavySellWall;
+      const isCircuitUnlockingRisk = (distToUcPct <= 1.0 || changePercent >= (bandLimit * 100 - 1.0)) && hasHeavySellWall;
+      const isNearUC = !isLockedInUC && !isCircuitUnlockingRisk && distToUcPct <= 2.0;
 
       let circuitStatus = 'NORMAL';
       if (isLockedInUC) circuitStatus = 'LOCKED_IN_UC';
+      else if (isCircuitUnlockingRisk) circuitStatus = 'CIRCUIT_RISK';
       else if (isNearUC) circuitStatus = 'NEAR_UC_ALERT';
 
       // Real-Time Signal & Warning Logic (All Intraday Stocks)
@@ -1206,7 +1213,11 @@ function buildScanner(
       let liveSignalText = '🟡 WATCH / NEUTRAL';
       let profitActionAdvice = 'Wait for Breakout above VWAP';
 
-      if (isLockedInUC) {
+      if (isCircuitUnlockingRisk) {
+        liveSignal = 'STRONG_SELLING';
+        liveSignalText = `⚠️ CIRCUIT DUMP RISK (${Math.round(sellPercent)}% Sellers)`;
+        profitActionAdvice = '❌ DO NOT BUY — Heavy Sell Wall / Circuit Cracking';
+      } else if (isLockedInUC) {
         liveSignal = 'LOCKED_CIRCUIT';
         liveSignalText = '🔒 100% LOCKED IN UC';
         profitActionAdvice = '💰 Hold for Tomorrow Gap-Up Open';
