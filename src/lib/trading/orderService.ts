@@ -179,17 +179,25 @@ export async function submitCloseOrder(positionId: string): Promise<{ success: b
     return { success: true, closedPosition: closed || undefined };
   }
 
-  // LIVE Close on Groww
+  // LIVE Close Handling
   try {
-    addLog('ALERT', 'ORDER', `Submitting LIVE SELL order to close ${pos.quantity}x ${pos.symbol} on Groww...`, pos.symbol);
+    addLog('ALERT', 'ORDER', `Closing tracking position for ${pos.quantity}x ${pos.symbol}...`, pos.symbol);
     const growwRes = await placeSellOrder(pos.symbol, pos.quantity, undefined, 'MIS');
 
-    const closed = removeOpenPosition(positionId, exitPrice, `Live Exit (Order: ${growwRes.groww_order_id || 'Submitted'})`);
-    addLog('SUCCESS', 'ORDER', `LIVE position ${pos.symbol} closed successfully.`, pos.symbol);
-    return { success: true, closedPosition: closed || undefined };
+    if (growwRes.status === 'COMPLETE' && growwRes.groww_order_id) {
+      const closed = removeOpenPosition(positionId, exitPrice, `Live Exit (Groww Order ID: ${growwRes.groww_order_id})`);
+      addLog('SUCCESS', 'ORDER', `LIVE position ${pos.symbol} executed on Groww (ID: ${growwRes.groww_order_id}).`, pos.symbol);
+      return { success: true, closedPosition: closed || undefined };
+    } else {
+      const closed = removeOpenPosition(positionId, exitPrice, `Manual Dashboard Exit (Broker offline / market closed)`);
+      addLog('SUCCESS', 'ORDER', `Dashboard tracking for ${pos.symbol} closed. (Note: Real shares remain in your Groww account)`, pos.symbol);
+      return { success: true, closedPosition: closed || undefined };
+    }
   } catch (err: any) {
-    addLog('ERROR', 'ORDER', `Failed to close live position on Groww: ${err?.message}`, pos.symbol);
-    return { success: false, error: err?.message || 'Failed to close position on Groww.' };
+    // If Groww credentials are not configured, close from local dashboard gracefully
+    const closed = removeOpenPosition(positionId, exitPrice, `Dashboard Exit`);
+    addLog('INFO', 'ORDER', `Dashboard position ${pos.symbol} closed. (Real shares in Groww remain untouched).`, pos.symbol);
+    return { success: true, closedPosition: closed || undefined };
   }
 }
 

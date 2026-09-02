@@ -44,6 +44,78 @@
   ],
   "closedPositions": [
     {
+      "id": "PAPER-1788364895919-INFY",
+      "symbol": "INFY",
+      "exchange": "NSE",
+      "side": "LONG",
+      "mode": "PAPER",
+      "entryPrice": 2000,
+      "currentPrice": 2030,
+      "quantity": 10,
+      "stopLoss": 1970,
+      "target1": 2060,
+      "target2": 2090,
+      "trailingStop": 2019.6,
+      "trailingHighWater": 2040,
+      "unrealizedPnL": 0,
+      "unrealizedPnLPercent": 0,
+      "status": "CLOSED",
+      "entryTime": "2026-09-02T16:01:35.919Z",
+      "orderReferenceId": "SIM-ORD-1788364895919",
+      "exitPrice": 2065,
+      "exitTime": "2026-09-02T16:01:35.927Z",
+      "exitReason": "Target Hit",
+      "realizedPnL": 650
+    },
+    {
+      "id": "PAPER-1788363579625-INFY",
+      "symbol": "INFY",
+      "exchange": "NSE",
+      "side": "LONG",
+      "mode": "PAPER",
+      "entryPrice": 2000,
+      "currentPrice": 2030,
+      "quantity": 10,
+      "stopLoss": 1970,
+      "target1": 2060,
+      "target2": 2090,
+      "trailingStop": 2019.6,
+      "trailingHighWater": 2040,
+      "unrealizedPnL": 0,
+      "unrealizedPnLPercent": 0,
+      "status": "CLOSED",
+      "entryTime": "2026-09-02T15:39:39.625Z",
+      "orderReferenceId": "SIM-ORD-1788363579625",
+      "exitPrice": 2065,
+      "exitTime": "2026-09-02T15:39:39.629Z",
+      "exitReason": "Target Hit",
+      "realizedPnL": 650
+    },
+    {
+      "id": "PAPER-1788350455662-INFY",
+      "symbol": "INFY",
+      "exchange": "NSE",
+      "side": "LONG",
+      "mode": "PAPER",
+      "entryPrice": 2000,
+      "currentPrice": 2030,
+      "quantity": 10,
+      "stopLoss": 1970,
+      "target1": 2060,
+      "target2": 2090,
+      "trailingStop": 2019.6,
+      "trailingHighWater": 2040,
+      "unrealizedPnL": 0,
+      "unrealizedPnLPercent": 0,
+      "status": "CLOSED",
+      "entryTime": "2026-09-02T12:00:55.662Z",
+      "orderReferenceId": "SIM-ORD-1788350455662",
+      "exitPrice": 2065,
+      "exitTime": "2026-09-02T12:00:55.668Z",
+      "exitReason": "Target Hit",
+      "realizedPnL": 650
+    },
+    {
       "id": "PAPER-1788345383057-INFY",
       "symbol": "INFY",
       "exchange": "NSE",
@@ -550,19 +622,124 @@
   ],
   "stats": {
     "date": "2026-09-02",
-    "tradesToday": 9,
-    "winningTrades": 9,
+    "tradesToday": 13,
+    "winningTrades": 13,
     "losingTrades": 0,
     "winRate": 100,
-    "realizedPnL": 5850,
+    "realizedPnL": 8783.999999999993,
     "unrealizedPnL": 984,
     "maxDailyLoss": 2000,
-    "remainingRiskLimit": 7850,
+    "remainingRiskLimit": 10783.999999999993,
     "dailyTarget": 2000,
     "targetReached": true,
     "maxLossHit": false
   },
   "logs": [
+    {
+      "id": "log-1788364895928-167",
+      "timestamp": "2026-09-02T16:01:35.928Z",
+      "timeString": "21:31:35",
+      "level": "SUCCESS",
+      "category": "POSITION",
+      "symbol": "INFY",
+      "message": "CLOSED INFY @ ₹2065 | Realized P&L: ₹650.00 (Target Hit)",
+      "details": {
+        "realizedPnL": 650,
+        "exitPrice": 2065,
+        "reason": "Target Hit"
+      }
+    },
+    {
+      "id": "log-1788364895922-247",
+      "timestamp": "2026-09-02T16:01:35.922Z",
+      "timeString": "21:31:35",
+      "level": "SUCCESS",
+      "category": "ORDER",
+      "symbol": "INFY",
+      "message": "PAPER BUY 10 shares of INFY @ ₹2000 (SL: ₹1970, Target: ₹2060)",
+      "details": {
+        "quantity": 10,
+        "entryPrice": 2000,
+        "stopLoss": 1970,
+        "target": 2060
+      }
+    },
+    {
+      "id": "log-1788364464736-70",
+      "timestamp": "2026-09-02T15:54:24.736Z",
+      "timeString": "21:24:24",
+      "level": "SUCCESS",
+      "category": "ORDER",
+      "symbol": "IFCI",
+      "message": "LIVE position IFCI closed successfully."
+    },
+    {
+      "id": "log-1788364464239-147",
+      "timestamp": "2026-09-02T15:54:24.239Z",
+      "timeString": "21:24:24",
+      "level": "ALERT",
+      "category": "ORDER",
+      "symbol": "IFCI",
+      "message": "Submitting LIVE SELL order to close 800x IFCI on Groww..."
+    },
+    {
+      "id": "log-1788363579629-451",
+      "timestamp": "2026-09-02T15:39:39.629Z",
+      "timeString": "21:09:39",
+      "level": "SUCCESS",
+      "category": "POSITION",
+      "symbol": "INFY",
+      "message": "CLOSED INFY @ ₹2065 | Realized P&L: ₹650.00 (Target Hit)",
+      "details": {
+        "realizedPnL": 650,
+        "exitPrice": 2065,
+        "reason": "Target Hit"
+      }
+    },
+    {
+      "id": "log-1788363579626-694",
+      "timestamp": "2026-09-02T15:39:39.626Z",
+      "timeString": "21:09:39",
+      "level": "SUCCESS",
+      "category": "ORDER",
+      "symbol": "INFY",
+      "message": "PAPER BUY 10 shares of INFY @ ₹2000 (SL: ₹1970, Target: ₹2060)",
+      "details": {
+        "quantity": 10,
+        "entryPrice": 2000,
+        "stopLoss": 1970,
+        "target": 2060
+      }
+    },
+    {
+      "id": "log-1788350455669-717",
+      "timestamp": "2026-09-02T12:00:55.669Z",
+      "timeString": "17:30:55",
+      "level": "SUCCESS",
+      "category": "POSITION",
+      "symbol": "INFY",
+      "message": "CLOSED INFY @ ₹2065 | Realized P&L: ₹650.00 (Target Hit)",
+      "details": {
+        "realizedPnL": 650,
+        "exitPrice": 2065,
+        "reason": "Target Hit"
+      }
+    },
+    {
+      "id": "log-1788350455665-86",
+      "timestamp": "2026-09-02T12:00:55.665Z",
+      "timeString": "17:30:55",
+      "level": "SUCCESS",
+      "category": "ORDER",
+      "symbol": "INFY",
+      "message": "PAPER BUY 10 shares of INFY @ ₹2000 (SL: ₹1970, Target: ₹2060)",
+      "details": {
+        "quantity": 10,
+        "entryPrice": 2000,
+        "stopLoss": 1970,
+        "target": 2060
+      }
+    },
     {
       "id": "log-1788345383064-811",
       "timestamp": "2026-09-02T10:36:23.064Z",
