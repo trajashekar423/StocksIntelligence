@@ -972,16 +972,28 @@ export default function BigShotRadar({
         <StockDetailModal
           symbol={selectedStockForChart.symbol}
           stock={{
+            ...selectedStockForChart,
             symbol: selectedStockForChart.symbol,
             companyName: selectedStockForChart.companyName,
             price: selectedStockForChart.currentLtp,
             changePercent: selectedStockForChart.dayGainPct,
+            change: Number(((selectedStockForChart.currentLtp * selectedStockForChart.dayGainPct) / 100).toFixed(2)),
             vwap: selectedStockForChart.vwap,
             dayHigh: selectedStockForChart.high,
             dayLow: selectedStockForChart.low,
             open: selectedStockForChart.openPrice,
+            stopLoss: selectedStockForChart.stopLoss,
+            target1: selectedStockForChart.target1,
+            target2: selectedStockForChart.target2,
+            score: selectedStockForChart.score || 100,
+            bullishScore: selectedStockForChart.score || 100,
+            support: selectedStockForChart.stopLoss,
+            resistance: selectedStockForChart.target1,
+            rsi: selectedStockForChart.rsi || 68,
+            volumeRatio: selectedStockForChart.rvol || 2.2,
           }}
           onClose={() => setSelectedStockForChart(null)}
+          onQuickTrade={handleTrackInRiskEngine}
         />
       )}
     </div>

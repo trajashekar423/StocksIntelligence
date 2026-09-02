@@ -123,8 +123,11 @@ export default function StockDetailModal({
             {modalTab === 'chart' && (
               <div>
                 <CandleChart
+                  candles={stock.candles}
                   symbol={symbol}
                   companyName={companyName}
+                  basePrice={ltp}
+                  currentPrice={ltp}
                   height={390}
                   onCandleSelect={setSelectedCandle}
                 />
@@ -150,73 +153,82 @@ export default function StockDetailModal({
             )}
 
             {/* ── TAB 3: KEY TECHNICAL LEVELS ── */}
-            {modalTab === 'levels' && (
-              <div className="row g-3">
-                <div className="col-12 col-md-6">
-                  <div className="card border-0 shadow-sm p-3 rounded-4 bg-white h-100">
-                    <h6 className="fw-bold mb-3">🎯 Suggested Intraday Targets & Risk</h6>
-                    <div className="list-group list-group-flush small">
-                      <div className="list-group-item d-flex justify-content-between px-0">
-                        <span className="text-muted">Calculated Entry Price:</span>
-                        <strong className="text-dark">₹{Number(stock.entryPrice || ltp).toFixed(2)}</strong>
-                      </div>
-                      <div className="list-group-item d-flex justify-content-between px-0">
-                        <span className="text-muted">Stop Loss (Risk Gate):</span>
-                        <strong className="text-danger">
-                          ₹{Number(stock.stopLoss || (ltp * 0.985)).toFixed(2)} (-1.5%)
-                        </strong>
-                      </div>
-                      <div className="list-group-item d-flex justify-content-between px-0">
-                        <span className="text-muted">Target 1 (1:2 R:R):</span>
-                        <strong className="text-success">
-                          ₹{Number(stock.target1 || stock.target || (ltp * 1.03)).toFixed(2)} (+3.0%)
-                        </strong>
-                      </div>
-                      <div className="list-group-item d-flex justify-content-between px-0">
-                        <span className="text-muted">Target 2 (Extended):</span>
-                        <strong className="text-success">
-                          ₹{Number(stock.target2 || (ltp * 1.05)).toFixed(2)} (+5.0%)
-                        </strong>
-                      </div>
-                      <div className="list-group-item d-flex justify-content-between px-0">
-                        <span className="text-muted">Risk : Reward Ratio:</span>
-                        <strong className="badge bg-primary fs-6">1 : 2.0</strong>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+            {modalTab === 'levels' && (() => {
+              const slVal = Number(stock.stopLoss || (ltp * 0.985));
+              const slPct = ltp > 0 ? (((slVal - ltp) / ltp) * 100).toFixed(1) : '-1.5';
+              const t1Val = Number(stock.target1 || stock.target || (ltp * 1.03));
+              const t1Pct = ltp > 0 ? (((t1Val - ltp) / ltp) * 100).toFixed(1) : '+3.0';
+              const t2Val = Number(stock.target2 || (ltp * 1.05));
+              const t2Pct = ltp > 0 ? (((t2Val - ltp) / ltp) * 100).toFixed(1) : '+5.0';
 
-                <div className="col-12 col-md-6">
-                  <div className="card border-0 shadow-sm p-3 rounded-4 bg-white h-100">
-                    <h6 className="fw-bold mb-3">📐 Support, Resistance & VWAP</h6>
-                    <div className="list-group list-group-flush small">
-                      <div className="list-group-item d-flex justify-content-between px-0">
-                        <span className="text-muted">VWAP (Volume Weighted Avg):</span>
-                        <strong className="text-purple" style={{ color: '#8b5cf6' }}>
-                          ₹{Number(stock.vwap || ltp * 0.995).toFixed(2)}
-                        </strong>
+              return (
+                <div className="row g-3">
+                  <div className="col-12 col-md-6">
+                    <div className="card border-0 shadow-sm p-3 rounded-4 bg-white h-100">
+                      <h6 className="fw-bold mb-3">🎯 Suggested Intraday Targets & Risk</h6>
+                      <div className="list-group list-group-flush small">
+                        <div className="list-group-item d-flex justify-content-between px-0">
+                          <span className="text-muted">Calculated Entry Price:</span>
+                          <strong className="text-dark">₹{Number(stock.entryPrice || ltp).toFixed(2)}</strong>
+                        </div>
+                        <div className="list-group-item d-flex justify-content-between px-0">
+                          <span className="text-muted">Stop Loss (Risk Gate):</span>
+                          <strong className="text-danger">
+                            ₹{slVal.toFixed(2)} ({Number(slPct) > 0 ? '+' : ''}{slPct}%)
+                          </strong>
+                        </div>
+                        <div className="list-group-item d-flex justify-content-between px-0">
+                          <span className="text-muted">Target 1 (1:2 R:R):</span>
+                          <strong className="text-success">
+                            ₹{t1Val.toFixed(2)} ({Number(t1Pct) > 0 ? '+' : ''}{t1Pct}%)
+                          </strong>
+                        </div>
+                        <div className="list-group-item d-flex justify-content-between px-0">
+                          <span className="text-muted">Target 2 (Extended):</span>
+                          <strong className="text-success">
+                            ₹{t2Val.toFixed(2)} ({Number(t2Pct) > 0 ? '+' : ''}{t2Pct}%)
+                          </strong>
+                        </div>
+                        <div className="list-group-item d-flex justify-content-between px-0">
+                          <span className="text-muted">Risk : Reward Ratio:</span>
+                          <strong className="badge bg-primary fs-6">1 : 2.0</strong>
+                        </div>
                       </div>
-                      <div className="list-group-item d-flex justify-content-between px-0">
-                        <span className="text-muted">Key Support (S1):</span>
-                        <strong className="text-dark">₹{Number(stock.support || ltp * 0.99).toFixed(2)}</strong>
-                      </div>
-                      <div className="list-group-item d-flex justify-content-between px-0">
-                        <span className="text-muted">Key Resistance (R1):</span>
-                        <strong className="text-dark">₹{Number(stock.resistance || ltp * 1.02).toFixed(2)}</strong>
-                      </div>
-                      <div className="list-group-item d-flex justify-content-between px-0">
-                        <span className="text-muted">RSI (14-Period Momentum):</span>
-                        <strong className="badge bg-info text-dark">{Number(stock.rsi || 65).toFixed(1)}</strong>
-                      </div>
-                      <div className="list-group-item d-flex justify-content-between px-0">
-                        <span className="text-muted">Relative Volume (RVOL):</span>
-                        <strong className="text-dark">{Number(stock.volumeRatio || stock.rvol || 1.8).toFixed(2)}x</strong>
+                    </div>
+                  </div>
+
+                  <div className="col-12 col-md-6">
+                    <div className="card border-0 shadow-sm p-3 rounded-4 bg-white h-100">
+                      <h6 className="fw-bold mb-3">📐 Support, Resistance & VWAP</h6>
+                      <div className="list-group list-group-flush small">
+                        <div className="list-group-item d-flex justify-content-between px-0">
+                          <span className="text-muted">VWAP (Volume Weighted Avg):</span>
+                          <strong className="text-purple" style={{ color: '#8b5cf6' }}>
+                            ₹{Number(stock.vwap || ltp * 0.995).toFixed(2)}
+                          </strong>
+                        </div>
+                        <div className="list-group-item d-flex justify-content-between px-0">
+                          <span className="text-muted">Key Support (S1):</span>
+                          <strong className="text-dark">₹{Number(stock.support || stock.stopLoss || ltp * 0.99).toFixed(2)}</strong>
+                        </div>
+                        <div className="list-group-item d-flex justify-content-between px-0">
+                          <span className="text-muted">Key Resistance (R1):</span>
+                          <strong className="text-dark">₹{Number(stock.resistance || stock.target1 || ltp * 1.02).toFixed(2)}</strong>
+                        </div>
+                        <div className="list-group-item d-flex justify-content-between px-0">
+                          <span className="text-muted">RSI (14-Period Momentum):</span>
+                          <strong className="badge bg-info text-dark">{Number(stock.rsi || 65).toFixed(1)}</strong>
+                        </div>
+                        <div className="list-group-item d-flex justify-content-between px-0">
+                          <span className="text-muted">Relative Volume (RVOL):</span>
+                          <strong className="text-dark">{Number(stock.volumeRatio || stock.rvol || 1.8).toFixed(2)}x</strong>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             {/* ── TAB 4: RAW DATA ── */}
             {modalTab === 'raw' && (

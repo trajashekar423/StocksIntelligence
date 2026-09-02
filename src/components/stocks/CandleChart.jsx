@@ -7,6 +7,8 @@ export default function CandleChart({
   candles = [],
   symbol = 'STOCK',
   companyName = '',
+  basePrice = null,
+  currentPrice = null,
   height = 440,
   onCandleSelect = null,
 }) {
@@ -22,7 +24,10 @@ export default function CandleChart({
 
   // Determine base price based on symbol
   const cleanSymbol = String(symbol || '').trim().toUpperCase();
+  const effectivePrice = Number(currentPrice || basePrice || 0);
+
   const getSymbolBasePrice = (sym) => {
+    if (effectivePrice > 0) return effectivePrice;
     switch (sym) {
       case 'RAMBHAJO':
         return 215.91;
@@ -48,20 +53,25 @@ export default function CandleChart({
         return 74.5;
       case 'TATAMOTORS':
         return 998.0;
+      case 'IFCI':
+        return 97.5;
       default:
-        return 215.0;
+        return 100.0;
     }
   };
 
   const [liveCandles, setLiveCandles] = useState([]);
+  const [loadingCandles, setLoadingCandles] = useState(!candles || candles.length < 5);
 
   // Fetch real live OHLC candles from exchange feed
   useEffect(() => {
     if (Array.isArray(candles) && candles.length >= 5) {
       setLiveCandles(candles);
+      setLoadingCandles(false);
       return;
     }
     let isMounted = true;
+    setLoadingCandles(true);
     async function fetchLiveCandles() {
       try {
         const res = await fetch(`/api/nse/candles?symbol=${cleanSymbol}`);
@@ -73,6 +83,10 @@ export default function CandleChart({
         }
       } catch {
         // keep fallback
+      } finally {
+        if (isMounted) {
+          setLoadingCandles(false);
+        }
       }
     }
     fetchLiveCandles();
@@ -471,16 +485,23 @@ export default function CandleChart({
         style={{
           touchAction: 'none',
           backgroundColor: isFullscreen ? '#0b0f19' : '#ffffff',
-          minHeight: isFullscreen ? 'calc(100vh - 170px)' : 'auto',
+          minHeight: isFullscreen ? 'calc(100vh - 170px)' : `${height}px`,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
         }}
       >
-        <svg
-          ref={svgRef}
-          viewBox={`0 0 ${chartWidth} ${chartHeight}`}
-          className="w-100 h-auto"
+        {loadingCandles && (!candles || candles.length < 5) && (!liveCandles || liveCandles.length < 5) ? (
+          <div className="d-flex flex-column align-items-center justify-content-center p-5 text-muted">
+            <div className="spinner-border text-primary mb-2" role="status" style={{ width: '2.2rem', height: '2.2rem' }} />
+            <strong className="text-dark small">Loading Live Candlesticks for {cleanSymbol}...</strong>
+            <small className="text-muted" style={{ fontSize: 11 }}>Connecting to exchange feed</small>
+          </div>
+        ) : (
+          <svg
+            ref={svgRef}
+            viewBox={`0 0 ${chartWidth} ${chartHeight}`}
+            className="w-100 h-auto"
           style={{
             maxHeight: isFullscreen ? 'calc(100vh - 180px)' : height,
             userSelect: 'none',
@@ -708,6 +729,7 @@ export default function CandleChart({
             </g>
           )}
         </svg>
+        )}
       </div>
 
       {/* Bottom Chart Legend */}
