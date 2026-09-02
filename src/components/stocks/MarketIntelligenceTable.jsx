@@ -228,6 +228,57 @@ export default function MarketIntelligenceTable({
                               <span key={badge} className="badge text-bg-secondary">{badge}</span>
                             ))}
                           </span>
+                        ) : column.key === 'liveSignal' ? (
+                          row.liveSignal === 'STRONG_SELLING' ? (
+                            <span className="badge bg-danger text-white fw-bold px-2 py-1 shadow-sm">
+                              {row.liveSignalText || '🔴 STRONG SELLING (Below VWAP)'}
+                            </span>
+                          ) : row.liveSignal === 'LOCKED_CIRCUIT' ? (
+                            <span className="badge bg-danger text-white fw-bold px-2 py-1 shadow-sm">
+                              {row.liveSignalText || '🔒 LOCKED IN UC'}
+                            </span>
+                          ) : row.liveSignal === 'NEAR_UC_ALERT' ? (
+                            <span className="badge bg-warning text-dark fw-bold px-2 py-1 border border-danger shadow-sm">
+                              {row.liveSignalText || '⚡ NEAR UPPER CIRCUIT'}
+                            </span>
+                          ) : row.liveSignal === 'STRONG_BUY' ? (
+                            <span className="badge bg-success text-white fw-bold px-2 py-1 shadow-sm">
+                              {row.liveSignalText || '🟢 STRONG BUY'}
+                            </span>
+                          ) : (
+                            <span className="badge bg-secondary text-white fw-semibold px-2 py-0.5">
+                              {row.liveSignalText || '🟡 WATCH'}
+                            </span>
+                          )
+                        ) : column.key === 'profitActionAdvice' ? (
+                          <span className={row.liveSignal === 'STRONG_SELLING' ? 'text-danger fw-bold small' : 'text-success fw-bold small'}>
+                            {row.profitActionAdvice || formatCell(row[column.key])}
+                          </span>
+                        ) : column.key === 'circuitStatus' ? (
+                          row.isLockedInUC ? (
+                            <span className="badge bg-danger text-white px-2 py-0.5 fw-bold">Locked</span>
+                          ) : row.isNearUC ? (
+                            <span className="badge bg-warning text-dark px-2 py-0.5 fw-bold">{row.distToUcPct}% to UC</span>
+                          ) : (
+                            <span className="text-muted small">Normal ({row.distToUcPct || 5}%)</span>
+                          )
+                        ) : column.key === 'vwap' ? (
+                          <div>
+                            <strong className={row.price < row.vwap ? 'text-danger' : 'text-success'}>
+                              ₹{Number(row.vwap || 0).toFixed(2)}
+                            </strong>
+                            <small className="d-block" style={{ fontSize: 10, color: row.price < row.vwap ? '#dc3545' : '#198754' }}>
+                              {row.price < row.vwap ? '⚠️ Below' : '✓ Above'}
+                            </small>
+                          </div>
+                        ) : column.key === 'stopLoss' && row.stopLoss ? (
+                          <span className="badge bg-danger text-white fw-bold px-2 py-1 shadow-sm">
+                            ₹{Number(row.stopLoss).toFixed(2)}
+                          </span>
+                        ) : column.key === 'target1' && row.target1 ? (
+                          <span className="badge bg-success text-white fw-bold px-2 py-1 shadow-sm">
+                            ₹{Number(row.target1).toFixed(2)}
+                          </span>
                         ) : (
                           formatCell(row[column.key])
                         )}

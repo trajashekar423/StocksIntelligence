@@ -1190,6 +1190,44 @@ function buildScanner(
         );
       }
 
+      // Upper Circuit & Lock Detection
+      const bandLimit = changePercent >= 15 ? 0.20 : changePercent >= 8 ? 0.10 : 0.05;
+      const upperBand = Number((previousClose > 0 ? previousClose * (1 + bandLimit) : price * (1 + bandLimit)).toFixed(2));
+      const distToUcPct = Math.max(0, Number((((upperBand - price) / price) * 100).toFixed(2)));
+      const isLockedInUC = distToUcPct <= 0.3 || changePercent >= (bandLimit * 100 - 0.2);
+      const isNearUC = !isLockedInUC && distToUcPct <= 2.0;
+
+      let circuitStatus = 'NORMAL';
+      if (isLockedInUC) circuitStatus = 'LOCKED_IN_UC';
+      else if (isNearUC) circuitStatus = 'NEAR_UC_ALERT';
+
+      // Real-Time Signal & Warning Logic (All Intraday Stocks)
+      let liveSignal = 'WATCH';
+      let liveSignalText = '🟡 WATCH / NEUTRAL';
+      let profitActionAdvice = 'Wait for Breakout above VWAP';
+
+      if (isLockedInUC) {
+        liveSignal = 'LOCKED_CIRCUIT';
+        liveSignalText = '🔒 100% LOCKED IN UC';
+        profitActionAdvice = '💰 Hold for Tomorrow Gap-Up Open';
+      } else if (isNearUC) {
+        liveSignal = 'NEAR_UC_ALERT';
+        liveSignalText = `⚡ NEAR UPPER CIRCUIT (${distToUcPct}% Away)`;
+        profitActionAdvice = '🎯 Buy Window Before Freeze';
+      } else if (!aboveVwap || (price < open && changePercent <= 0)) {
+        liveSignal = 'STRONG_SELLING';
+        liveSignalText = '🔴 STRONG SELLING (Below VWAP)';
+        profitActionAdvice = '❌ DO NOT BUY / EXIT LONG (Capital Defense)';
+      } else if (score >= 60 && aboveVwap && changePercent >= 1.5) {
+        liveSignal = 'STRONG_BUY';
+        liveSignalText = '🟢 STRONG BUY (Above VWAP)';
+        profitActionAdvice = '🎯 Take 50% at T1 (+2.5%) & SL to Cost (Never-Red)';
+      } else if (aboveVwap && changePercent > 0) {
+        liveSignal = 'MODERATE_BUY';
+        liveSignalText = '🟢 BUY ON DIP';
+        profitActionAdvice = '🎯 Trail SL to VWAP';
+      }
+
       return {
         ...row,
 
@@ -1252,7 +1290,23 @@ function buildScanner(
 
         confidence,
 
-        entryReady: (score >= 60 && aboveVwap && changePercent > 0) || tradeSignal === 'Buy' || breakoutConfirmed,
+        upperBand,
+
+        distToUcPct,
+
+        isLockedInUC,
+
+        isNearUC,
+
+        circuitStatus,
+
+        liveSignal,
+
+        liveSignalText,
+
+        profitActionAdvice,
+
+        entryReady: (score >= 60 && aboveVwap && changePercent > 0) || tradeSignal === 'Buy' || breakoutConfirmed || isNearUC || isLockedInUC,
 
         bullishRSI,
 
@@ -1862,16 +1916,16 @@ function TableView({
 
 const LIVE_SCANNER_COLUMNS = [
   { key: 'symbol', label: 'Symbol' },
-  { key: 'price', label: 'LTP' },
+  { key: 'price', label: 'LTP (₹)' },
+  { key: 'liveSignal', label: 'Live Signal & Alert' },
+  { key: 'profitActionAdvice', label: 'Profit Limit Action' },
   { key: 'score', label: 'Score' },
-  { key: 'recommendation', label: 'Recommendation' },
-  { key: 'entryLow', label: 'Entry' },
+  { key: 'vwap', label: 'VWAP (₹)' },
+  { key: 'circuitStatus', label: 'Circuit Status' },
   { key: 'stopLoss', label: 'Stop Loss' },
   { key: 'target1', label: 'Target' },
-  { key: 'buyRatio', label: 'Buy Ratio' },
   { key: 'volumeRatio', label: 'Volume Spike' },
   { key: 'risk', label: 'Risk' },
-  { key: 'confidence', label: 'Confidence' },
   { key: 'badges', label: 'Badges' },
 ];
 

@@ -52,3 +52,40 @@ test('classifies bullish and bearish intraday sentiment for my stocks', () => {
     goodForIntraday: 'Yes',
   });
 });
+
+test('evaluates intraday signal and profit limit rule correctly', () => {
+  function computeIntradaySignal({ price, vwap, open, changePercent, score, distToUcPct }) {
+    const isLockedInUC = distToUcPct <= 0.3;
+    const isNearUC = !isLockedInUC && distToUcPct <= 2.0;
+    const aboveVwap = price >= vwap;
+
+    if (isLockedInUC) {
+      return { signal: 'LOCKED_CIRCUIT', advice: 'Hold for Tomorrow Gap-Up Open' };
+    }
+    if (isNearUC) {
+      return { signal: 'NEAR_UC_ALERT', advice: 'Buy Window Before Freeze' };
+    }
+    if (!aboveVwap || (price < open && changePercent <= 0)) {
+      return { signal: 'STRONG_SELLING', advice: 'DO NOT BUY / EXIT LONG' };
+    }
+    if (score >= 60 && aboveVwap && changePercent >= 1.5) {
+      return { signal: 'STRONG_BUY', advice: 'Take 50% at T1 (+2.5%) & SL to Cost' };
+    }
+    return { signal: 'WATCH', advice: 'Wait for Breakout above VWAP' };
+  }
+
+  // Ather Energy scenario today: below VWAP
+  const ather = computeIntradaySignal({ price: 1675, vwap: 1702, open: 1722, changePercent: -2.9, score: 40, distToUcPct: 6.0 });
+  assert.equal(ather.signal, 'STRONG_SELLING');
+  assert.match(ather.advice, /DO NOT BUY/);
+
+  // Lenskart scenario today: above VWAP
+  const lenskart = computeIntradaySignal({ price: 669, vwap: 669, open: 665, changePercent: 1.8, score: 85, distToUcPct: 3.5 });
+  assert.equal(lenskart.signal, 'STRONG_BUY');
+  assert.match(lenskart.advice, /Take 50% at T1/);
+
+  // Niraj Ispat scenario today: Locked in UC
+  const niraj = computeIntradaySignal({ price: 341.85, vwap: 341.85, open: 285, changePercent: 19.9, score: 95, distToUcPct: 0.0 });
+  assert.equal(niraj.signal, 'LOCKED_CIRCUIT');
+});
+
