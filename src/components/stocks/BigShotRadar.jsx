@@ -6,10 +6,11 @@ const WATCHLIST_STORAGE_KEY = 'bigshot_custom_watchlist_v1';
 /**
  * BigShotRadar Component
  * 
- * Implements High-Probability Institutional & Circuit Breakout Algorithms:
+ * Implements High-Probability Institutional, Circuit & Risk Protection Engines:
  * 1. 🏢 Mega Block Deal Accumulation Radar (> ₹500–₹1,500+ Crore)
  * 2. ⚡ 5x Volume Surge News Breakouts (The ASIANHOTNR Model)
  * 3. 🔒 Upper Circuit & Lock Radar (3:15 PM Near-to-Lock & Locked Stocks for Next-Morning Gap-Ups)
+ * 4. 🛡️ Signal & Profit Limit Engine (🟢 Strong Buy vs 🔴 Strong Selling / VWAP Breach Alerts)
  */
 export default function BigShotRadar({
   scannedStocks = [],
@@ -21,6 +22,7 @@ export default function BigShotRadar({
   const [pinnedSymbols, setPinnedSymbols] = useState(new Set());
   const [selectedStockForChart, setSelectedStockForChart] = useState(null);
   const [feedbackMsg, setFeedbackMsg] = useState(null);
+  const [showMistakeGuide, setShowMistakeGuide] = useState(false);
 
   // Load Pinned Watchlist from LocalStorage
   useEffect(() => {
@@ -55,7 +57,7 @@ export default function BigShotRadar({
     });
   };
 
-  // 1. Process Mega Block Deal Stocks (Threshold: ≥ ₹100 Cr to ₹1,800+ Cr)
+  // 1. Process Mega Block Deal Stocks
   const megaBlockCandidates = useMemo(() => {
     const rawDeals = [
       {
@@ -64,22 +66,26 @@ export default function BigShotRadar({
         dealValueCr: 1758.24,
         dealVolume: 11880000,
         dealPrice: 1480.0,
-        currentLtp: 1717.7,
-        gainSinceDealPct: 16.06,
-        dayGainPct: 6.27,
-        catalyst: '₹1,758 Cr Mega Block Accumulation (Sovereign/FII Buy)',
-        followThroughDays: 'T+1 Fresh 52W High Breakout',
-        stopLoss: 1605.0,
-        target1: 1780.0,
-        target2: 1850.0,
-        vwap: 1675.28,
-        high: 1717.7,
+        currentLtp: 1675.0,
+        gainSinceDealPct: 13.18,
+        dayGainPct: -2.93,
+        catalyst: 'Post-Breakout Profit Booking (Below ₹1,702 VWAP • Do Not Enter!)',
+        followThroughDays: 'T+2 Pullback toward ₹1,650 Support Base',
+        stopLoss: 1650.0,
+        target1: 1735.0,
+        target2: 1780.0,
+        vwap: 1702.25,
+        high: 1737.0,
+        low: 1675.0,
         series: 'EQ',
         rvol: 6.8,
         upperBand: 1777.9,
-        distToUcPct: 3.5,
+        distToUcPct: 6.1,
         circuitStatus: 'NORMAL',
-        gapUpProjection: '▲ +3.5% to +6.0%',
+        gapUpProjection: '⚠️ Neutral / Pullback to Support',
+        signal: 'STRONG_SELLING',
+        signalText: '🔴 STRONG SELLING (Below VWAP)',
+        signalAdvice: '❌ Exit Long / Never buy below VWAP on red day',
         type: 'MEGA_BLOCK',
       },
       {
@@ -88,22 +94,26 @@ export default function BigShotRadar({
         dealValueCr: 1856.78,
         dealVolume: 29472670,
         dealPrice: 630.0,
-        currentLtp: 648.5,
-        gainSinceDealPct: 2.94,
-        dayGainPct: 1.85,
-        catalyst: '₹1,856 Cr Mega Institutional Window Absorption',
+        currentLtp: 669.0,
+        gainSinceDealPct: 6.19,
+        dayGainPct: 0.78,
+        catalyst: '₹1,856 Cr Mega Institutional Floor (Green in Red Market • Holding ₹663 Base)',
         followThroughDays: 'T+1 Base Building Above Deal Price',
-        stopLoss: 622.0,
-        target1: 675.0,
-        target2: 710.0,
-        vwap: 638.2,
-        high: 654.0,
+        stopLoss: 661.5,
+        target1: 678.0,
+        target2: 690.0,
+        vwap: 669.09,
+        high: 678.4,
+        low: 663.05,
         series: 'EQ',
         rvol: 5.2,
         upperBand: 693.0,
-        distToUcPct: 6.8,
+        distToUcPct: 3.5,
         circuitStatus: 'NORMAL',
-        gapUpProjection: '▲ +2.0% to +4.5%',
+        gapUpProjection: '▲ +2.5% to +4.5%',
+        signal: 'STRONG_BUY',
+        signalText: '🟢 STRONG BUY (Above VWAP)',
+        signalAdvice: '🎯 Target ₹678 — Book 50% & Move SL to Cost',
         type: 'MEGA_BLOCK',
       },
       {
@@ -112,22 +122,26 @@ export default function BigShotRadar({
         dealValueCr: 99.0,
         dealVolume: 1000000,
         dealPrice: 990.0,
-        currentLtp: 1020.7,
-        gainSinceDealPct: 3.1,
-        dayGainPct: 3.84,
+        currentLtp: 1018.5,
+        gainSinceDealPct: 2.88,
+        dayGainPct: 1.25,
         catalyst: '₹99 Cr Afternoon Session 2 Institutional Inflow',
         followThroughDays: 'T+1 Day-High Rally Above ₹990 Floor',
         stopLoss: 988.0,
         target1: 1050.0,
         target2: 1080.0,
-        vwap: 1002.7,
+        vwap: 1008.2,
         high: 1024.0,
+        low: 998.0,
         series: 'EQ',
         rvol: 4.5,
         upperBand: 1082.4,
-        distToUcPct: 6.0,
+        distToUcPct: 6.2,
         circuitStatus: 'NORMAL',
-        gapUpProjection: '▲ +2.5% to +5.0%',
+        gapUpProjection: '▲ +2.0% to +4.0%',
+        signal: 'STRONG_BUY',
+        signalText: '🟢 STRONG BUY (Above VWAP)',
+        signalAdvice: '🎯 Target ₹1,050 — Trail SL to ₹1,008',
         type: 'MEGA_BLOCK',
       },
     ];
@@ -159,6 +173,9 @@ export default function BigShotRadar({
         distToUcPct: 0.0,
         circuitStatus: 'LOCKED_IN_UC',
         gapUpProjection: '▲ +5.0% to +8.5% (High Probability)',
+        signal: 'LOCKED_CIRCUIT',
+        signalText: '🔒 LOCKED IN UC (Zero Sellers)',
+        signalAdvice: '💰 Hold for Next-Morning Gap-Up Open!',
         type: 'CIRCUIT_LOCK',
       },
       {
@@ -182,6 +199,9 @@ export default function BigShotRadar({
         distToUcPct: 1.3,
         circuitStatus: 'NEAR_UC_ALERT',
         gapUpProjection: '▲ +4.0% to +6.5%',
+        signal: 'STRONG_BUY',
+        signalText: '⚡ NEAR UPPER CIRCUIT (1.3%)',
+        signalAdvice: '🎯 Golden Buy Window Before Freeze',
         type: '5X_VOLUME_BREAKOUT',
       },
       {
@@ -205,6 +225,9 @@ export default function BigShotRadar({
         distToUcPct: 1.2,
         circuitStatus: 'NEAR_UC_ALERT',
         gapUpProjection: '▲ +4.5% to +7.0%',
+        signal: 'STRONG_BUY',
+        signalText: '⚡ NEAR UPPER CIRCUIT (1.2%)',
+        signalAdvice: '🎯 Golden Buy Window Before Freeze',
         type: '5X_VOLUME_BREAKOUT',
       },
       {
@@ -228,6 +251,9 @@ export default function BigShotRadar({
         distToUcPct: 2.1,
         circuitStatus: 'NEAR_UC_ALERT',
         gapUpProjection: '▲ +3.5% to +5.5%',
+        signal: 'STRONG_BUY',
+        signalText: '⚡ NEAR UPPER CIRCUIT (2.1%)',
+        signalAdvice: '🎯 Golden Buy Window Before Freeze',
         type: '5X_VOLUME_BREAKOUT',
       },
       {
@@ -251,6 +277,9 @@ export default function BigShotRadar({
         distToUcPct: 3.7,
         circuitStatus: 'NORMAL',
         gapUpProjection: '▲ +3.0% to +5.0%',
+        signal: 'STRONG_BUY',
+        signalText: '🟢 STRONG BUY (Above VWAP)',
+        signalAdvice: '🎯 Target ₹308 — Move SL to ₹275',
         type: '5X_VOLUME_BREAKOUT',
       },
     ];
@@ -274,6 +303,17 @@ export default function BigShotRadar({
           circuitStatus = 'LOCKED_IN_UC';
         } else if (distToUcPct <= 2.5) {
           circuitStatus = 'NEAR_UC_ALERT';
+        }
+
+        const isAboveVwap = s.vwap ? s.price >= s.vwap : true;
+        let signal = isAboveVwap ? 'STRONG_BUY' : 'STRONG_SELLING';
+        let signalText = isAboveVwap ? '🟢 STRONG BUY (Above VWAP)' : '🔴 STRONG SELLING (Below VWAP)';
+        let signalAdvice = isAboveVwap ? '🎯 Take 50% at Target 1 & Trail SL' : '❌ Exit Long / Below VWAP';
+
+        if (circuitStatus === 'LOCKED_IN_UC') {
+          signal = 'LOCKED_CIRCUIT';
+          signalText = '🔒 LOCKED IN UC';
+          signalAdvice = '💰 Hold for Tomorrow Gap-Up';
         }
 
         return {
@@ -301,6 +341,9 @@ export default function BigShotRadar({
           distToUcPct,
           circuitStatus,
           gapUpProjection: circuitStatus === 'LOCKED_IN_UC' ? '▲ +5.0% to +8.0%' : '▲ +3.0% to +5.5%',
+          signal,
+          signalText,
+          signalAdvice,
           type: circuitStatus === 'LOCKED_IN_UC' ? 'CIRCUIT_LOCK' : '5X_VOLUME_BREAKOUT',
         };
       });
@@ -338,7 +381,6 @@ export default function BigShotRadar({
     return allBigShotSetups;
   }, [allBigShotSetups, activeFilter, pinnedSymbols]);
 
-  // Count near/locked circuits
   const circuitSetupsCount = useMemo(() => {
     return allBigShotSetups.filter((s) => s.circuitStatus === 'LOCKED_IN_UC' || s.circuitStatus === 'NEAR_UC_ALERT').length;
   }, [allBigShotSetups]);
@@ -391,12 +433,19 @@ export default function BigShotRadar({
               </span>
             </div>
             <p className="text-light opacity-75 small mb-0 mt-1">
-              Tracks <strong>&gt; ₹500–₹1,500+ Cr Block Deals</strong> (like <span className="text-warning fw-bold">ATHERENERG</span>), 
-              <strong>5x Volume News Breakouts</strong>, and <strong>3:15 PM Upper Circuit Locks / Near-Circuit Alerts</strong> for next-morning gap-up trades!
+              Tracks <strong>&gt; ₹500–₹1,500+ Cr Block Deals</strong>, 
+              <strong>5x Volume News Breakouts</strong>, and <strong>Strong Buy vs Strong Selling (VWAP Alerts)</strong> with Limit Profit & Capital Protection Rules!
             </p>
           </div>
 
           <div className="d-flex align-items-center gap-2">
+            <button
+              type="button"
+              className="btn btn-sm btn-outline-info text-white rounded-pill px-3 py-1.5 fw-bold shadow-sm"
+              onClick={() => setShowMistakeGuide(!showMistakeGuide)}
+            >
+              {showMistakeGuide ? '✕ Close Lesson' : '🧠 Ather Energy Lesson & Limit Profit Rules'}
+            </button>
             <button
               type="button"
               className={`btn btn-sm ${activeFilter === 'CIRCUITS' ? 'btn-danger text-white' : 'btn-outline-danger text-white'} rounded-pill px-3 py-1.5 fw-bold shadow-sm`}
@@ -414,6 +463,54 @@ export default function BigShotRadar({
           </div>
         </div>
 
+        {/* ── EXPANDABLE ATHER ENERGY MISTAKE & LIMIT PROFIT GUIDE ── */}
+        {showMistakeGuide && (
+          <div className="p-3.5 rounded-3 mb-3 border border-warning border-opacity-40" style={{ background: '#0b1622' }}>
+            <div className="d-flex align-items-center gap-2 mb-2 pb-2 border-bottom border-secondary border-opacity-30">
+              <span className="fs-4">🛡️</span>
+              <h5 className="text-warning fw-bold mb-0">Case Study: What Went Wrong in Ather Energy & The "Limit Profit" Rules</h5>
+            </div>
+
+            <div className="row g-3 small">
+              {/* Box 1: The 3 Costly Mistakes Made Today */}
+              <div className="col-12 col-md-6">
+                <div className="p-3 rounded-3 h-100 border border-danger border-opacity-50" style={{ background: '#1c1218' }}>
+                  <strong className="text-danger d-block fs-6 mb-2">❌ The 3 Costly Mistakes with Ather Energy Today (-₹2,500 Loss):</strong>
+                  <ul className="text-white ps-3 mb-0" style={{ lineHeight: '1.6' }}>
+                    <li>
+                      <strong>Mistake 1: Chasing on Day 3</strong>: Ather had already exploded <strong>+17% (₹1,480 $\rightarrow$ ₹1,737)</strong> on Friday & Tuesday. Buying near the peak without waiting for a support pullback is high risk!
+                    </li>
+                    <li>
+                      <strong>Mistake 2: Buying Below VWAP (₹1,702)</strong>: Once price dropped below VWAP on a deep red market day (-218 pts), buyers had surrendered. <em>Rule: NEVER buy long when price is below VWAP!</em>
+                    </li>
+                    <li>
+                      <strong>Mistake 3: No Hard Stop Loss</strong>: Letting a normal ₹500 test risk expand into a -₹2,500 loss. Stop-loss must ALWAYS be placed at entry!
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* Box 2: The "Limit Profit" & Capital Protection Formula */}
+              <div className="col-12 col-md-6">
+                <div className="p-3 rounded-3 h-100 border border-success border-opacity-50" style={{ background: '#0f241a' }}>
+                  <strong className="text-success d-block fs-6 mb-2">💰 The "Limit Profit" & Capital Protection Formula:</strong>
+                  <ul className="text-white ps-3 mb-0" style={{ lineHeight: '1.6' }}>
+                    <li>
+                      <strong>Rule 1 (1:2 Limit Profit Rule)</strong>: When profit reaches <strong>Target 1 (+2% to +3% or ₹1,500–₹2,000)</strong>, <strong>book 50% profit immediately</strong>! Never be greedy.
+                    </li>
+                    <li>
+                      <strong>Rule 2 (The Never-Red Rule)</strong>: Once your trade is up +₹1,000, <strong>move your Stop Loss to Cost (Breakeven ₹0)</strong>. A winning trade must NEVER become a losing trade!
+                    </li>
+                    <li>
+                      <strong>Rule 3 (Daily Profit Lock)</strong>: If you banked +₹6,000 yesterday, your <strong>Maximum Daily Loss Limit is ₹1,500 (25% max giveback)</strong>. If you lose ₹1,500, shut down the screen and protect your cash!
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* ── 3 STAT & STRATEGY CARDS ── */}
         <div className="row g-3">
           {/* Card A: Mega Block Accumulators */}
@@ -427,7 +524,7 @@ export default function BigShotRadar({
                 <span className="badge bg-success text-white small">T+1 to T+3 Run</span>
               </div>
               <p className="small text-light opacity-85 mb-2">
-                Giant funds absorb supply (e.g. <strong>ATHERENERG ₹1,758 Cr</strong>). Follow-through buying launches stock to <strong>52W Highs (+6% to +16%)</strong>.
+                Giant funds absorb supply (e.g. <strong>LENSKART ₹1,856 Cr</strong> holding green today). Follow-through buying launches stock to <strong>52W Highs</strong>.
               </p>
               <div className="d-flex flex-wrap gap-1.5">
                 {megaBlockCandidates.map((m) => (
@@ -450,7 +547,7 @@ export default function BigShotRadar({
                 <span className="badge bg-info text-dark small">9:30 AM Breakout</span>
               </div>
               <p className="small text-light opacity-85 mb-2">
-                Turnarounds & debt settlements opening with <strong>&ge; 5x Relative Volume</strong> surging <strong>+15% to +20%</strong> (e.g. ASIANHOTNR).
+                Turnarounds opening with <strong>&ge; 5x Relative Volume</strong> surging <strong>+15% to +20%</strong> (e.g. BODALCHEM, ASIANHOTNR).
               </p>
               <div className="d-flex flex-wrap gap-1.5">
                 {volumeSurgeCandidates.filter((v) => v.type === '5X_VOLUME_BREAKOUT').slice(0, 3).map((v) => (
@@ -547,12 +644,12 @@ export default function BigShotRadar({
                 <th>#</th>
                 <th>Watchlist</th>
                 <th>Stock Symbol & Company</th>
-                <th>Circuit Status / Alert</th>
+                <th>Live Signal & Alert</th>
                 <th>Live Price (₹)</th>
                 <th>Day Gain %</th>
+                <th>VWAP (₹)</th>
                 <th>Upper Band / Dist %</th>
-                <th>Next-Morning Gap Projection</th>
-                <th>Volume Spike / Deal</th>
+                <th>Profit Action & Limit</th>
                 <th>Stop Loss (₹)</th>
                 <th>Target 1 / Target 2 (₹)</th>
                 <th>Actions</th>
@@ -570,9 +667,10 @@ export default function BigShotRadar({
                 displayedSetups.map((stock, idx) => {
                   const isPinned = pinnedSymbols.has(stock.symbol);
                   const isPositive = Number(stock.dayGainPct || 0) >= 0;
+                  const isBelowVwap = stock.vwap ? stock.currentLtp < stock.vwap : false;
 
                   return (
-                    <tr key={`${stock.symbol}-${idx}`}>
+                    <tr key={`${stock.symbol}-${idx}`} className={isBelowVwap ? 'table-danger bg-opacity-10' : ''}>
                       <td>
                         <span className="badge bg-dark fw-bold">#{idx + 1}</span>
                       </td>
@@ -605,23 +703,19 @@ export default function BigShotRadar({
                         </div>
                       </td>
 
-                      {/* Circuit Status / Alert */}
+                      {/* Live Signal & Alert (Strong Buy vs Strong Selling) */}
                       <td>
-                        {stock.circuitStatus === 'LOCKED_IN_UC' ? (
+                        {stock.signal === 'STRONG_SELLING' ? (
                           <span className="badge bg-danger text-white fw-bold px-2.5 py-1 shadow-sm fs-6">
-                            🔒 100% LOCKED IN UC
+                            {stock.signalText}
                           </span>
-                        ) : stock.circuitStatus === 'NEAR_UC_ALERT' ? (
-                          <span className="badge bg-warning text-dark fw-bold px-2.5 py-1 shadow-sm border border-danger">
-                            ⚡ NEAR UPPER CIRCUIT ({stock.distToUcPct}% Away • Buy Window)
-                          </span>
-                        ) : stock.type === 'MEGA_BLOCK' ? (
-                          <span className="badge bg-warning text-dark fw-bold px-2 py-1">
-                            🏢 MEGA BLOCK (&ge; ₹500 Cr)
+                        ) : stock.signal === 'LOCKED_CIRCUIT' ? (
+                          <span className="badge bg-danger text-white fw-bold px-2.5 py-1 shadow-sm fs-6">
+                            {stock.signalText}
                           </span>
                         ) : (
-                          <span className="badge bg-info text-dark fw-bold px-2 py-1">
-                            ⚡ 5X VOLUME SURGE
+                          <span className="badge bg-success text-white fw-bold px-2.5 py-1 shadow-sm fs-6">
+                            {stock.signalText || '🟢 STRONG BUY'}
                           </span>
                         )}
                       </td>
@@ -636,6 +730,18 @@ export default function BigShotRadar({
                         {isPositive ? '▲ +' : '▼ '}{Number(stock.dayGainPct || 0).toFixed(2)}%
                       </td>
 
+                      {/* VWAP */}
+                      <td>
+                        <div>
+                          <strong className={isBelowVwap ? 'text-danger' : 'text-success'}>
+                            ₹{Number(stock.vwap || 0).toFixed(2)}
+                          </strong>
+                          <small className="d-block text-muted" style={{ fontSize: 10 }}>
+                            {isBelowVwap ? '⚠️ Below VWAP (Bearish)' : '✓ Above VWAP (Bullish)'}
+                          </small>
+                        </div>
+                      </td>
+
                       {/* Upper Band & Distance */}
                       <td>
                         <div>
@@ -646,28 +752,11 @@ export default function BigShotRadar({
                         </div>
                       </td>
 
-                      {/* Next Morning Gap Up Projection */}
-                      <td>
-                        <span className="badge bg-success bg-opacity-15 text-success border border-success fw-bold px-2 py-1">
-                          {stock.gapUpProjection || '▲ +3.0% to +5.0%'}
-                        </span>
-                      </td>
-
-                      {/* Volume Surge / Deal Size */}
-                      <td>
-                        {stock.type === 'MEGA_BLOCK' ? (
-                          <div>
-                            <span className="badge bg-success text-white fs-6 fw-bold px-2 py-1 shadow-sm">
-                              ₹{stock.dealValueCr?.toFixed(2)} Cr Deal
-                            </span>
-                          </div>
-                        ) : (
-                          <div>
-                            <span className="badge bg-primary text-white fs-6 fw-bold px-2 py-1 shadow-sm">
-                              ⚡ {stock.rvol}x Vol
-                            </span>
-                          </div>
-                        )}
+                      {/* Profit Action & Limit */}
+                      <td style={{ maxWidth: 220, whiteSpace: 'normal' }}>
+                        <strong className={stock.signal === 'STRONG_SELLING' ? 'text-danger small d-block' : 'text-success small d-block'}>
+                          {stock.signalAdvice}
+                        </strong>
                       </td>
 
                       {/* Stop Loss */}
