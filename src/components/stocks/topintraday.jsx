@@ -5,6 +5,7 @@ import { MARKET_INTELLIGENCE_TABS } from './marketIntelligence';
 export default function TopIntraday({ activeTab, onChange }) {
   const tabs = [
     ...MARKET_INTELLIGENCE_TABS,
+    { key: 'practice-trading', label: '🎓 Practice Stock Market (Dummy Funds)', tone: 'gold' },
     { key: 'risk-monitor', label: '🛡️ Position Risk Monitor', tone: 'orange' },
     { key: 'nifty50', label: '🇮🇳 NIFTY50', tone: 'green' },
     { key: 'watchfornextday', label: '🔮 Watch For Next Day', tone: 'green' },
@@ -16,6 +17,7 @@ export default function TopIntraday({ activeTab, onChange }) {
     { key: 'candlestick-guide', label: '🕯️ Candlestick Guide', tone: 'green' },
     { key: 'trading', label: '⚡ Groww Intraday Trading', tone: 'green' },
     { key: 'momentum', label: '🚀 Momentum Scanner', tone: 'green' },
+    { key: 'fno', label: '📊 F&O Options Engine', tone: 'orange' },
   ];
 
   return (

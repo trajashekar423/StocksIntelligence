@@ -41,6 +41,7 @@ import BigShotRadar from './BigShotRadar.jsx';
 import Nifty50Scanner from './Nifty50Scanner.jsx';
 import LivePositionRiskMonitor from '../trading/LivePositionRiskMonitor';
 import MarketSentimentAlertBanner from './MarketSentimentAlertBanner.jsx';
+import PracticeStockMarket from './PracticeStockMarket.jsx';
 
 const UNAVAILABLE = 'Unavailable';
 
@@ -3394,6 +3395,11 @@ export default function Stocks() {
             </>
           )}
         </>
+      )}
+
+      {/* PRACTICE STOCK MARKET (DUMMY FUNDS & LIVE REAL NSE DATA) */}
+      {activeTab === 'practice-trading' && (
+        <PracticeStockMarket />
       )}
 
       {/* LIVE OPEN POSITION RISK & EXIT ALERT ENGINE */}
