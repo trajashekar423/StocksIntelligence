@@ -30,6 +30,7 @@ import {
   renderTomorrowSetup,
 } from './tomorrowScanner';
 import MomentumScanner from './MomentumScanner.jsx';
+import FnOStrategyEngine from './FnOStrategyEngine.jsx';
 import IntradayTradingModule from '../trading/IntradayTradingModule';
 import StockDetailModal from './StockDetailModal.jsx';
 import CandleExplainer from './CandleExplainer.jsx';
@@ -3426,9 +3427,14 @@ export default function Stocks() {
       {/* LIVE BLOCK DEALS WATCH */}
       {activeTab === 'block-deals' && (
         <BlockDealsWatch
+          scannedStocks={scanner.scanned || []}
+          blockDeals={marketIntelligenceData.blockDeals || []}
           onQuickTrade={(s) => {
             setSelectedStock(s);
             setActiveTab('trading');
+          }}
+          onTrackRisk={(s) => {
+            // Track risk
           }}
         />
       )}
@@ -3547,6 +3553,10 @@ export default function Stocks() {
           industryScoreMap={momentumIndustryScoreMap}
           lastUpdated={lastUpdated}
         />
+      )}
+
+      {activeTab === 'fno' && (
+        <FnOStrategyEngine />
       )}
 
       {activeTab === 'candlestick-guide' && (

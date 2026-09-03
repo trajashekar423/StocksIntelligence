@@ -1,10 +1,27 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import StockDetailModal from './StockDetailModal';
+import StockDetailModal from './StockDetailModal.jsx';
 import { registerNewOpenPosition } from '../../services/risk/positionTracker';
 
-export default function BlockDealsWatch({ onQuickTrade = null }) {
+const WATCHLIST_STORAGE_KEY = 'block_deals_custom_watchlist_v1';
+
+/**
+ * BlockDealsWatch Component (Powered by BigShot Radar Logic)
+ * 
+ * Implements Institutional Intelligence:
+ * 1. 🏢 Mega Block Deal Accumulation (≥ ₹500–₹1,500+ Crore)
+ * 2. 🟢 Strong Buy vs 🔴 Strong Selling (VWAP & Floor Breach Alerts)
+ * 3. 🎯 Profit Limit & Capital Protection Advice
+ * 4. 🛡️ Live Risk Tracking & Trailing Stop Integration
+ * 5. 📱 100% Responsive Dual View (Table for Desktop, Cards for Mobile)
+ */
+export default function BlockDealsWatch({
+  scannedStocks = [],
+  blockDeals = [],
+  onQuickTrade = null,
+  onTrackRisk = null,
+}) {
   const [loading, setLoading] = useState(true);
   const [blockDealData, setBlockDealData] = useState({
     timestamp: '',
@@ -16,13 +33,48 @@ export default function BlockDealsWatch({ onQuickTrade = null }) {
     marketStatus: null,
   });
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedSession, setSelectedSession] = useState('ALL'); // 'ALL' | 'Session 1' | 'Session 2'
-  const [minValueCr, setMinValueCr] = useState(0); // 0 | 50 | 500 | 1000
+  const [activeFilter, setActiveFilter] = useState('ALL'); // 'ALL' | 'MEGA' | 'LARGE' | 'STRONG_BUY' | 'SELLING' | 'WATCHLIST'
+  const [pinnedSymbols, setPinnedSymbols] = useState(new Set());
   const [selectedStockForChart, setSelectedStockForChart] = useState(null);
   const [feedbackMsg, setFeedbackMsg] = useState(null);
   const [riskTrackedSymbols, setRiskTrackedSymbols] = useState(new Set());
   const [lastRefreshed, setLastRefreshed] = useState('');
+  const [showPlaybook, setShowPlaybook] = useState(false);
 
+  // Load Pinned Watchlist
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(WATCHLIST_STORAGE_KEY);
+      if (saved) {
+        setPinnedSymbols(new Set(JSON.parse(saved)));
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  // Toggle Pinned Watchlist
+  const togglePinWatchlist = (symbol) => {
+    setPinnedSymbols((prev) => {
+      const next = new Set(prev);
+      if (next.has(symbol)) {
+        next.delete(symbol);
+        setFeedbackMsg(`Removed ${symbol} from Your Block Deals Watchlist`);
+      } else {
+        next.add(symbol);
+        setFeedbackMsg(`⭐ Added ${symbol} to Your Block Deals Watchlist!`);
+      }
+      try {
+        localStorage.setItem(WATCHLIST_STORAGE_KEY, JSON.stringify(Array.from(next)));
+      } catch {
+        // ignore
+      }
+      setTimeout(() => setFeedbackMsg(null), 3500);
+      return next;
+    });
+  };
+
+  // Fetch Live Block Deals from NSE
   const fetchBlockDeals = useCallback(async () => {
     setLoading(true);
     try {
@@ -54,327 +106,603 @@ export default function BlockDealsWatch({ onQuickTrade = null }) {
     return () => clearInterval(timer);
   }, [fetchBlockDeals]);
 
-  // Track in Risk Engine
-  const handleTrackInRiskEngine = (deal) => {
+  // Track in Risk Engine with Trailing SL
+  const handleTrackInRiskEngine = (stock) => {
     try {
-      const sym = deal.symbol;
-      const comp = `${sym} Limited`;
-      const buyPrice = Number(deal.lastPrice || deal.open || 100);
-      const sl = Number((buyPrice * 0.97).toFixed(2));
+      const sym = stock.symbol;
+      const comp = stock.companyName || `${sym} Limited`;
+      const buyPrice = Number(stock.currentLtp || stock.dealPrice || 100);
+      const sl = Number((stock.stopLoss || buyPrice * 0.97).toFixed(2));
+
+      // 1. Register into positionTracker
       registerNewOpenPosition(sym, comp, 100, buyPrice, sl, 'MIS');
 
+      // 2. Register into groww_active_positions_v1
+      const activePositions = JSON.parse(localStorage.getItem('groww_active_positions_v1') || '[]');
+      const newPos = {
+        symbol: sym,
+        qty: 100,
+        avgPrice: buyPrice,
+        stopLoss: sl,
+        target: stock.target1 || Number((buyPrice * 1.03).toFixed(2)),
+        entryTime: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+        entryDate: new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
+        type: 'BUY',
+        currentLtp: buyPrice,
+        unrealizedPnl: 0,
+        pnlPercent: 0,
+        trailingStop: sl,
+        highestPrice: buyPrice,
+      };
+      const filtered = activePositions.filter((p) => p.symbol !== sym);
+      localStorage.setItem('groww_active_positions_v1', JSON.stringify([newPos, ...filtered]));
+
       setRiskTrackedSymbols((prev) => new Set([...prev, sym]));
-      setFeedbackMsg(`✓ ${sym} registered into Live Position Risk Monitor with Trailing Stop Loss (₹${sl.toFixed(2)})!`);
-      setTimeout(() => setFeedbackMsg(null), 4500);
+      setFeedbackMsg(`✓ ${sym} registered into Live Position Risk Monitor with Trailing SL (₹${sl.toFixed(2)})!`);
+      setTimeout(() => setFeedbackMsg(null), 4000);
+      onTrackRisk?.(stock);
     } catch {
       // ignore
     }
   };
 
-  // Filtered Deals
-  const filteredDeals = useMemo(() => {
-    return blockDealData.data.filter((deal) => {
-      const sym = String(deal.symbol || '').toUpperCase();
-      const q = searchQuery.trim().toUpperCase();
-      const matchesSearch = !q || sym.includes(q);
+  // Process & Merge All Block Deals with BigShot Radar Logic
+  const processedBlockSetups = useMemo(() => {
+    const rawDeals = blockDealData.data || [];
 
-      const matchesSession =
-        selectedSession === 'ALL' || String(deal.session || '').toLowerCase() === selectedSession.toLowerCase();
+    // Fallback baseline for notable multi-day institutional block deals
+    const historicalKnownDeals = [
+      {
+        session: 'Session 1',
+        symbol: 'LENSKART',
+        companyName: 'Lenskart Solutions Limited',
+        dealPrice: 630.0,
+        currentLtp: 669.0,
+        totalTradedValue: 18567800000,
+        totalTradedVolume: 29472670,
+        pchange: 0.78,
+        previousClose: 663.8,
+        vwap: 669.09,
+        series: 'EQ',
+        lastUpdateTime: 'T+1 Live Follow-Through',
+        catalyst: '₹1,856 Cr Mega Floor (Holding Green Above Base)',
+      },
+      {
+        session: 'Session 1',
+        symbol: 'ATHERENERG',
+        companyName: 'Ather Energy Limited',
+        dealPrice: 1480.0,
+        currentLtp: 1675.0,
+        totalTradedValue: 17582400000,
+        totalTradedVolume: 11880000,
+        pchange: -2.93,
+        previousClose: 1725.5,
+        vwap: 1702.25,
+        series: 'EQ',
+        lastUpdateTime: 'T+2 Pullback Window',
+        catalyst: 'Post-Breakout Pullback (Below ₹1,702 VWAP)',
+      },
+    ];
 
-      const valCr = (deal.totalTradedValue || 0) / 10000000;
-      const matchesVal = valCr >= minValueCr;
+    // Combine rawDeals and historical deals without duplicates
+    const combined = [...rawDeals];
+    for (const h of historicalKnownDeals) {
+      if (!combined.some((d) => d.symbol === h.symbol)) {
+        combined.push(h);
+      }
+    }
 
-      return matchesSearch && matchesSession && matchesVal;
+    return combined.map((deal) => {
+      const sym = deal.symbol;
+      const matchedScanner = scannedStocks.find((s) => s.symbol === sym);
+
+      const dealValueCr = Number(((deal.totalTradedValue || 0) / 10000000).toFixed(2));
+      const dealVolume = Number(deal.totalTradedVolume || 0);
+      const dealPrice = Number(deal.lastPrice || deal.open || deal.dealPrice || 100);
+      const prevClose = Number(deal.previousClose || matchedScanner?.previousClose || dealPrice);
+
+      const currentLtp = Number(matchedScanner?.price || matchedScanner?.ltp || deal.currentLtp || deal.lastPrice || dealPrice);
+      const pchange = Number(matchedScanner?.changePercent ?? deal.pchange ?? deal.pChange ?? (prevClose > 0 ? ((currentLtp - prevClose) / prevClose) * 100 : 0));
+
+      const vwap = Number(matchedScanner?.vwap || deal.vwap || (dealPrice * 0.995).toFixed(2));
+      const isAboveVwap = currentLtp >= vwap;
+      const isHoldingDealPrice = currentLtp >= dealPrice;
+      const gainSinceDealPct = dealPrice > 0 ? Number((((currentLtp - dealPrice) / dealPrice) * 100).toFixed(2)) : 0;
+
+      // Upper band calculation
+      const upperBand = Number((matchedScanner?.upperBand || (prevClose * 1.10)).toFixed(2));
+      const distToUcPct = upperBand > 0 ? Math.max(0, Number((((upperBand - currentLtp) / upperBand) * 100).toFixed(1))) : 5.0;
+
+      // BigShot 100-Point Scoring Logic
+      let score = 50;
+      if (dealValueCr >= 1000) score += 30;
+      else if (dealValueCr >= 500) score += 25;
+      else if (dealValueCr >= 100) score += 15;
+      else if (dealValueCr >= 50) score += 10;
+
+      if (isAboveVwap) score += 15;
+      else score -= 25; // Penalty for trading below VWAP
+
+      if (isHoldingDealPrice) score += 10;
+      if (pchange > 0) score += 10;
+      if (distToUcPct <= 1.5) score += 15;
+
+      score = Math.max(10, Math.min(100, Math.round(score)));
+
+      // Institutional Tier
+      const isMegaBlock = dealValueCr >= 500;
+      const isLargeBlock = dealValueCr >= 50 && dealValueCr < 500;
+      const tierBadge = isMegaBlock
+        ? '🏢 MEGA BLOCK (≥ ₹500 Cr)'
+        : isLargeBlock
+        ? '⚡ LARGE BLOCK (≥ ₹50 Cr)'
+        : '📦 STANDARD BLOCK';
+
+      // BigShot Live Signal & Alert Logic
+      let signal = 'WATCH';
+      let signalText = '🟡 WATCH / CONSOLIDATING';
+      let signalAdvice = '⏳ Wait for clean breakout above Deal Price & VWAP';
+      let risk = 'Low';
+
+      if (!isAboveVwap && pchange <= 0) {
+        signal = 'STRONG_SELLING';
+        signalText = '🔴 STRONG SELLING (Below VWAP)';
+        signalAdvice = '❌ DO NOT BUY / Institutional Supply Dumping (Capital Defense)';
+        risk = 'High';
+      } else if (distToUcPct <= 1.5) {
+        signal = 'LOCKED_CIRCUIT';
+        signalText = distToUcPct === 0 ? '🔒 100% LOCKED IN UC' : '⚡ NEAR UC (Golden Window)';
+        signalAdvice = '💰 Hold for Tomorrow Gap-Up Open (Sell 50% at 09:15 AM)';
+        risk = 'Low';
+      } else if (isAboveVwap && (isHoldingDealPrice || pchange >= 0.5)) {
+        signal = 'STRONG_BUY';
+        signalText = '🟢 STRONG BUY (Holding Floor)';
+        signalAdvice = '🎯 Take 50% at T1 (+2.5%) & Move SL to Cost (Never-Red)';
+        risk = 'Low';
+      } else if (score >= 60) {
+        signal = 'ACCUMULATING';
+        signalText = '💎 INSTITUTIONAL ACCUMULATION';
+        signalAdvice = '📈 Building base above Deal Price. Buy near VWAP support.';
+        risk = 'Medium';
+      }
+
+      // Stop Loss & Targets
+      const stopLoss = Number((Math.min(dealPrice, vwap) * 0.985).toFixed(2));
+      const target1 = Number((currentLtp * 1.025).toFixed(2));
+      const target2 = Number((currentLtp * 1.05).toFixed(2));
+
+      return {
+        symbol: sym,
+        companyName: deal.companyName || `${sym} Limited`,
+        dealPrice,
+        currentLtp,
+        dealValueCr,
+        dealVolume,
+        pchange,
+        prevClose,
+        vwap,
+        isAboveVwap,
+        isHoldingDealPrice,
+        gainSinceDealPct,
+        upperBand,
+        distToUcPct,
+        score,
+        isMegaBlock,
+        isLargeBlock,
+        tierBadge,
+        signal,
+        signalText,
+        signalAdvice,
+        risk,
+        stopLoss,
+        target1,
+        target2,
+        session: deal.session || 'Session 1',
+        lastUpdateTime: deal.lastUpdateTime || '08:50 AM',
+        series: deal.series || 'BL',
+        catalyst: deal.catalyst || `${tierBadge} transaction`,
+      };
     });
-  }, [blockDealData.data, searchQuery, selectedSession, minValueCr]);
+  }, [blockDealData.data, scannedStocks]);
+
+  // Filtered Setups
+  const displayedSetups = useMemo(() => {
+    return processedBlockSetups.filter((deal) => {
+      const q = searchQuery.trim().toUpperCase();
+      const matchesSearch = !q || deal.symbol.includes(q) || deal.companyName.toUpperCase().includes(q);
+
+      if (!matchesSearch) return false;
+
+      switch (activeFilter) {
+        case 'MEGA':
+          return deal.isMegaBlock;
+        case 'LARGE':
+          return deal.isLargeBlock || deal.isMegaBlock;
+        case 'STRONG_BUY':
+          return deal.signal === 'STRONG_BUY' || deal.signal === 'LOCKED_CIRCUIT';
+        case 'SELLING':
+          return deal.signal === 'STRONG_SELLING';
+        case 'WATCHLIST':
+          return pinnedSymbols.has(deal.symbol);
+        default:
+          return true;
+      }
+    });
+  }, [processedBlockSetups, searchQuery, activeFilter, pinnedSymbols]);
 
   const totalValueCr = (blockDealData.totalTradedValue / 10000000).toFixed(2);
-  const totalVolumeCr = (blockDealData.totalTradedVolume / 10000000).toFixed(2);
+  const megaBlocksCount = processedBlockSetups.filter((d) => d.isMegaBlock).length;
+  const strongBuyCount = processedBlockSetups.filter((d) => d.signal === 'STRONG_BUY' || d.signal === 'LOCKED_CIRCUIT').length;
 
   return (
     <div className="block-deals-module w-100 mb-5">
-      {/* ── 1. HEADER BANNER ── */}
+      {/* ── 1. HEADER BANNER (BigShot Radar Styling) ── */}
       <div
-        className="card border-0 shadow-sm rounded-4 overflow-hidden text-white mb-4 p-4"
-        style={{ background: 'linear-gradient(135deg, #0b132b 0%, #1c2541 50%, #3a506b 100%)' }}
+        className="card border-0 shadow-sm rounded-4 overflow-hidden text-white mb-4 p-3 p-md-4"
+        style={{ background: 'linear-gradient(135deg, #09131d 0%, #112842 50%, #1d4673 100%)' }}
       >
-        <div className="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+        <div className="d-flex flex-column flex-lg-row align-items-start align-items-lg-center justify-content-between gap-3 mb-3">
           <div>
             <div className="d-flex flex-wrap align-items-center gap-2">
               <span className="fs-3">🏢</span>
-              <h4 className="mb-0 fw-bold">NSE Official Live Block Deals Watch</h4>
-              <span className="badge bg-primary text-white fw-bold px-2.5 py-1 small shadow-sm">
-                ⚡ REAL-TIME NSE WINDOW FEED
+              <h4 className="mb-0 fw-bold fs-5 fs-md-4">
+                NSE Block Deals Watch • Powered by BigShot Radar Logic
+              </h4>
+              <span className="badge bg-warning text-dark fw-bold px-2.5 py-1 small shadow-sm">
+                ⚡ INSTITUTIONAL RADAR
               </span>
             </div>
             <p className="text-light opacity-75 small mb-0 mt-1">
-              Live tracking of large institutional transactions (&ge; ₹10 Crore) executed through NSE&apos;s dedicated Block Deal trading windows.
+              Tracks <strong>&ge; ₹500–₹1,500+ Cr Mega Blocks</strong>, VWAP Accumulation Floors, and 
+              <strong> Strong Buy vs Strong Selling (Supply Dump)</strong> alerts with Limit Profit rules!
             </p>
           </div>
 
-          <div className="d-flex align-items-center gap-2">
+          <div className="d-flex flex-wrap align-items-center gap-2 w-100 w-lg-auto">
             <button
               type="button"
-              className="btn btn-sm btn-outline-light d-flex align-items-center gap-1 shadow-sm fw-semibold"
+              className="btn btn-sm btn-outline-info text-white rounded-pill px-3 py-1.5 fw-bold shadow-sm flex-grow-1 flex-sm-grow-0"
+              onClick={() => setShowPlaybook(!showPlaybook)}
+            >
+              {showPlaybook ? '✕ Close Playbook' : '🧠 Block Deals Playbook & Rules'}
+            </button>
+            <button
+              type="button"
+              className="btn btn-sm btn-outline-light rounded-pill px-3 py-1.5 fw-semibold shadow-sm flex-grow-1 flex-sm-grow-0"
               onClick={fetchBlockDeals}
               disabled={loading}
             >
-              {loading ? <span className="spinner-border spinner-border-sm" /> : '🔄 Refresh Live Deals'}
+              {loading ? <span className="spinner-border spinner-border-sm" /> : '🔄 Refresh Deals'}
             </button>
-            {lastRefreshed && (
-              <span className="text-light opacity-75 small" style={{ fontSize: 11 }}>
-                Updated: {lastRefreshed}
-              </span>
-            )}
+            <button
+              type="button"
+              className={`btn btn-sm ${activeFilter === 'WATCHLIST' ? 'btn-warning text-dark' : 'btn-outline-warning text-white'} rounded-pill px-3 py-1.5 fw-bold shadow-sm flex-grow-1 flex-sm-grow-0`}
+              onClick={() => setActiveFilter(activeFilter === 'WATCHLIST' ? 'ALL' : 'WATCHLIST')}
+            >
+              ⭐ Watchlist ({pinnedSymbols.size})
+            </button>
           </div>
         </div>
 
-        {/* AUCTION WINDOWS SCHEDULE STRIP */}
-        <div className="row g-2 text-dark small">
-          <div className="col-12 col-md-6">
-            <div className="p-2.5 rounded-3 bg-white bg-opacity-90 border d-flex align-items-center justify-content-between">
-              <div>
-                <strong className="d-block text-dark">🌅 Morning Window (Session 1)</strong>
-                <span className="text-muted" style={{ fontSize: 11 }}>08:45 AM – 09:00 AM IST</span>
+        {/* ── EXPANDABLE PLAYBOOK & CASE STUDY ── */}
+        {showPlaybook && (
+          <div className="p-3 p-md-3.5 rounded-3 mb-3 border border-warning border-opacity-40" style={{ background: '#0b1622' }}>
+            <div className="d-flex align-items-center gap-2 mb-2 pb-2 border-bottom border-secondary border-opacity-30">
+              <span className="fs-4">🛡️</span>
+              <h5 className="text-warning fw-bold mb-0 fs-6 fs-md-5">
+                Institutional Block Deals Playbook: Accumulation Floor vs Supply Dumping
+              </h5>
+            </div>
+
+            <div className="row g-3 small">
+              {/* Card 1: Clean Accumulation (The Lenskart Model) */}
+              <div className="col-12 col-md-6">
+                <div className="p-3 rounded-3 h-100 border border-success border-opacity-50" style={{ background: '#0f241a' }}>
+                  <strong className="text-success d-block fs-6 mb-2">🟢 The Accumulation Pattern (e.g. Lenskart ₹1,856 Cr):</strong>
+                  <ul className="text-white ps-3 mb-0" style={{ lineHeight: '1.6' }}>
+                    <li>
+                      <strong>Floor Established</strong>: Price holds firmly <strong>ABOVE the Block Deal Price (₹630)</strong>.
+                    </li>
+                    <li>
+                      <strong>Above VWAP (₹669)</strong>: Buyers defend the VWAP intraday benchmark, even when the broader market falls -200 pts.
+                    </li>
+                    <li>
+                      <strong>Execution</strong>: Buy near VWAP support; book 50% at +2.5% Target 1, and move Stop Loss to Cost!
+                    </li>
+                  </ul>
+                </div>
               </div>
-              <span className="badge bg-success text-white px-2.5 py-1 fw-bold">
-                ✓ Executed ({blockDealData.data.filter((d) => d.session === 'Session 1').length} Deals)
-              </span>
+
+              {/* Card 2: Supply Offloading (The Ather Energy Lesson) */}
+              <div className="col-12 col-md-6">
+                <div className="p-3 rounded-3 h-100 border border-danger border-opacity-50" style={{ background: '#1c1218' }}>
+                  <strong className="text-danger d-block fs-6 mb-2">🔴 The Supply Dump Pattern (e.g. Ather Energy -₹2,500 Lesson):</strong>
+                  <ul className="text-white ps-3 mb-0" style={{ lineHeight: '1.6' }}>
+                    <li>
+                      <strong>VWAP Breakdown</strong>: Even after a ₹1,758 Cr deal, if price breaks <strong>BELOW VWAP (₹1,702)</strong>, institutions are offloading inventory into retail!
+                    </li>
+                    <li>
+                      <strong>Day 3 Exhaustion</strong>: Never chase on Day 3 without a support pullback base.
+                    </li>
+                    <li>
+                      <strong>Golden Rule</strong>: <em>NEVER buy long when price is below VWAP, regardless of block deal size!</em>
+                    </li>
+                  </ul>
+                </div>
+              </div>
             </div>
           </div>
-          <div className="col-12 col-md-6">
-            <div className="p-2.5 rounded-3 bg-white bg-opacity-90 border d-flex align-items-center justify-content-between">
-              <div>
-                <strong className="d-block text-dark">🌇 Afternoon Window (Session 2)</strong>
-                <span className="text-muted" style={{ fontSize: 11 }}>02:05 PM – 02:20 PM IST</span>
-              </div>
-              <span className="badge bg-warning text-dark px-2.5 py-1 fw-bold">
-                ⏳ Upcoming (2:05 PM)
-              </span>
+        )}
+
+        {/* ── SUMMARY STAT CARDS ── */}
+        <div className="row g-2.5 g-md-3">
+          <div className="col-6 col-md-3">
+            <div className="p-3 rounded-3 border border-light border-opacity-10 h-100" style={{ background: 'rgba(255, 255, 255, 0.05)' }}>
+              <span className="text-muted small d-block" style={{ fontSize: 11 }}>TOTAL BLOCK TURNOVER</span>
+              <h4 className="fw-bold text-primary mb-0 mt-1">₹{totalValueCr} <span className="fs-6 text-muted">Cr</span></h4>
+              <small className="text-light opacity-75" style={{ fontSize: 10.5 }}>Executed across NSE Sessions</small>
+            </div>
+          </div>
+
+          <div className="col-6 col-md-3">
+            <div className="p-3 rounded-3 border border-light border-opacity-10 h-100" style={{ background: 'rgba(255, 255, 255, 0.05)' }}>
+              <span className="text-muted small d-block" style={{ fontSize: 11 }}>MEGA BLOCKS (&ge; ₹500 Cr)</span>
+              <h4 className="fw-bold text-warning mb-0 mt-1">{megaBlocksCount} <span className="fs-6 text-muted">Stocks</span></h4>
+              <small className="text-light opacity-75" style={{ fontSize: 10.5 }}>Giant Institutional Floor</small>
+            </div>
+          </div>
+
+          <div className="col-6 col-md-3">
+            <div className="p-3 rounded-3 border border-light border-opacity-10 h-100" style={{ background: 'rgba(255, 255, 255, 0.05)' }}>
+              <span className="text-muted small d-block" style={{ fontSize: 11 }}>STRONG BUY SIGNALS</span>
+              <h4 className="fw-bold text-success mb-0 mt-1">{strongBuyCount} <span className="fs-6 text-muted">Setups</span></h4>
+              <small className="text-light opacity-75" style={{ fontSize: 10.5 }}>Above VWAP & Floor</small>
+            </div>
+          </div>
+
+          <div className="col-6 col-md-3">
+            <div className="p-3 rounded-3 border border-light border-opacity-10 h-100" style={{ background: 'rgba(255, 255, 255, 0.05)' }}>
+              <span className="text-muted small d-block" style={{ fontSize: 11 }}>NSE BENCHMARK</span>
+              <h4 className="fw-bold text-white mb-0 mt-1">
+                {blockDealData.marketStatus?.last ? Number(blockDealData.marketStatus.last).toFixed(1) : '24,088.6'}
+              </h4>
+              <small className={Number(blockDealData.marketStatus?.percentChange || 0) >= 0 ? 'text-success' : 'text-danger'} style={{ fontSize: 10.5 }}>
+                {Number(blockDealData.marketStatus?.percentChange || 0) >= 0 ? '▲ +' : '▼ '}
+                {blockDealData.marketStatus?.percentChange ? Number(blockDealData.marketStatus.percentChange).toFixed(2) : '-0.01'}% (Market Open)
+              </small>
             </div>
           </div>
         </div>
       </div>
 
-      {/* FEEDBACK BANNER */}
+      {/* ── TOAST NOTIFICATION ── */}
       {feedbackMsg && (
-        <div className="alert alert-success bg-success bg-opacity-25 border-success text-dark rounded-3 p-3 mb-4 d-flex align-items-center justify-content-between shadow-sm">
-          <div className="d-flex align-items-center gap-2">
-            <span className="fs-5">✓</span>
-            <strong>{feedbackMsg}</strong>
-          </div>
-          <button type="button" className="btn-close" onClick={() => setFeedbackMsg(null)} />
+        <div className="alert alert-success border-0 shadow-sm rounded-3 py-2 px-3 mb-3 d-flex align-items-center justify-content-between">
+          <span className="fw-bold">{feedbackMsg}</span>
+          <button type="button" className="btn-close btn-sm" onClick={() => setFeedbackMsg(null)} />
         </div>
       )}
 
-      {/* ── 2. SUMMARY METRICS CARDS ── */}
-      <div className="row g-3 mb-4">
-        <div className="col-6 col-md-3">
-          <div className="card border-0 shadow-sm rounded-4 p-3 bg-white border-start border-4 border-primary">
-            <span className="text-muted small d-block" style={{ fontSize: 11.5 }}>TOTAL BLOCK DEAL TURNOVER</span>
-            <h4 className="fw-bold text-primary mb-0 mt-1">₹{totalValueCr} <span className="fs-6 text-muted">Cr</span></h4>
-            <small className="text-secondary" style={{ fontSize: 11 }}>Minimum order size ₹10 Cr</small>
-          </div>
+      {/* ── 2. RESPONSIVE FILTER STRIP (Fluid Wrapping) ── */}
+      <div className="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-2.5 mb-3">
+        <div className="d-flex flex-wrap gap-2" role="group">
+          <button
+            type="button"
+            className={`btn btn-sm rounded-pill px-3 py-1.5 fw-bold shadow-sm ${activeFilter === 'ALL' ? 'btn-primary' : 'btn-outline-secondary text-dark'}`}
+            onClick={() => setActiveFilter('ALL')}
+          >
+            🔥 All Blocks ({processedBlockSetups.length})
+          </button>
+          <button
+            type="button"
+            className={`btn btn-sm rounded-pill px-3 py-1.5 fw-bold shadow-sm ${activeFilter === 'MEGA' ? 'btn-warning text-dark' : 'btn-outline-warning text-dark'}`}
+            onClick={() => setActiveFilter('MEGA')}
+          >
+            🏢 Mega Blocks ≥ ₹500 Cr ({megaBlocksCount})
+          </button>
+          <button
+            type="button"
+            className={`btn btn-sm rounded-pill px-3 py-1.5 fw-bold shadow-sm ${activeFilter === 'STRONG_BUY' ? 'btn-success text-white' : 'btn-outline-success'}`}
+            onClick={() => setActiveFilter('STRONG_BUY')}
+          >
+            🟢 Strong Buy Above VWAP ({strongBuyCount})
+          </button>
+          <button
+            type="button"
+            className={`btn btn-sm rounded-pill px-3 py-1.5 fw-bold shadow-sm ${activeFilter === 'SELLING' ? 'btn-danger text-white' : 'btn-outline-danger'}`}
+            onClick={() => setActiveFilter('SELLING')}
+          >
+            🔴 Selling Alerts ({processedBlockSetups.filter((d) => d.signal === 'STRONG_SELLING').length})
+          </button>
+          <button
+            type="button"
+            className={`btn btn-sm rounded-pill px-3 py-1.5 fw-bold shadow-sm ${activeFilter === 'WATCHLIST' ? 'btn-warning text-dark' : 'btn-outline-secondary'}`}
+            onClick={() => setActiveFilter('WATCHLIST')}
+          >
+            ⭐ Pinned Watchlist ({pinnedSymbols.size})
+          </button>
         </div>
-        <div className="col-6 col-md-3">
-          <div className="card border-0 shadow-sm rounded-4 p-3 bg-white border-start border-4 border-success">
-            <span className="text-muted small d-block" style={{ fontSize: 11.5 }}>TOTAL SHARES EXCHANGED</span>
-            <h4 className="fw-bold text-success mb-0 mt-1">{totalVolumeCr} <span className="fs-6 text-muted">Cr Shares</span></h4>
-            <small className="text-secondary" style={{ fontSize: 11 }}>{blockDealData.totalTradedVolume.toLocaleString('en-IN')} shares</small>
-          </div>
-        </div>
-        <div className="col-6 col-md-3">
-          <div className="card border-0 shadow-sm rounded-4 p-3 bg-white border-start border-4 border-warning">
-            <span className="text-muted small d-block" style={{ fontSize: 11.5 }}>DEALS EXECUTED TODAY</span>
-            <h4 className="fw-bold text-dark mb-0 mt-1">{blockDealData.data.length} <span className="fs-6 text-muted">Transactions</span></h4>
-            <small className="text-secondary" style={{ fontSize: 11 }}>Across NSE Series BL</small>
-          </div>
-        </div>
-        <div className="col-6 col-md-3">
-          <div className="card border-0 shadow-sm rounded-4 p-3 bg-white border-start border-4 border-info">
-            <span className="text-muted small d-block" style={{ fontSize: 11.5 }}>MARKET BENCHMARK (NIFTY)</span>
-            <h4 className="fw-bold text-dark mb-0 mt-1">
-              {blockDealData.marketStatus?.last ? Number(blockDealData.marketStatus.last).toFixed(1) : '24,088.6'}
-            </h4>
-            <small className={Number(blockDealData.marketStatus?.percentChange || 0) >= 0 ? 'text-success' : 'text-danger'} style={{ fontSize: 11 }}>
-              {Number(blockDealData.marketStatus?.percentChange || 0) >= 0 ? '▲ +' : '▼ '}
-              {blockDealData.marketStatus?.percentChange ? Number(blockDealData.marketStatus.percentChange).toFixed(2) : '-0.01'}% (Normal Market Open)
-            </small>
-          </div>
+
+        {/* Search Bar */}
+        <div className="d-flex align-items-center gap-2 w-100 w-md-auto" style={{ maxWidth: 280 }}>
+          <input
+            type="text"
+            className="form-control form-control-sm bg-light border-secondary rounded-pill px-3"
+            placeholder="Search symbol (e.g. MEESHO)..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
         </div>
       </div>
 
-      {/* ── 3. FILTER BAR ── */}
-      <div className="card border-0 shadow-sm rounded-4 p-3 mb-4 bg-white">
-        <div className="d-flex flex-wrap align-items-center justify-content-between gap-3">
-          {/* Search */}
-          <div className="d-flex align-items-center gap-2 flex-grow-1" style={{ maxWidth: 320 }}>
-            <span className="text-muted">🔍</span>
-            <input
-              type="text"
-              className="form-control form-control-sm bg-light border-secondary"
-              placeholder="Search stock symbol (e.g. LENSKART)..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-
-          {/* Session Filter */}
-          <div className="d-flex align-items-center gap-2">
-            <span className="small text-secondary fw-bold">Session:</span>
-            <div className="btn-group btn-group-sm" role="group">
-              <button
-                type="button"
-                className={`btn fw-bold ${selectedSession === 'ALL' ? 'btn-dark text-white' : 'btn-outline-secondary'}`}
-                onClick={() => setSelectedSession('ALL')}
-              >
-                All ({blockDealData.data.length})
-              </button>
-              <button
-                type="button"
-                className={`btn fw-bold ${selectedSession === 'Session 1' ? 'btn-primary text-white' : 'btn-outline-secondary'}`}
-                onClick={() => setSelectedSession('Session 1')}
-              >
-                Session 1 Morning ({blockDealData.data.filter((d) => d.session === 'Session 1').length})
-              </button>
-              <button
-                type="button"
-                className={`btn fw-bold ${selectedSession === 'Session 2' ? 'btn-warning text-dark' : 'btn-outline-secondary'}`}
-                onClick={() => setSelectedSession('Session 2')}
-              >
-                Session 2 Afternoon ({blockDealData.data.filter((d) => d.session === 'Session 2').length})
-              </button>
-            </div>
-          </div>
-
-          {/* Value Filter */}
-          <div className="d-flex align-items-center gap-2">
-            <span className="small text-secondary fw-bold">Min Value:</span>
-            <select
-              className="form-select form-select-sm bg-light"
-              style={{ width: 140 }}
-              value={minValueCr}
-              onChange={(e) => setMinValueCr(Number(e.target.value))}
-            >
-              <option value={0}>All (₹10+ Cr)</option>
-              <option value={50}>₹50+ Crore</option>
-              <option value={500}>₹500+ Crore</option>
-              <option value={1000}>₹1,000+ Crore</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      {/* ── 4. LIVE BLOCK DEALS TABLE ── */}
-      <div className="card border-0 shadow-sm rounded-4 overflow-hidden bg-white p-3 p-md-4 mb-4">
-        <div className="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
-          <div>
-            <h5 className="fw-bold text-dark mb-0">
-              📊 Live Block Deals Stream ({filteredDeals.length} of {blockDealData.data.length})
-            </h5>
-            <small className="text-muted">Timestamp: {blockDealData.timestamp}</small>
-          </div>
-        </div>
-
-        {loading && blockDealData.data.length === 0 ? (
-          <div className="p-5 text-center">
-            <div className="spinner-border text-primary mx-auto mb-3" />
-            <h6 className="fw-bold">Connecting to NSE Live Block Deal Feed...</h6>
-          </div>
-        ) : filteredDeals.length === 0 ? (
-          <div className="p-5 text-center text-muted">
-            <h5 className="fw-bold text-dark">No block deals found matching the selected filters</h5>
-            <p className="small text-muted mb-3">
-              Showing 0 of {blockDealData.data.length} total block deals executed today.
-            </p>
-            <button
-              type="button"
-              className="btn btn-sm btn-primary rounded-pill px-4 fw-bold shadow-sm"
-              onClick={() => {
-                setSearchQuery('');
-                setSelectedSession('ALL');
-                setMinValueCr(0);
-              }}
-            >
-              🔄 Reset All Filters (View All {blockDealData.data.length} Deals)
-            </button>
-          </div>
-        ) : (
-          <div className="table-responsive">
-            <table className="table table-hover align-middle table-striped table-sm small mb-0 text-nowrap">
-              <thead className="table-dark">
+      {/* ── 3A. DESKTOP RESULTS TABLE (Large Screens) ── */}
+      <div className="d-none d-lg-block card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+        <div className="table-responsive">
+          <table className="table table-hover align-middle table-striped table-sm small mb-0 text-nowrap">
+            <thead className="table-dark">
+              <tr>
+                <th>#</th>
+                <th>Watchlist</th>
+                <th>Stock Symbol & Company</th>
+                <th>Live Signal & Alert</th>
+                <th>Score</th>
+                <th>Deal Price (₹)</th>
+                <th>Live Price (₹)</th>
+                <th>Day Gain %</th>
+                <th>Deal Value (₹ Cr)</th>
+                <th>VWAP (₹)</th>
+                <th>Profit Limit Action</th>
+                <th>Stop Loss (₹)</th>
+                <th>Target 1 / 2 (₹)</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {displayedSetups.length === 0 ? (
                 <tr>
-                  <th>#</th>
-                  <th>Stock Symbol</th>
-                  <th>Deal Price (₹)</th>
-                  <th>Prev Close (₹)</th>
-                  <th>Change %</th>
-                  <th>Traded Quantity</th>
-                  <th>Deal Value (₹ Crores)</th>
-                  <th>Trading Session</th>
-                  <th>Execution Time</th>
-                  <th>Series</th>
-                  <th>Actions</th>
+                  <td colSpan="14" className="text-center py-5 text-muted">
+                    <h5>No block deal setups match the selected filter</h5>
+                    <p className="small mb-0">Try clearing filters or search term to view all transactions.</p>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {filteredDeals.map((deal, idx) => {
-                  const isPositive = Number(deal.change || 0) >= 0;
-                  const valueCr = ((deal.totalTradedValue || 0) / 10000000).toFixed(2);
+              ) : (
+                displayedSetups.map((deal, idx) => {
+                  const isPinned = pinnedSymbols.has(deal.symbol);
+                  const isPositive = Number(deal.pchange || 0) >= 0;
                   const isTracked = riskTrackedSymbols.has(deal.symbol);
 
                   return (
-                    <tr key={`${deal.symbol}-${deal.lastUpdateTime}-${idx}`}>
+                    <tr key={`${deal.symbol}-${idx}`} className={!deal.isAboveVwap ? 'table-danger bg-opacity-10' : ''}>
                       <td><span className="badge bg-dark fw-bold">#{idx + 1}</span></td>
+
+                      {/* 1-Click Pin Watchlist */}
                       <td>
-                        <span className="badge bg-dark fs-6 px-2.5 py-1 fw-bold text-white me-1.5">{deal.symbol}</span>
-                        <strong className="text-dark">{deal.symbol} Ltd</strong>
+                        <button
+                          type="button"
+                          className={`btn btn-xs rounded-pill px-2.5 py-1 fw-bold shadow-sm ${
+                            isPinned ? 'btn-warning text-dark' : 'btn-outline-secondary text-dark'
+                          }`}
+                          onClick={() => togglePinWatchlist(deal.symbol)}
+                          style={{ fontSize: 11 }}
+                        >
+                          {isPinned ? '⭐ Pinned' : '☆ Watchlist'}
+                        </button>
                       </td>
-                      <td className="fw-bold fs-6 text-primary">₹{Number(deal.lastPrice || deal.open || 0).toFixed(2)}</td>
-                      <td>₹{Number(deal.previousClose || 0).toFixed(2)}</td>
-                      <td className={isPositive ? 'text-success fw-bold' : 'text-danger fw-bold'}>
-                        {isPositive ? '+' : ''}{Number(deal.pchange || deal.pChange || 0).toFixed(2)}%
-                      </td>
+
+                      {/* Stock Symbol & Company */}
                       <td>
-                        <strong className="text-dark">{Number(deal.totalTradedVolume || 0).toLocaleString('en-IN')}</strong>
-                        <small className="text-muted d-block" style={{ fontSize: 10.5 }}>
-                          ({((deal.totalTradedVolume || 0) / 10000000).toFixed(2)} Cr shares)
-                        </small>
+                        <div className="d-flex align-items-center gap-1.5">
+                          <span className="badge bg-dark fs-6 px-2.5 py-1 fw-bold text-white me-1">
+                            {deal.symbol}
+                          </span>
+                          <div>
+                            <strong className="text-dark d-block">{deal.companyName}</strong>
+                            <small className="text-muted">
+                              {deal.session} • {deal.series} • {deal.lastUpdateTime}
+                            </small>
+                          </div>
+                        </div>
                       </td>
+
+                      {/* Live Signal & Alert */}
                       <td>
-                        <span className="badge bg-success text-white fs-6 fw-bold px-2.5 py-1 shadow-sm">
-                          ₹{valueCr} Cr
+                        {deal.signal === 'STRONG_SELLING' ? (
+                          <span className="badge bg-danger text-white fw-bold px-2.5 py-1 shadow-sm fs-6">
+                            {deal.signalText}
+                          </span>
+                        ) : deal.signal === 'LOCKED_CIRCUIT' ? (
+                          <span className="badge bg-danger text-white fw-bold px-2.5 py-1 shadow-sm fs-6">
+                            {deal.signalText}
+                          </span>
+                        ) : (
+                          <span className="badge bg-success text-white fw-bold px-2.5 py-1 shadow-sm fs-6">
+                            {deal.signalText}
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Score */}
+                      <td>
+                        <span className={`badge fs-6 ${deal.score >= 80 ? 'bg-success text-white' : deal.score >= 60 ? 'bg-primary text-white' : 'bg-secondary'}`}>
+                          {deal.score}/100
                         </span>
                       </td>
+
+                      {/* Deal Price */}
+                      <td className="fw-semibold text-dark">
+                        ₹{Number(deal.dealPrice || 0).toFixed(2)}
+                      </td>
+
+                      {/* Live Price */}
+                      <td className="fw-bold fs-6 text-primary">
+                        ₹{Number(deal.currentLtp || 0).toFixed(2)}
+                      </td>
+
+                      {/* Day Gain % */}
+                      <td className={isPositive ? 'text-success fw-bold fs-6' : 'text-danger fw-bold fs-6'}>
+                        {isPositive ? '▲ +' : '▼ '}{Number(deal.pchange || 0).toFixed(2)}%
+                      </td>
+
+                      {/* Deal Value Cr */}
                       <td>
-                        <span className="badge bg-info text-dark fw-bold">
-                          {deal.session || 'Session 1'}
+                        <span className={`badge fs-6 fw-bold px-2.5 py-1 shadow-sm ${deal.isMegaBlock ? 'bg-warning text-dark' : deal.isLargeBlock ? 'bg-info text-dark' : 'bg-light text-dark border'}`}>
+                          ₹{deal.dealValueCr} Cr
                         </span>
                       </td>
-                      <td><span className="text-muted">{deal.lastUpdateTime || '08:50 AM'}</span></td>
-                      <td><span className="badge bg-light text-dark border">{deal.series || 'BL'}</span></td>
+
+                      {/* VWAP */}
+                      <td>
+                        <div>
+                          <strong className={deal.isAboveVwap ? 'text-success' : 'text-danger'}>
+                            ₹{Number(deal.vwap || 0).toFixed(2)}
+                          </strong>
+                          <small className="d-block text-muted" style={{ fontSize: 10 }}>
+                            {deal.isAboveVwap ? '✓ Above VWAP' : '⚠️ Below VWAP'}
+                          </small>
+                        </div>
+                      </td>
+
+                      {/* Profit Limit Action */}
+                      <td style={{ maxWidth: 220, whiteSpace: 'normal' }}>
+                        <strong className={deal.signal === 'STRONG_SELLING' ? 'text-danger small d-block' : 'text-success small d-block'}>
+                          {deal.signalAdvice}
+                        </strong>
+                      </td>
+
+                      {/* Stop Loss */}
+                      <td>
+                        <span className="badge bg-danger text-white fw-bold px-2 py-1 shadow-sm">
+                          ₹{Number(deal.stopLoss || 0).toFixed(2)}
+                        </span>
+                      </td>
+
+                      {/* Targets */}
+                      <td>
+                        <div className="d-flex align-items-center gap-1">
+                          <span className="badge bg-success text-white fw-bold px-2 py-1 shadow-sm">
+                            T1: ₹{Number(deal.target1 || 0).toFixed(2)}
+                          </span>
+                          <span className="badge bg-success text-white fw-bold px-2 py-1 shadow-sm">
+                            T2: ₹{Number(deal.target2 || 0).toFixed(2)}
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* Actions */}
                       <td>
                         <div className="d-flex align-items-center gap-1.5">
                           <button
                             type="button"
-                            className="btn btn-xs btn-outline-warning text-dark fw-bold px-2 py-1 shadow-sm"
+                            className="btn btn-xs btn-outline-danger fw-bold px-2.5 py-1 shadow-sm"
                             onClick={() => handleTrackInRiskEngine(deal)}
-                            disabled={isTracked}
                             style={{ fontSize: 11 }}
                           >
                             {isTracked ? '✓ Tracked' : '🛡️ Track Risk'}
                           </button>
                           <button
                             type="button"
-                            className="btn btn-xs btn-outline-primary fw-semibold px-2 py-1"
-                            onClick={() => setSelectedStockForChart({
-                              symbol: deal.symbol,
-                              companyName: `${deal.symbol} Ltd`,
-                              ltp: deal.lastPrice || deal.open,
-                              open: deal.open,
-                              high: deal.dayHigh,
-                              low: deal.dayLow,
-                            })}
+                            className="btn btn-xs btn-outline-primary fw-bold px-2 py-1 shadow-sm"
+                            onClick={() => setSelectedStockForChart(deal)}
                             style={{ fontSize: 11 }}
                           >
                             📈 Chart
@@ -383,42 +711,188 @@ export default function BlockDealsWatch({ onQuickTrade = null }) {
                       </td>
                     </tr>
                   );
-                })}
-              </tbody>
-            </table>
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* ── 3B. MOBILE & TABLET RESPONSIVE CARDS (Small Screens) ── */}
+      <div className="d-lg-none mb-4">
+        {displayedSetups.length === 0 ? (
+          <div className="card p-4 text-center text-muted rounded-4 shadow-sm">
+            <h5>No block deals match the selected filter</h5>
+            <p className="small mb-0">Try clearing filters or search term.</p>
+          </div>
+        ) : (
+          <div className="d-flex flex-column gap-3">
+            {displayedSetups.map((deal, idx) => {
+              const isPinned = pinnedSymbols.has(deal.symbol);
+              const isPositive = Number(deal.pchange || 0) >= 0;
+              const isTracked = riskTrackedSymbols.has(deal.symbol);
+
+              return (
+                <div
+                  key={`mobile-block-${deal.symbol}-${idx}`}
+                  className="card border shadow-sm rounded-4 overflow-hidden p-3"
+                  style={{
+                    background: !deal.isAboveVwap ? '#fff8f8' : '#ffffff',
+                    borderColor: !deal.isAboveVwap ? '#f8d7da' : '#e2e8f0',
+                  }}
+                >
+                  {/* Card Header: Symbol, Company & Price */}
+                  <div className="d-flex align-items-start justify-content-between gap-2 pb-2 mb-2 border-bottom">
+                    <div className="d-flex align-items-center gap-2">
+                      <span className="badge bg-dark fw-bold">#{idx + 1}</span>
+                      <div>
+                        <div className="d-flex align-items-center gap-1.5">
+                          <strong className="fs-6 text-dark">{deal.symbol}</strong>
+                          <span className={`badge px-1.5 py-0.5 ${deal.isMegaBlock ? 'bg-warning text-dark' : 'bg-secondary text-white'}`} style={{ fontSize: 10 }}>
+                            ₹{deal.dealValueCr} Cr
+                          </span>
+                        </div>
+                        <small className="text-muted d-block text-truncate" style={{ maxWidth: 180 }}>
+                          {deal.companyName}
+                        </small>
+                      </div>
+                    </div>
+
+                    <div className="text-end">
+                      <div className="fw-bold fs-5 text-primary">
+                        ₹{Number(deal.currentLtp || 0).toFixed(2)}
+                      </div>
+                      <div className={isPositive ? 'text-success fw-bold small' : 'text-danger fw-bold small'}>
+                        {isPositive ? '▲ +' : '▼ '}{Number(deal.pchange || 0).toFixed(2)}%
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Signal & Watchlist Badge */}
+                  <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2.5">
+                    <div>
+                      {deal.signal === 'STRONG_SELLING' ? (
+                        <span className="badge bg-danger text-white fw-bold px-2 py-1 shadow-sm">
+                          {deal.signalText}
+                        </span>
+                      ) : deal.signal === 'LOCKED_CIRCUIT' ? (
+                        <span className="badge bg-danger text-white fw-bold px-2 py-1 shadow-sm">
+                          {deal.signalText}
+                        </span>
+                      ) : (
+                        <span className="badge bg-success text-white fw-bold px-2 py-1 shadow-sm">
+                          {deal.signalText}
+                        </span>
+                      )}
+                    </div>
+
+                    <button
+                      type="button"
+                      className={`btn btn-xs rounded-pill px-2.5 py-1 fw-bold shadow-sm ${
+                        isPinned ? 'btn-warning text-dark' : 'btn-outline-secondary'
+                      }`}
+                      onClick={() => togglePinWatchlist(deal.symbol)}
+                      style={{ fontSize: 11 }}
+                    >
+                      {isPinned ? '⭐ Pinned' : '☆ Watchlist'}
+                    </button>
+                  </div>
+
+                  {/* 4-Box Key Metrics Grid */}
+                  <div className="row g-2 text-center small mb-2.5">
+                    <div className="col-6 col-sm-3">
+                      <div className="p-2 rounded bg-light border">
+                        <span className="text-muted d-block" style={{ fontSize: 10.5 }}>Deal Price</span>
+                        <strong className="text-dark">₹{Number(deal.dealPrice || 0).toFixed(2)}</strong>
+                        <div style={{ fontSize: 9.5 }} className={deal.gainSinceDealPct >= 0 ? 'text-success' : 'text-danger'}>
+                          {deal.gainSinceDealPct >= 0 ? '+' : ''}{deal.gainSinceDealPct}%
+                        </div>
+                      </div>
+                    </div>
+                    <div className="col-6 col-sm-3">
+                      <div className="p-2 rounded bg-light border">
+                        <span className="text-muted d-block" style={{ fontSize: 10.5 }}>VWAP</span>
+                        <strong className={deal.isAboveVwap ? 'text-success' : 'text-danger'}>
+                          ₹{Number(deal.vwap || 0).toFixed(2)}
+                        </strong>
+                        <div style={{ fontSize: 9.5, color: deal.isAboveVwap ? '#198754' : '#dc3545' }}>
+                          {deal.isAboveVwap ? '✓ Above' : '⚠️ Below'}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="col-6 col-sm-3">
+                      <div className="p-2 rounded bg-light border">
+                        <span className="text-muted d-block" style={{ fontSize: 10.5 }}>Stop Loss</span>
+                        <strong className="text-danger">₹{Number(deal.stopLoss || 0).toFixed(2)}</strong>
+                        <div style={{ fontSize: 9.5 }} className="text-muted">Risk Gate</div>
+                      </div>
+                    </div>
+                    <div className="col-6 col-sm-3">
+                      <div className="p-2 rounded bg-light border">
+                        <span className="text-muted d-block" style={{ fontSize: 10.5 }}>Target 1</span>
+                        <strong className="text-success">₹{Number(deal.target1 || 0).toFixed(2)}</strong>
+                        <div style={{ fontSize: 9.5 }} className="text-success">+2.5% Lock</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Profit Limit Action Alert Strip */}
+                  <div
+                    className="p-2 rounded mb-2.5 small"
+                    style={{
+                      background: deal.signal === 'STRONG_SELLING' ? '#fde8e8' : '#e6f7ef',
+                      borderLeft: `4px solid ${deal.signal === 'STRONG_SELLING' ? '#dc3545' : '#198754'}`,
+                    }}
+                  >
+                    <strong className={deal.signal === 'STRONG_SELLING' ? 'text-danger' : 'text-success'}>
+                      {deal.signalAdvice}
+                    </strong>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="d-flex align-items-center gap-2 pt-1">
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline-danger fw-bold flex-grow-1 shadow-sm"
+                      onClick={() => handleTrackInRiskEngine(deal)}
+                    >
+                      {isTracked ? '✓ Tracked' : '🛡️ Track Risk'}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline-primary fw-bold flex-grow-1 shadow-sm"
+                      onClick={() => setSelectedStockForChart(deal)}
+                    >
+                      📈 View Chart
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
 
-      {/* ── 5. EDUCATIONAL BLOCK DEAL KNOWLEDGE BASE ── */}
-      <div className="card border-0 shadow-sm rounded-4 p-4 bg-light border text-dark">
-        <h6 className="fw-bold text-dark mb-2">💡 Understanding NSE Block Deals (Institutional Activity)</h6>
-        <div className="row g-3 small">
-          <div className="col-12 col-md-4">
-            <strong className="d-block text-primary mb-1">1. What is a Block Deal?</strong>
-            <p className="text-muted mb-0">
-              A single trade with a minimum quantity of <strong>5 lakh shares</strong> or a minimum value of <strong>₹10 Crore</strong>, executed between two institutional parties (FIIs, DIIs, Mutual Funds, Promoters).
-            </p>
-          </div>
-          <div className="col-12 col-md-4">
-            <strong className="d-block text-primary mb-1">2. Dedicated Trading Windows</strong>
-            <p className="text-muted mb-0">
-              Block deals do not happen in the regular market order book. They are matched in two discrete 15-minute windows: <strong>Morning (08:45–09:00 AM)</strong> and <strong>Afternoon (02:05–02:20 PM)</strong> within $\pm 1\%$ of reference price.
-            </p>
-          </div>
-          <div className="col-12 col-md-4">
-            <strong className="d-block text-primary mb-1">3. How to Use for Trading</strong>
-            <p className="text-muted mb-0">
-              Heavy block deal buying at a premium indicates strong institutional accumulation. Use the deal price as a major technical support benchmark for your swing/BTST positions.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* ── 6. CHART MODAL ── */}
+      {/* ── 4. CHART / DETAIL MODAL ── */}
       {selectedStockForChart && (
         <StockDetailModal
-          stock={selectedStockForChart}
+          symbol={selectedStockForChart.symbol}
+          stock={{
+            ...selectedStockForChart,
+            symbol: selectedStockForChart.symbol,
+            companyName: selectedStockForChart.companyName,
+            price: selectedStockForChart.currentLtp,
+            changePercent: selectedStockForChart.pchange,
+            change: Number(((selectedStockForChart.currentLtp * selectedStockForChart.pchange) / 100).toFixed(2)),
+            vwap: selectedStockForChart.vwap,
+            stopLoss: selectedStockForChart.stopLoss,
+            target1: selectedStockForChart.target1,
+            target2: selectedStockForChart.target2,
+            score: selectedStockForChart.score || 85,
+            bullishScore: selectedStockForChart.score || 85,
+            support: selectedStockForChart.stopLoss,
+            resistance: selectedStockForChart.target1,
+          }}
           onClose={() => setSelectedStockForChart(null)}
           onQuickTrade={onQuickTrade}
         />
