@@ -42,8 +42,6 @@ import Nifty50Scanner from './Nifty50Scanner.jsx';
 import LivePositionRiskMonitor from '../trading/LivePositionRiskMonitor';
 import MarketSentimentAlertBanner from './MarketSentimentAlertBanner.jsx';
 import PracticeStockMarket from './PracticeStockMarket.jsx';
-import StockSidebarNav from './StockSidebarNav.jsx';
-import StockTopToolbar from './StockTopToolbar.jsx';
 
 const UNAVAILABLE = 'Unavailable';
 
@@ -2010,25 +2008,6 @@ const ALERT_COLUMNS = [
    ============================================================ */
 
 export default function Stocks() {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
-    try {
-      return localStorage.getItem('stock_sidebar_collapsed') === 'true';
-    } catch {
-      return false;
-    }
-  });
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-
-  const toggleSidebar = () => {
-    setSidebarCollapsed((prev) => {
-      const next = !prev;
-      try {
-        localStorage.setItem('stock_sidebar_collapsed', String(next));
-      } catch {}
-      return next;
-    });
-  };
-
   const [
     marketData,
     setMarketData,
@@ -2703,71 +2682,171 @@ export default function Stocks() {
      ========================================================== */
 
   return (
-    <div className="stock-terminal-layout d-flex position-relative w-100 min-vh-100" style={{ background: '#f8fafc' }}>
-      {/* ── 1. COLLAPSIBLE LEFT SIDEBAR NAVIGATION (All 18 tools organized) ── */}
-      <StockSidebarNav
-        activeTab={activeTab}
-        onChange={setActiveTab}
-        isCollapsed={sidebarCollapsed}
-        onToggleCollapse={toggleSidebar}
-        mobileOpen={mobileSidebarOpen}
-        onCloseMobile={() => setMobileSidebarOpen(false)}
+    <div className="p-3">
+      {/* ── 0. MARKET SENTIMENT & EARLY-WARNING RADAR ── */}
+      <MarketSentimentAlertBanner
+        marketConfirmation={scanner.marketConfirmation}
+        universeCount={scanner.universeCount}
+        lastUpdated={lastUpdated}
+        onRefresh={() => window.location.reload()}
       />
 
-      {/* ── 2. MAIN DASHBOARD CONTENT AREA ── */}
-      <div className="stock-terminal-main flex-grow-1 p-2 p-md-3 overflow-x-hidden" style={{ minWidth: 0 }}>
-        {/* Sleek Single-Row Top Toolbar with Active View Pill, Live Controls & Sidebar Toggle */}
-        <StockTopToolbar
-          activeTab={activeTab}
-          isCollapsed={sidebarCollapsed}
-          onToggleCollapse={toggleSidebar}
-          onOpenMobile={() => setMobileSidebarOpen(true)}
-          live={live}
-          onToggleLive={() => setLive((v) => !v)}
-          intervalMs={intervalMs}
-          onChangeInterval={(ms) => setIntervalMs(ms)}
-          capital={capital}
-          onChangeCapital={(c) => setCapital(c)}
-          topStatus={topStatus}
-          mostStatus={mostStatus}
-          lastUpdated={lastUpdated}
-          getNSEDateTime={getNSEDateTime}
-        />
+      {/* HEADER */}
 
-        {/* ── 0. MARKET SENTIMENT & EARLY-WARNING RADAR ── */}
-        <MarketSentimentAlertBanner
-          marketConfirmation={scanner.marketConfirmation}
-          universeCount={scanner.universeCount}
-          lastUpdated={lastUpdated}
-          onRefresh={() => window.location.reload()}
-        />
+      <div className="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
+        <div>
+          <h3 className="mb-1">
+            TOP 10 NSE INTRADAY STOCKS TODAY
+          </h3>
 
-        {/* HEADER */}
-        <div className="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
+          <p className="text-muted mb-0">
+            NSE intraday scanner using
+            market data, volume, VWAP,
+            PDH, EMA, RSI and breakout
+            confirmation.
+          </p>
+        </div>
+
+        <div className="text-end small">
           <div>
-            <h3 className="mb-1">
-              TOP 10 NSE INTRADAY STOCKS TODAY
-            </h3>
-            <p className="text-muted mb-0">
-              NSE intraday scanner using market data, volume, VWAP, PDH, EMA, RSI and breakout confirmation.
-            </p>
+            <strong>
+              {marketText}
+            </strong>
           </div>
 
-          <div className="text-end small">
-            <div>
-              <strong>{marketText}</strong>
-            </div>
-            <div className="text-muted">
-              Universe: {scanner.universeCount} · Valid: {scanner.validCount} · Bullish: {scanner.bullish.length}
-            </div>
-            <div className="text-muted">
-              Market score: {scanner.marketScore}/5 · Data: {dataQuality.emoji} {dataQuality.label}
-            </div>
-            <div className="text-muted">
-              {lastUpdated ? `Last: ${getNSEDateTime(lastUpdated).shortTime} IST` : ''}
-            </div>
+          <div className="text-muted">
+            Universe:{' '}
+            {scanner.universeCount}{' '}
+            · Valid:{' '}
+            {scanner.validCount}{' '}
+            · Bullish:{' '}
+            {scanner.bullish.length}
+          </div>
+
+          <div className="text-muted">
+            Market score:{' '}
+            {scanner.marketScore}
+            /5 · Data:{' '}
+            {dataQuality.emoji}{' '}
+            {dataQuality.label}
+          </div>
+
+          <div className="text-muted">
+            {lastUpdated
+              ? `Last: ${getNSEDateTime(lastUpdated).shortTime} IST`
+              : ''}
           </div>
         </div>
+      </div>
+
+      {/* CONTROLS */}
+
+      <div className="d-flex flex-wrap align-items-center gap-3 mb-3">
+        <TopIntraday
+          activeTab={
+            activeTab
+          }
+          onChange={
+            setActiveTab
+          }
+        />
+
+        <button
+          className={`btn btn-sm ${
+            live
+              ? 'btn-danger'
+              : 'btn-success'
+          }`}
+          onClick={() =>
+            setLive(
+              (value) =>
+                !value
+            )
+          }
+        >
+          {live
+            ? 'Pause Live'
+            : 'Resume Live'}
+        </button>
+
+        <label className="small text-muted d-flex align-items-center gap-2">
+          Interval
+
+          <select
+            className="form-select form-select-sm"
+            value={String(
+              intervalMs
+            )}
+            onChange={(event) =>
+              setIntervalMs(
+                Number(
+                  event.target
+                    .value
+                )
+              )
+            }
+            style={{
+              width: 110,
+            }}
+          >
+            <option value={5000}>
+              5s
+            </option>
+
+            <option value={10000}>
+              10s
+            </option>
+
+            <option value={30000}>
+              30s
+            </option>
+
+            <option value={60000}>
+              60s
+            </option>
+          </select>
+        </label>
+
+        <label className="small text-muted d-flex align-items-center gap-2">
+          Capital
+
+          <input
+            className="form-control form-control-sm"
+            min="0"
+            type="number"
+            value={capital}
+            onChange={(event) =>
+              setCapital(
+                Number(
+                  event.target
+                    .value
+                )
+              )
+            }
+            style={{
+              width: 130,
+            }}
+          />
+        </label>
+
+        <div className="d-flex align-items-center gap-2 small">
+          <span className="text-muted">
+            Gainers:
+          </span>
+
+          <StatusChip
+            ok={topStatus}
+          />
+
+          <span className="text-muted ms-2">
+            Volume:
+          </span>
+
+          <StatusChip
+            ok={mostStatus}
+          />
+        </div>
+      </div>
 
       <div className={`st-tab-help st-tab-help--${activeTabHelp.tone}`}>
         <div>
@@ -3503,7 +3582,6 @@ export default function Stocks() {
           }}
         />
       )}
-      </div>
     </div>
   );
 }
