@@ -41,6 +41,122 @@ export default function BlockDealsWatch({
   const [lastRefreshed, setLastRefreshed] = useState('');
   const [showPlaybook, setShowPlaybook] = useState(false);
   const [liveQuotes, setLiveQuotes] = useState({});
+  const [soundAlertsEnabled, setSoundAlertsEnabled] = useState(true);
+  const prevQuoteRef = useRef({});
+
+  // Web Audio Synthesizer for Reversal Chimes and Breakdown Warnings
+  const playAlertChime = useCallback((type = 'REVERSAL') => {
+    if (typeof window === 'undefined') return;
+    try {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextClass) return;
+      const ctx = new AudioContextClass();
+      if (ctx.state === 'suspended') {
+        ctx.resume().catch(() => {});
+      }
+      const now = ctx.currentTime;
+      if (type === 'REVERSAL') {
+        // High-pitch rising arpeggio: C5 (523Hz) -> E5 (659Hz) -> G5 (784Hz) -> C6 (1046Hz)
+        const notes = [523.25, 659.25, 783.99, 1046.5];
+        notes.forEach((freq, i) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now + i * 0.08);
+          gain.gain.setValueAtTime(0.12, now + i * 0.08);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.28);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now + i * 0.08);
+          osc.stop(now + i * 0.08 + 0.28);
+        });
+      } else {
+        // Descending warning tone (660Hz -> 440Hz -> 330Hz)
+        const notes = [659.25, 440.0, 329.63];
+        notes.forEach((freq, i) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(freq, now + i * 0.1);
+          gain.gain.setValueAtTime(0.1, now + i * 0.1);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.1 + 0.25);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now + i * 0.1);
+          osc.stop(now + i * 0.1 + 0.25);
+        });
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  // Browser Desktop Push Notification
+  const triggerDesktopNotification = useCallback((title, body) => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      if (Notification.permission === 'granted') {
+        try {
+          new Notification(title, { body, icon: '/favicon.ico' });
+        } catch {
+          // ignore
+        }
+      } else if (Notification.permission !== 'denied') {
+        Notification.requestPermission().then((perm) => {
+          if (perm === 'granted') {
+            try {
+              new Notification(title, { body, icon: '/favicon.ico' });
+            } catch {
+              // ignore
+            }
+          }
+        });
+      }
+    }
+  }, []);
+
+  // Request Notification Permission on load
+  const requestNotificationPermission = () => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      Notification.requestPermission().then((perm) => {
+        if (perm === 'granted') {
+          setFeedbackMsg('🔔 Desktop Browser Notifications Activated for Reversals & Breakdowns!');
+          playAlertChime('REVERSAL');
+        } else {
+          setFeedbackMsg('⚠️ Browser notifications disabled. You will still receive in-app audio chimes!');
+        }
+        setTimeout(() => setFeedbackMsg(null), 4000);
+      });
+    }
+  };
+
+  // Monitor Live Quotes for Reversals (Price Crossing VWAP) and Breakdowns
+  useEffect(() => {
+    Object.entries(liveQuotes).forEach(([sym, q]) => {
+      const prev = prevQuoteRef.current[sym];
+      if (prev && q?.price) {
+        const vwap = q.vwap || q.price;
+        // 1. REVERSAL ALERT (Price was below VWAP, now crossed ABOVE VWAP!)
+        if (prev.price < prev.vwap && q.price >= vwap) {
+          if (soundAlertsEnabled) playAlertChime('REVERSAL');
+          const msg = `⚡ ${sym} REVERSAL ALERT: Price reclaimed ₹${vwap.toFixed(2)} VWAP! Strong buyers have arrived!`;
+          setFeedbackMsg(msg);
+          triggerDesktopNotification(`⚡ ${sym} Institutional Reversal!`, `Price has crossed above ₹${vwap.toFixed(2)} VWAP!`);
+        }
+        // 2. BREAKDOWN ALERT (Price made a new low below previous low!)
+        else if (prev.low && q.low && q.low < prev.low && q.price < vwap) {
+          if (soundAlertsEnabled) playAlertChime('BREAKDOWN');
+          const msg = `⚠️ ${sym} BREAKDOWN ALERT: Dropped to new low ₹${q.low.toFixed(2)}! Dumping continues. Do not buy!`;
+          setFeedbackMsg(msg);
+          triggerDesktopNotification(`⚠️ ${sym} Breakdown Alert!`, `New intraday low ₹${q.low.toFixed(2)} below VWAP.`);
+        }
+      }
+      prevQuoteRef.current[sym] = {
+        price: q.price,
+        vwap: q.vwap || q.price,
+        low: q.low || q.price,
+      };
+    });
+  }, [liveQuotes, soundAlertsEnabled, playAlertChime, triggerDesktopNotification]);
 
   // Load Pinned Watchlist
   useEffect(() => {
@@ -448,6 +564,25 @@ export default function BlockDealsWatch({
             </button>
             <button
               type="button"
+              className={`btn btn-sm ${soundAlertsEnabled ? 'btn-outline-warning text-white' : 'btn-outline-secondary text-muted'} rounded-pill px-3 py-1.5 fw-bold shadow-sm flex-grow-1 flex-sm-grow-0`}
+              onClick={() => {
+                setSoundAlertsEnabled(!soundAlertsEnabled);
+                if (!soundAlertsEnabled) playAlertChime('REVERSAL');
+              }}
+              title="Toggle Audio Chime Alerts"
+            >
+              {soundAlertsEnabled ? '🔊 Sound: ON' : '🔇 Sound: OFF'}
+            </button>
+            <button
+              type="button"
+              className="btn btn-sm btn-outline-info text-white rounded-pill px-3 py-1.5 fw-bold shadow-sm flex-grow-1 flex-sm-grow-0"
+              onClick={requestNotificationPermission}
+              title="Enable Desktop Push Notifications"
+            >
+              🔔 Push Alerts
+            </button>
+            <button
+              type="button"
               className="btn btn-sm btn-outline-light rounded-pill px-3 py-1.5 fw-semibold shadow-sm flex-grow-1 flex-sm-grow-0"
               onClick={fetchBlockDeals}
               disabled={loading}
@@ -587,6 +722,78 @@ export default function BlockDealsWatch({
           </div>
         </div>
       </div>
+
+      {/* ── LIVE REVERSAL & BREAKDOWN RADAR STRIP ── */}
+      {(() => {
+        const targetDeal = processedBlockSetups.find((d) => d.symbol === 'MEESHO') || processedBlockSetups[0];
+        if (!targetDeal) return null;
+        const distToVwap = Number((targetDeal.vwap - targetDeal.currentLtp).toFixed(2));
+        const distPct = targetDeal.currentLtp > 0 ? Number(((distToVwap / targetDeal.currentLtp) * 100).toFixed(2)) : 0;
+        const isAbove = targetDeal.currentLtp >= targetDeal.vwap;
+
+        return (
+          <div
+            className={`card border-0 shadow-sm rounded-4 p-3 mb-3 text-white ${
+              isAbove ? 'border-start border-4 border-success' : 'border-start border-4 border-warning'
+            }`}
+            style={{
+              background: isAbove
+                ? 'linear-gradient(135deg, #092015 0%, #123321 100%)'
+                : 'linear-gradient(135deg, #221217 0%, #3a1922 100%)',
+            }}
+          >
+            <div className="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3">
+              <div>
+                <div className="d-flex align-items-center gap-2 mb-1">
+                  <span className="fs-5">{isAbove ? '⚡' : '⏳'}</span>
+                  <strong className="fs-6 text-white">
+                    LIVE RADAR: {targetDeal.symbol} ({targetDeal.companyName})
+                  </strong>
+                  <span className={`badge ${isAbove ? 'bg-success' : 'bg-warning text-dark'} fw-bold px-2 py-0.5 small`}>
+                    {isAbove ? 'REVERSAL ACTIVE (ABOVE VWAP)' : 'WAITING FOR REVERSAL'}
+                  </span>
+                </div>
+                <p className="small mb-0 opacity-90">
+                  {isAbove ? (
+                    <span className="text-success fw-bold">
+                      ✓ Strong buyers have reclaimed VWAP (₹{targetDeal.vwap.toFixed(2)})! Target 1: ₹{targetDeal.target1.toFixed(2)}.
+                    </span>
+                  ) : (
+                    <span>
+                      Live: <strong>₹{targetDeal.currentLtp.toFixed(2)}</strong> • Reversal Trigger: <strong className="text-info">₹{targetDeal.vwap.toFixed(2)} VWAP</strong> • 
+                      Distance: <strong className="text-warning">₹{Math.abs(distToVwap).toFixed(2)} ({distPct}%) away</strong> • 
+                      Day Low Risk: <strong className="text-danger">₹{Number(targetDeal.dealPrice * 0.985).toFixed(2)}</strong>
+                    </span>
+                  )}
+                </p>
+              </div>
+
+              <div className="d-flex align-items-center gap-2 w-100 w-md-auto">
+                <button
+                  type="button"
+                  className="btn btn-xs btn-outline-light rounded-pill px-3 py-1.5 fw-bold shadow-sm"
+                  onClick={() => {
+                    playAlertChime('REVERSAL');
+                    setFeedbackMsg('🔔 Testing Reversal Chime: Rising arpeggio sounds when price reclaims VWAP!');
+                  }}
+                >
+                  🔔 Test Reversal Chime
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-xs btn-outline-danger text-light rounded-pill px-3 py-1.5 fw-bold shadow-sm"
+                  onClick={() => {
+                    playAlertChime('BREAKDOWN');
+                    setFeedbackMsg('⚠️ Testing Breakdown Tone: Descending warning sounds if stock makes new low!');
+                  }}
+                >
+                  ⚠️ Test Breakdown Tone
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ── TOAST NOTIFICATION ── */}
       {feedbackMsg && (
