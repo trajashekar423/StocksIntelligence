@@ -40,6 +40,7 @@ export default function BlockDealsWatch({
   const [riskTrackedSymbols, setRiskTrackedSymbols] = useState(new Set());
   const [lastRefreshed, setLastRefreshed] = useState('');
   const [showPlaybook, setShowPlaybook] = useState(false);
+  const [liveQuotes, setLiveQuotes] = useState({});
 
   // Load Pinned Watchlist
   useEffect(() => {
@@ -105,6 +106,51 @@ export default function BlockDealsWatch({
     const timer = setInterval(fetchBlockDeals, 15000);
     return () => clearInterval(timer);
   }, [fetchBlockDeals]);
+
+  // Direct Live Price & VWAP Polling for Block Deal Symbols (Every 10 Seconds from NSE)
+  useEffect(() => {
+    let isMounted = true;
+    const fetchQuotes = async () => {
+      const deals = blockDealData.data || [];
+      const symbolsToPoll = ['MEESHO', 'CLEANMAX', 'LENSKART', 'ATHERENERG', ...deals.map((d) => d.symbol)];
+      const uniqueSymbols = Array.from(new Set(symbolsToPoll));
+
+      const updates = {};
+      await Promise.all(
+        uniqueSymbols.map(async (sym) => {
+          try {
+            const res = await fetch(`/api/quote-equity?symbol=${sym}`);
+            if (res.ok) {
+              const data = await res.json();
+              if (data?.priceInfo?.lastPrice) {
+                updates[sym] = {
+                  price: Number(data.priceInfo.lastPrice),
+                  vwap: Number(data.priceInfo.vwap || data.priceInfo.lastPrice),
+                  changePercent: Number(data.priceInfo.pChange || 0),
+                  previousClose: Number(data.priceInfo.previousClose || 0),
+                  high: Number(data.priceInfo.intraDayHighLow?.max || 0),
+                  low: Number(data.priceInfo.intraDayHighLow?.min || 0),
+                };
+              }
+            }
+          } catch {
+            // ignore
+          }
+        })
+      );
+
+      if (isMounted && Object.keys(updates).length > 0) {
+        setLiveQuotes((prev) => ({ ...prev, ...updates }));
+      }
+    };
+
+    fetchQuotes();
+    const timer = setInterval(fetchQuotes, 10000);
+    return () => {
+      isMounted = false;
+      clearInterval(timer);
+    };
+  }, [blockDealData.data]);
 
   // Track in Risk Engine with Trailing SL
   const handleTrackInRiskEngine = (stock) => {
@@ -194,17 +240,18 @@ export default function BlockDealsWatch({
 
     return combined.map((deal) => {
       const sym = deal.symbol;
+      const liveQ = liveQuotes[sym];
       const matchedScanner = scannedStocks.find((s) => s.symbol === sym);
 
       const dealValueCr = Number(((deal.totalTradedValue || 0) / 10000000).toFixed(2));
       const dealVolume = Number(deal.totalTradedVolume || 0);
       const dealPrice = Number(deal.lastPrice || deal.open || deal.dealPrice || 100);
-      const prevClose = Number(deal.previousClose || matchedScanner?.previousClose || dealPrice);
+      const prevClose = Number(liveQ?.previousClose || deal.previousClose || matchedScanner?.previousClose || dealPrice);
 
-      const currentLtp = Number(matchedScanner?.price || matchedScanner?.ltp || deal.currentLtp || deal.lastPrice || dealPrice);
-      const pchange = Number(matchedScanner?.changePercent ?? deal.pchange ?? deal.pChange ?? (prevClose > 0 ? ((currentLtp - prevClose) / prevClose) * 100 : 0));
+      const currentLtp = Number(liveQ?.price || matchedScanner?.price || matchedScanner?.ltp || deal.currentLtp || deal.lastPrice || dealPrice);
+      const pchange = Number(liveQ?.changePercent ?? matchedScanner?.changePercent ?? deal.pchange ?? deal.pChange ?? (prevClose > 0 ? ((currentLtp - prevClose) / prevClose) * 100 : 0));
 
-      const vwap = Number(matchedScanner?.vwap || deal.vwap || (dealPrice * 0.995).toFixed(2));
+      const vwap = Number(liveQ?.vwap || matchedScanner?.vwap || deal.vwap || (dealPrice * 0.995).toFixed(2));
       const isAboveVwap = currentLtp >= vwap;
       const isHoldingDealPrice = currentLtp >= dealPrice;
       const gainSinceDealPct = dealPrice > 0 ? Number((((currentLtp - dealPrice) / dealPrice) * 100).toFixed(2)) : 0;
@@ -334,7 +381,7 @@ export default function BlockDealsWatch({
         catalyst: deal.catalyst || `${tierBadge} transaction`,
       };
     });
-  }, [blockDealData.data, scannedStocks]);
+  }, [blockDealData.data, scannedStocks, liveQuotes]);
 
   // Filtered Setups
   const displayedSetups = useMemo(() => {
