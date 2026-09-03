@@ -984,7 +984,6 @@ function buildScanner(
         vwap,
         volume,
         averageVolume: averageVolume || (volumeRatio > 0 ? volume / volumeRatio : 200000),
-        relativeVolume: volumeRatio !== null ? volumeRatio : 1.0,
         changePercent,
         previousDayHigh,
         entry: entryLow,
