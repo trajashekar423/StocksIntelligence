@@ -67,6 +67,12 @@ export const STOCK_TAB_HELP = {
     description: 'Live 1% to 50% intraday momentum categorization and heatmaps across all NSE equities.',
     beginnerTip: 'Look for stocks transitioning across upward momentum tiers with volume confirmation.',
   },
+  'confluence-quant': {
+    title: 'Confluence Quant Scanner (3-Tier Engine)',
+    tone: 'gold',
+    description: 'Institutional quantitative confluence: Global Macro (20%) + Indian Market Regime (30%) + Stock Technicals (35%) + Liquidity (10%) + Risk Gate (5%).',
+    beginnerTip: 'Identifies Top 10 LONG on bullish days and Top 10 SHORT on bearish days with complete mathematical explainability.',
+  },
 };
 
 function getSymbolKey(symbol) {

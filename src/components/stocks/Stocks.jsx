@@ -43,6 +43,7 @@ import LivePositionRiskMonitor from '../trading/LivePositionRiskMonitor';
 import MarketSentimentAlertBanner from './MarketSentimentAlertBanner.jsx';
 import PracticeStockMarket from './PracticeStockMarket.jsx';
 import { calculateIntradayScore } from '../../services/strategy/intradayScoreEngine';
+import ConfluenceQuantScanner from './ConfluenceQuantScanner.jsx';
 
 const UNAVAILABLE = 'Unavailable';
 
@@ -3497,6 +3498,18 @@ export default function Stocks() {
 
       {activeTab === 'fno' && (
         <FnOStrategyEngine />
+      )}
+
+      {activeTab === 'confluence-quant' && (
+        <ConfluenceQuantScanner
+          onQuickTrade={(s) => {
+            setSelectedStock(s);
+            setActiveTab('trading');
+          }}
+          onSendToPractice={() => {
+            setActiveTab('practice-trading');
+          }}
+        />
       )}
 
       {activeTab === 'candlestick-guide' && (

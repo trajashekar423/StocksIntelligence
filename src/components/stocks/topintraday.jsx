@@ -11,6 +11,7 @@ export default function TopIntraday({ activeTab, onChange }) {
     { key: 'watchfornextday', label: '🔮 Watch For Next Day', tone: 'green' },
     { key: 'block-deals', label: '🏢 Block Deals', tone: 'green' },
     { key: 'bigshot-radar', label: '⭐ BigShot Radar (5x Vol & Mega Blocks)', tone: 'gold' },
+    { key: 'confluence-quant', label: '🎯 Confluence Quant Scanner (Long/Short)', tone: 'gold' },
     { key: 'tomorrow', label: 'Tomorrow Intraday', tone: 'green' },
     { key: 'top', label: 'Top Gainers', tone: 'green' },
     { key: 'mystocks', label: '💼 My Portfolio', tone: 'green' },
