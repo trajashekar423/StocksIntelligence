@@ -239,6 +239,15 @@ export default function BlockDealsWatch({
 
       score = Math.max(5, Math.min(100, Math.round(score)));
 
+      // Check for Institutional Reversal (Supply Absorbed)
+      // When buyers step in, absorb the dump, and push price BACK ABOVE VWAP into the green!
+      const isReversalAbsorbed = isAboveVwap && pchange > 0 && currentLtp > dealPrice;
+
+      if (isReversalAbsorbed) {
+        // Strong buyers have stepped in and absorbed the supply dump!
+        score = Math.min(100, Math.max(80, 50 + (dealValueCr >= 500 ? 25 : 15) + (isAboveVwap ? 15 : 0)));
+      }
+
       // Institutional Tier
       const isMegaBlock = dealValueCr >= 500;
       const isLargeBlock = dealValueCr >= 50 && dealValueCr < 500;
@@ -248,23 +257,28 @@ export default function BlockDealsWatch({
         ? '⚡ LARGE BLOCK (≥ ₹50 Cr)'
         : '📦 STANDARD BLOCK';
 
-      // BigShot Live Signal & Alert Logic (Strict Defense)
+      // BigShot Live Signal & Alert Logic (Strict Defense & Reversal Recovery)
       let signal = 'WATCH';
       let signalText = '🟡 WATCH / CONSOLIDATING';
-      let signalAdvice = '⏳ Wait for clean breakout above VWAP with buyer volume';
+      let signalAdvice = `⏳ Wait for clean breakout above ₹${Number(vwap).toFixed(2)} VWAP with buyer volume`;
       let risk = 'Low';
 
-      if (isDiscountDeal || (pchange < 0 && dealValueCr >= 100)) {
+      if (isReversalAbsorbed) {
+        signal = 'REVERSAL';
+        signalText = '⚡ INSTITUTIONAL REVERSAL (Supply Absorbed)';
+        signalAdvice = `🎯 SAFE ENTRY TRIGGERED: Dump absorbed above ₹${Number(vwap).toFixed(2)} VWAP! Book 50% at T1, SL @ Day Low.`;
+        risk = 'Low';
+      } else if (isDiscountDeal && (!isAboveVwap || pchange < 0)) {
         // e.g. MEESHO: 8 Crore shares sold at -2.5% discount creates massive supply overhang!
         signal = 'STRONG_SELLING';
         signalText = `⚠️ DISCOUNT STAKE DUMP (${discountPct}%)`;
-        signalAdvice = `❌ DO NOT BUY — Institutional supply overhang (${discountPct}% discount). High dump risk!`;
+        signalAdvice = `❌ DO NOT BUY — Still dumping below ₹${Number(vwap).toFixed(2)} VWAP. Must cross above ₹${Number(vwap).toFixed(2)} to confirm buyers!`;
         risk = 'High';
       } else if (!isAboveVwap || pchange < 0) {
         // Trading below VWAP or in the red
         signal = 'STRONG_SELLING';
         signalText = '🔴 STRONG SELLING (Below VWAP / Red)';
-        signalAdvice = '❌ DO NOT BUY / Capital Defense (Never buy red stocks below VWAP)';
+        signalAdvice = `❌ DO NOT BUY — Bearish momentum below ₹${Number(vwap).toFixed(2)} VWAP. (Never buy red stocks).`;
         risk = 'High';
       } else if (distToUcPct <= 1.5 && pchange >= 2.0) {
         signal = 'LOCKED_CIRCUIT';
@@ -279,7 +293,7 @@ export default function BlockDealsWatch({
       } else if (score >= 60 && pchange >= 0) {
         signal = 'ACCUMULATING';
         signalText = '💎 INSTITUTIONAL ACCUMULATION';
-        signalAdvice = '📈 Building base above Deal Price. Buy near VWAP support.';
+        signalAdvice = `📈 Building base above Deal Price. Buy near ₹${Number(vwap).toFixed(2)} VWAP support.`;
         risk = 'Medium';
       }
 
@@ -335,8 +349,10 @@ export default function BlockDealsWatch({
           return deal.isMegaBlock;
         case 'LARGE':
           return deal.isLargeBlock || deal.isMegaBlock;
+        case 'REVERSAL':
+          return deal.signal === 'REVERSAL';
         case 'STRONG_BUY':
-          return deal.signal === 'STRONG_BUY' || deal.signal === 'LOCKED_CIRCUIT';
+          return deal.signal === 'STRONG_BUY' || deal.signal === 'LOCKED_CIRCUIT' || deal.signal === 'REVERSAL';
         case 'SELLING':
           return deal.signal === 'STRONG_SELLING';
         case 'WATCHLIST':
@@ -433,18 +449,51 @@ export default function BlockDealsWatch({
               {/* Card 2: Supply Offloading (The Ather Energy Lesson) */}
               <div className="col-12 col-md-6">
                 <div className="p-3 rounded-3 h-100 border border-danger border-opacity-50" style={{ background: '#1c1218' }}>
-                  <strong className="text-danger d-block fs-6 mb-2">🔴 The Supply Dump Pattern (e.g. Ather Energy -₹2,500 Lesson):</strong>
+                  <strong className="text-danger d-block fs-6 mb-2">🔴 The Supply Dump Pattern (e.g. Meesho -₹3,500 Lesson):</strong>
                   <ul className="text-white ps-3 mb-0" style={{ lineHeight: '1.6' }}>
                     <li>
-                      <strong>VWAP Breakdown</strong>: Even after a ₹1,758 Cr deal, if price breaks <strong>BELOW VWAP (₹1,702)</strong>, institutions are offloading inventory into retail!
+                      <strong>Discount Stake Dump</strong>: When promoters sell at a discount (e.g. -2.5% below CMP), it creates massive supply.
                     </li>
                     <li>
-                      <strong>Day 3 Exhaustion</strong>: Never chase on Day 3 without a support pullback base.
+                      <strong>Opening 9:15 AM Trap</strong>: Arbitrageurs push price up for 10 minutes to lure retail, then dump down through VWAP!
                     </li>
                     <li>
-                      <strong>Golden Rule</strong>: <em>NEVER buy long when price is below VWAP, regardless of block deal size!</em>
+                      <strong>Golden Defense</strong>: <em>NEVER buy between 9:15–9:45 AM! Wait for VWAP reclaim after 10:15 AM.</em>
                     </li>
                   </ul>
+                </div>
+              </div>
+
+              {/* Card 3: Exact Timing & Capital Recovery Rules */}
+              <div className="col-12">
+                <div className="p-3 rounded-3 border border-info border-opacity-50" style={{ background: '#0b1d2e' }}>
+                  <strong className="text-info d-block fs-6 mb-2">⏱️ The Loss Recovery & Entry/Exit Rules (Never-Red Blueprint):</strong>
+                  <div className="row g-2 text-white">
+                    <div className="col-12 col-md-4">
+                      <div className="p-2 rounded bg-dark bg-opacity-50 border border-secondary">
+                        <strong className="text-warning d-block small">1. BEST TIME TO ENTER</strong>
+                        <span style={{ fontSize: 12 }}>
+                          <strong>10:15 AM – 11:30 AM</strong> (Opening trap finished, base confirmed). Avoid 09:15–09:45 AM!
+                        </span>
+                      </div>
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <div className="p-2 rounded bg-dark bg-opacity-50 border border-secondary">
+                        <strong className="text-success d-block small">2. THE REVERSAL TRIGGER</strong>
+                        <span style={{ fontSize: 12 }}>
+                          Wait for a 5-min green candle to <strong>close ABOVE VWAP</strong>. If below VWAP, do not touch!
+                        </span>
+                      </div>
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <div className="p-2 rounded bg-dark bg-opacity-50 border border-secondary">
+                        <strong className="text-primary d-block small">3. BEST TIME TO EXIT</strong>
+                        <span style={{ fontSize: 12 }}>
+                          At <strong>+2.0% to +2.5%</strong>, sell 50% shares. Move SL to Buy Price. Trade is now 100% risk-free!
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -523,6 +572,13 @@ export default function BlockDealsWatch({
             onClick={() => setActiveFilter('STRONG_BUY')}
           >
             🟢 Strong Buy Above VWAP ({strongBuyCount})
+          </button>
+          <button
+            type="button"
+            className={`btn btn-sm rounded-pill px-3 py-1.5 fw-bold shadow-sm ${activeFilter === 'REVERSAL' ? 'btn-info text-white' : 'btn-outline-info text-dark'}`}
+            onClick={() => setActiveFilter('REVERSAL')}
+          >
+            ⚡ Reversals ({processedBlockSetups.filter((d) => d.signal === 'REVERSAL').length})
           </button>
           <button
             type="button"
