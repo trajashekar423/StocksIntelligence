@@ -129,21 +129,37 @@ export default function BlockDealsWatch({
     }
   };
 
+  const lastAlertTimeRef = useRef({});
+
   // Monitor Live Quotes for Reversals (Price Crossing VWAP) and Breakdowns
   useEffect(() => {
+    const nowMs = Date.now();
     Object.entries(liveQuotes).forEach(([sym, q]) => {
       const prev = prevQuoteRef.current[sym];
+      const lastAlert = lastAlertTimeRef.current[sym] || 0;
+      const canAlert = nowMs - lastAlert > 120000; // 2-minute cooldown to prevent notification spam
+
       if (prev && q?.price) {
         const vwap = q.vwap || q.price;
-        // 1. REVERSAL ALERT (Price was below VWAP, now crossed ABOVE VWAP!)
-        if (prev.price < prev.vwap && q.price >= vwap) {
+        const isGreen = (q.changePercent || 0) > 0;
+        const isSustainedAboveVwap = q.price >= (vwap * 1.002); // +0.2% buffer to filter false wicks
+
+        // 1. CONFIRMED REVERSAL ALERT (Held above VWAP with Green Day Confirmation)
+        if (prev.price < prev.vwap && isSustainedAboveVwap && isGreen && canAlert) {
+          lastAlertTimeRef.current[sym] = nowMs;
           if (soundAlertsEnabled) playAlertChime('REVERSAL');
-          const msg = `⚡ ${sym} REVERSAL ALERT: Price reclaimed ₹${vwap.toFixed(2)} VWAP! Strong buyers have arrived!`;
+          const msg = `⚡ ${sym} CONFIRMED REVERSAL: Sustained above ₹${vwap.toFixed(2)} VWAP in the Green (+${q.changePercent.toFixed(2)}%)! Safe entry confirmed.`;
           setFeedbackMsg(msg);
-          triggerDesktopNotification(`⚡ ${sym} Institutional Reversal!`, `Price has crossed above ₹${vwap.toFixed(2)} VWAP!`);
+          triggerDesktopNotification(`⚡ ${sym} Reversal Confirmed!`, `Sustained above ₹${vwap.toFixed(2)} VWAP in the green!`);
         }
-        // 2. BREAKDOWN ALERT (Price made a new low below previous low!)
-        else if (prev.low && q.low && q.low < prev.low && q.price < vwap) {
+        // 2. TESTING VWAP NOTICE (Just poked above without confirmation — WARN USER NOT TO JUMP IN!)
+        else if (prev.price < prev.vwap && q.price >= vwap && (!isGreen || !isSustainedAboveVwap)) {
+          // Do NOT send spam desktop notification; show in-app caution
+          setFeedbackMsg(`👀 ${sym} is testing VWAP (₹${vwap.toFixed(2)}). Do NOT enter yet — wait for 5-min candle close above VWAP!`);
+        }
+        // 3. BREAKDOWN ALERT (Price made a new low below previous low!)
+        else if (prev.low && q.low && q.low < prev.low && q.price < vwap && canAlert) {
+          lastAlertTimeRef.current[sym] = nowMs;
           if (soundAlertsEnabled) playAlertChime('BREAKDOWN');
           const msg = `⚠️ ${sym} BREAKDOWN ALERT: Dropped to new low ₹${q.low.toFixed(2)}! Dumping continues. Do not buy!`;
           setFeedbackMsg(msg);
