@@ -42,6 +42,7 @@ import Nifty50Scanner from './Nifty50Scanner.jsx';
 import LivePositionRiskMonitor from '../trading/LivePositionRiskMonitor';
 import MarketSentimentAlertBanner from './MarketSentimentAlertBanner.jsx';
 import PracticeStockMarket from './PracticeStockMarket.jsx';
+import { calculateIntradayScore } from '../../services/strategy/intradayScoreEngine';
 
 const UNAVAILABLE = 'Unavailable';
 
@@ -903,101 +904,6 @@ function buildScanner(
         bullishEMA;
 
       /* --------------------------------------------------------
-         SCORE
-         -------------------------------------------------------- */
-
-      let score = 0;
-
-      /* Momentum - 20 */
-      if (changePercent >= 3.0) {
-        score += 20;
-      } else if (changePercent >= 1.5) {
-        score += 16;
-      } else if (changePercent > 0) {
-        score += 10;
-      }
-
-      /* Volume - 20 */
-      if (volumeRatio !== null) {
-        if (volumeRatio >= 2.0) {
-          score += 20;
-        } else if (volumeRatio >= 1.5) {
-          score += 16;
-        } else if (volumeRatio >= 1.1) {
-          score += 12;
-        } else {
-          score += 6;
-        }
-      } else {
-        score += 10;
-      }
-
-      /* VWAP - 15 */
-      if (aboveVwap) {
-        score += 15;
-      }
-
-      /* Breakout - 15 */
-      if (breakoutConfirmed) {
-        score += 15;
-      } else if (nearPDH || price >= (previousClose * 1.005)) {
-        score += 10;
-      }
-
-      /* Trend - 10 */
-      if (bullishTrend) {
-        score += 10;
-      } else if (price > open) {
-        score += 7;
-      } else if (price > previousClose) {
-        score += 4;
-      }
-
-      /* Liquidity - 10 */
-      if (volume >= 100000) {
-        score += 10;
-      } else if (volume >= 25000) {
-        score += 6;
-      }
-
-      /* RSI confirmation - 5 */
-      if (bullishRSI || (rsi >= 50 && rsi <= 78)) {
-        score += 5;
-      }
-
-      /* Market - 5 */
-      if (marketScore >= 4) {
-        score += 5;
-      } else if (marketScore >= 3) {
-        score += 3;
-      } else {
-        score += 2;
-      }
-
-      /* --------------------------------------------------------
-         PENALTIES
-         -------------------------------------------------------- */
-
-      if (volumeRatio !== null && volumeRatio < 0.6) {
-        score -= 10;
-      }
-
-      if (rsi !== null && rsi > 85) {
-        score -= 5;
-      }
-
-      if (price <= vwap && vwap !== null) {
-        score -= 10;
-      }
-
-      score = Math.round(
-        Math.max(
-          0,
-          Math.min(100, score)
-        )
-      );
-
-      /* --------------------------------------------------------
          ENTRY / SL / TARGET
          -------------------------------------------------------- */
 
@@ -1031,7 +937,7 @@ function buildScanner(
         Math.max(
           entryLow -
             stopLoss,
-          0
+          0.01
         );
 
       const maxRiskAmount =
@@ -1066,6 +972,32 @@ function buildScanner(
               riskPerShare
             ).toFixed(2)
           : UNAVAILABLE;
+
+      /* --------------------------------------------------------
+         STANDARDIZED INTRADAY SCORE (0 - 100)
+         Intraday Score = (20×V) + (15×L) + (15×M) + (15×W) + (10×B) + (10×T) + (10×R) + (5×S)
+         -------------------------------------------------------- */
+      const intradayScoreObj = calculateIntradayScore({
+        price,
+        open,
+        previousClose,
+        vwap,
+        volume,
+        averageVolume: avgVolume || (volumeRatio > 0 ? volume / volumeRatio : 200000),
+        relativeVolume: volumeRatio !== null ? volumeRatio : 1.0,
+        changePercent,
+        previousDayHigh,
+        entry: entryLow,
+        target: target1,
+        stopLoss,
+        breakout: breakoutConfirmed,
+        bullishTrend,
+        niftyBullish: marketScore >= 3,
+        sectorBullish: marketScore >= 3,
+      });
+
+      const score = intradayScoreObj.score;
+      const canTrade = intradayScoreObj.canTrade;
 
       const risk =
         score >= 75 && aboveVwap
@@ -1246,6 +1178,8 @@ function buildScanner(
         ...row,
 
         score,
+        canTrade,
+        intradayScoreBreakdown: intradayScoreObj.breakdown,
 
         signal:
           getSignal(score),
