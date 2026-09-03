@@ -370,11 +370,11 @@ export default function PracticeStockMarket() {
       badgeClass = 'bg-success text-white';
       title = '🟢 SAFE ENTRY CONFIRMED (Institutional Floor Active)';
       guidance = `Price (₹${price.toFixed(2)}) is defending VWAP (₹${vwap.toFixed(2)}) in the green (+${pChange.toFixed(2)}%). Safe to enter with Stop Loss below VWAP!`;
-    } else if (score <= 40) {
+    } else if (score <= 40 || !isAboveVwap) {
       status = 'DUMP_TRAP';
       badgeClass = 'bg-danger text-white';
-      title = '🔴 TRAP ZONE — DO NOT BUY (Supply Overhang)';
-      guidance = `Price (₹${price.toFixed(2)}) is trapped BELOW VWAP (₹${vwap.toFixed(2)}). Trapped sellers are dumping on rallies. Buying here is catching a falling knife!`;
+      title = '❌ DO NOT BUY — Still Dumping Below VWAP';
+      guidance = `❌ DO NOT BUY — Still dumping below ₹${vwap.toFixed(2)} VWAP. Must cross above ₹${vwap.toFixed(2)} to confirm buyers! Trapped sellers are dumping on rallies.`;
     }
 
     // Calculated SL and Target
@@ -1135,3 +1135,4 @@ export default function PracticeStockMarket() {
     </div>
   );
 }
+

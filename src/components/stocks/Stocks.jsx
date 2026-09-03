@@ -1228,9 +1228,10 @@ function buildScanner(
         liveSignalText = `⚡ NEAR UPPER CIRCUIT (${distToUcPct}% Away)`;
         profitActionAdvice = '🎯 Buy Window Before Freeze';
       } else if (!aboveVwap || (price < open && changePercent <= 0)) {
+        const vwapVal = Number(row?.vwap || (row?.VWAP ? row.VWAP : price)).toFixed(2);
         liveSignal = 'STRONG_SELLING';
         liveSignalText = '🔴 STRONG SELLING (Below VWAP)';
-        profitActionAdvice = '❌ DO NOT BUY / EXIT LONG (Capital Defense)';
+        profitActionAdvice = `❌ DO NOT BUY — Still dumping below ₹${vwapVal} VWAP. Must cross above ₹${vwapVal} to confirm buyers!`;
       } else if (score >= 60 && aboveVwap && changePercent >= 1.5) {
         liveSignal = 'STRONG_BUY';
         liveSignalText = '🟢 STRONG BUY (Above VWAP)';

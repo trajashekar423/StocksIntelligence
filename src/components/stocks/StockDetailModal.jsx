@@ -22,6 +22,8 @@ export default function StockDetailModal({
   const changePct = Number(stock.changePercent || stock.pChange || (stock.previousClose ? ((ltp - stock.previousClose) / stock.previousClose) * 100 : 0));
   const isPositive = changePct >= 0;
   const score = stock.score ?? stock.bullishScore ?? 80;
+  const vwap = Number(stock.vwap || stock.VWAP || 0);
+  const isBelowVwap = vwap > 0 && ltp < vwap;
 
   return (
     <div className="modal d-block" tabIndex="-1" role="dialog" style={{ backgroundColor: 'rgba(15, 23, 42, 0.65)', backdropFilter: 'blur(4px)', zIndex: 1060 }}>
@@ -31,16 +33,26 @@ export default function StockDetailModal({
           <div className="modal-header bg-light border-bottom px-4 py-3 d-flex align-items-center justify-content-between">
             <div className="d-flex flex-wrap align-items-center gap-3">
               <div>
-                <div className="d-flex align-items-center gap-2">
+                <div className="d-flex flex-wrap align-items-center gap-2">
                   <span className="badge bg-dark fs-6 px-3 py-1 fw-bold">{symbol}</span>
                   <h5 className="modal-title fw-bold text-dark mb-0">{companyName}</h5>
+                  {isBelowVwap && (
+                    <span className="badge bg-danger text-white fw-bold px-2 py-1 shadow-sm">
+                      ❌ DO NOT BUY — Still dumping below ₹{vwap.toFixed(2)} VWAP
+                    </span>
+                  )}
                 </div>
-                <div className="d-flex align-items-center gap-2 mt-1">
+                <div className="d-flex flex-wrap align-items-center gap-2 mt-1">
                   <span className="fs-5 fw-bold text-dark">₹{ltp.toFixed(2)}</span>
                   <span className={`badge ${isPositive ? 'bg-success' : 'bg-danger'} px-2 py-1`}>
                     {isPositive ? '▲ +' : '▼ '}
                     {changePct.toFixed(2)}% (₹{Math.abs(change).toFixed(2)})
                   </span>
+                  {vwap > 0 && (
+                    <span className="badge bg-light text-dark border">
+                      Live VWAP: ₹{vwap.toFixed(2)}
+                    </span>
+                  )}
                   <span className="badge bg-primary-subtle text-primary fw-semibold">
                     🎯 Bullish Score: {score}/100
                   </span>

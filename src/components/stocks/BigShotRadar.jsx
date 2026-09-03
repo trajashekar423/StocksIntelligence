@@ -308,7 +308,10 @@ export default function BigShotRadar({
         const isAboveVwap = s.vwap ? s.price >= s.vwap : true;
         let signal = isAboveVwap ? 'STRONG_BUY' : 'STRONG_SELLING';
         let signalText = isAboveVwap ? '🟢 STRONG BUY (Above VWAP)' : '🔴 STRONG SELLING (Below VWAP)';
-        let signalAdvice = isAboveVwap ? '🎯 Take 50% at Target 1 & Trail SL' : '❌ Exit Long / Below VWAP';
+        const vwapVal = Number(s.vwap || s.price).toFixed(2);
+        let signalAdvice = isAboveVwap
+          ? '🎯 Take 50% at Target 1 & Trail SL'
+          : `❌ DO NOT BUY — Still dumping below ₹${vwapVal} VWAP. Must cross above ₹${vwapVal} to confirm buyers!`;
 
         if (circuitStatus === 'LOCKED_IN_UC') {
           signal = 'LOCKED_CIRCUIT';

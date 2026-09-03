@@ -742,11 +742,25 @@ export default function Nifty50Scanner({ onQuickTrade = null }) {
                           </span>
                         </td>
                         <td className="text-center">
-                          <span className={`badge ${stock.score >= 90 ? 'bg-danger' : stock.score >= 80 ? 'bg-success' : 'bg-warning text-dark'} px-2 py-1`}>
-                            {stock.signal}
-                          </span>
+                          {!stock.isAboveVwap ? (
+                            <span className="badge bg-danger text-white px-2 py-1 fw-bold">
+                              ❌ DO NOT BUY
+                            </span>
+                          ) : (
+                            <span className={`badge ${stock.score >= 90 ? 'bg-danger' : stock.score >= 80 ? 'bg-success' : 'bg-warning text-dark'} px-2 py-1`}>
+                              {stock.signal}
+                            </span>
+                          )}
                         </td>
-                        <td className="font-monospace text-nowrap">{stock.entryZone}</td>
+                        <td className="font-monospace text-nowrap">
+                          {!stock.isAboveVwap ? (
+                            <span className="text-danger fw-semibold" style={{ fontSize: 11 }}>
+                              ❌ Still dumping below ₹{stock.vwap.toFixed(1)} VWAP. Must cross above ₹{stock.vwap.toFixed(1)} to confirm buyers!
+                            </span>
+                          ) : (
+                            stock.entryZone
+                          )}
+                        </td>
                         <td className="font-monospace text-danger text-nowrap">₹{stock.stopLoss.toFixed(1)}</td>
                         <td className="font-monospace text-nowrap">
                           <span className="text-success">₹{stock.target1.toFixed(0)}</span> /{' '}
@@ -821,9 +835,13 @@ export default function Nifty50Scanner({ onQuickTrade = null }) {
 
                     <div className="row g-1.5 small text-center mb-2">
                       <div className="col-6">
-                        <div className="p-1.5 rounded bg-light border">
-                          <span className="text-muted d-block" style={{ fontSize: 10 }}>Entry Zone</span>
-                          <strong className="font-monospace">{stock.entryZone}</strong>
+                        <div className={`p-1.5 rounded border ${!stock.isAboveVwap ? 'bg-danger bg-opacity-10 border-danger' : 'bg-light'}`}>
+                          <span className={`${!stock.isAboveVwap ? 'text-danger fw-bold' : 'text-muted'} d-block`} style={{ fontSize: 10 }}>
+                            {!stock.isAboveVwap ? '❌ DO NOT BUY' : 'Entry Zone'}
+                          </span>
+                          <strong className={`${!stock.isAboveVwap ? 'text-danger' : 'text-dark'} font-monospace`} style={{ fontSize: !stock.isAboveVwap ? 11 : 12 }}>
+                            {!stock.isAboveVwap ? `Below ₹${stock.vwap.toFixed(1)} VWAP` : stock.entryZone}
+                          </strong>
                         </div>
                       </div>
                       <div className="col-6">

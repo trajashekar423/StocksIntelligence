@@ -497,13 +497,17 @@ export default function WatchForNextDay({ onQuickTrade = null, onAddToPortfolio 
                               <span className="badge bg-light text-secondary border small">{stock.sector}</span>
                             </div>
                             <div className="d-flex flex-wrap align-items-center gap-2 mt-1.5 small">
-                              <span className={`badge ${stock.signalTier === 'HIGH CONVICTION' ? 'bg-danger' : stock.signalTier === 'STRONG' ? 'bg-success' : 'bg-warning text-dark'} px-2.5 py-1 fw-bold`}>
-                                {stock.signalBadge}
-                              </span>
+                              {stock.price < stock.vwap ? (
+                                <span className="badge bg-danger text-white px-2.5 py-1 fw-bold">
+                                  ❌ DO NOT BUY — Dumping Below VWAP
+                                </span>
+                              ) : (
+                                <span className={`badge ${stock.signalTier === 'HIGH CONVICTION' ? 'bg-danger' : stock.signalTier === 'STRONG' ? 'bg-success' : 'bg-warning text-dark'} px-2.5 py-1 fw-bold`}>
+                                  {stock.signalBadge}
+                                </span>
+                              )}
                               <span className="badge bg-light text-dark border">
                                 {stock.breakoutStatus}
-                              </span>
-                              <span className={`badge ${stock.corporateAction.status === 'NONE' ? 'bg-success text-white' : 'bg-warning text-dark'} px-2.5 py-1 fw-bold shadow-sm small`}>
                               </span>
                             </div>
                           </div>
@@ -536,7 +540,13 @@ export default function WatchForNextDay({ onQuickTrade = null, onAddToPortfolio 
                           <div className="row g-2 text-center text-md-start">
                             <div className="col-6 col-md-3">
                               <span className="text-muted small d-block">Entry Zone:</span>
-                              <strong className="text-dark">{stock.entryZone}</strong>
+                              {stock.price < stock.vwap ? (
+                                <strong className="text-danger small" style={{ fontSize: 11 }}>
+                                  ❌ Still dumping below ₹{Number(stock.vwap).toFixed(2)} VWAP
+                                </strong>
+                              ) : (
+                                <strong className="text-dark">{stock.entryZone}</strong>
+                              )}
                             </div>
                             <div className="col-6 col-md-3">
                               <span className="text-muted small d-block">Stop Loss (Invalidation):</span>
