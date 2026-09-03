@@ -244,7 +244,7 @@ export default function BlockDealsWatch({
     let isMounted = true;
     const fetchQuotes = async () => {
       const deals = blockDealData.data || [];
-      const symbolsToPoll = ['MEESHO', 'CLEANMAX', 'LENSKART', 'ATHERENERG', ...deals.map((d) => d.symbol)];
+      const symbolsToPoll = ['MEESHO', 'CLEANMAX', 'LENSKART', 'ATHERENERG', 'STAR', ...deals.map((d) => d.symbol)];
       const uniqueSymbols = Array.from(new Set(symbolsToPoll));
 
       const updates = {};
@@ -359,6 +359,21 @@ export default function BlockDealsWatch({
         series: 'EQ',
         lastUpdateTime: 'T+2 Pullback Window',
         catalyst: 'Post-Breakout Pullback (Below ₹1,702 VWAP)',
+      },
+      {
+        session: 'Session 2',
+        symbol: 'STAR',
+        companyName: 'Strides Pharma Science Limited',
+        dealPrice: 990.0,
+        currentLtp: 998.5,
+        totalTradedValue: 990000000,
+        totalTradedVolume: 1000000,
+        pchange: 0.71,
+        previousClose: 983.0,
+        vwap: 992.4,
+        series: 'EQ',
+        lastUpdateTime: '14:06:04 (Session 2 Match)',
+        catalyst: '₹99 Cr Afternoon Block (Session 2 Benchmark)',
       },
     ];
 
@@ -534,6 +549,10 @@ export default function BlockDealsWatch({
           return deal.signal === 'STRONG_BUY' || deal.signal === 'LOCKED_CIRCUIT' || deal.signal === 'REVERSAL';
         case 'SELLING':
           return deal.signal === 'STRONG_SELLING';
+        case 'SESSION_1':
+          return deal.session === 'Session 1';
+        case 'SESSION_2':
+          return deal.session === 'Session 2';
         case 'WATCHLIST':
           return pinnedSymbols.has(deal.symbol);
         default:
@@ -545,6 +564,11 @@ export default function BlockDealsWatch({
   const totalValueCr = (blockDealData.totalTradedValue / 10000000).toFixed(2);
   const megaBlocksCount = processedBlockSetups.filter((d) => d.isMegaBlock).length;
   const strongBuyCount = processedBlockSetups.filter((d) => d.signal === 'STRONG_BUY' || d.signal === 'LOCKED_CIRCUIT').length;
+  const session2DealsCount = processedBlockSetups.filter((d) => d.session === 'Session 2').length;
+  const now = new Date();
+  const currentHours = now.getHours();
+  const currentMinutes = now.getMinutes();
+  const isSession2WindowActive = currentHours === 14 && currentMinutes >= 5 && currentMinutes <= 30;
 
   return (
     <div className="block-deals-module w-100 mb-5">
@@ -739,6 +763,54 @@ export default function BlockDealsWatch({
         </div>
       </div>
 
+      {/* ── 02:05 PM SESSION 2 AUCTION WINDOW TRACKER ── */}
+      <div
+        className="card border-0 shadow-sm rounded-4 p-3 mb-3 text-white"
+        style={{
+          background: isSession2WindowActive
+            ? 'linear-gradient(135deg, #072a3b 0%, #0d4661 100%)'
+            : 'linear-gradient(135deg, #131d27 0%, #1a2836 100%)',
+          borderLeft: isSession2WindowActive ? '4px solid #0dcaf0' : '4px solid #6c757d',
+        }}
+      >
+        <div className="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3">
+          <div className="d-flex align-items-center gap-2.5">
+            <span className="fs-4">{isSession2WindowActive ? '🕒' : '⏳'}</span>
+            <div>
+              <div className="d-flex align-items-center gap-2 mb-0.5">
+                <strong className="fs-6 text-white">
+                  NSE Session 2 Block Deal Window (02:05 PM – 02:20 PM)
+                </strong>
+                <span className={`badge ${isSession2WindowActive ? 'bg-info text-dark' : 'bg-secondary text-white'} fw-bold px-2 py-0.5 small`}>
+                  {isSession2WindowActive ? '🟢 AUCTION WINDOW ACTIVE' : 'AUCTION WINDOW CLOSED'}
+                </span>
+              </div>
+              <small className="opacity-85 d-block">
+                {isSession2WindowActive ? (
+                  <span>
+                    Institutions are submitting 2:00 PM block deals right now. Auto-polling NSE every 10s. Newly matched deals will appear here automatically upon exchange settlement!
+                  </span>
+                ) : (
+                  <span>
+                    Session 1 executed at 08:45 AM. Session 2 operates daily from 02:05 PM to 02:20 PM.
+                  </span>
+                )}
+              </small>
+            </div>
+          </div>
+
+          <div className="d-flex align-items-center gap-2">
+            <button
+              type="button"
+              className={`btn btn-xs rounded-pill px-3 py-1.5 fw-bold shadow-sm ${activeFilter === 'SESSION_2' ? 'btn-info text-dark' : 'btn-outline-info text-white'}`}
+              onClick={() => setActiveFilter(activeFilter === 'SESSION_2' ? 'ALL' : 'SESSION_2')}
+            >
+              🕒 View Session 2 Deals ({session2DealsCount})
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* ── LIVE REVERSAL & BREAKDOWN RADAR STRIP ── */}
       {(() => {
         const targetDeal = processedBlockSetups.find((d) => d.symbol === 'MEESHO') || processedBlockSetups[0];
@@ -856,6 +928,20 @@ export default function BlockDealsWatch({
             onClick={() => setActiveFilter('SELLING')}
           >
             🔴 Selling Alerts ({processedBlockSetups.filter((d) => d.signal === 'STRONG_SELLING').length})
+          </button>
+          <button
+            type="button"
+            className={`btn btn-sm rounded-pill px-3 py-1.5 fw-bold shadow-sm ${activeFilter === 'SESSION_1' ? 'btn-secondary text-white' : 'btn-outline-secondary text-dark'}`}
+            onClick={() => setActiveFilter('SESSION_1')}
+          >
+            🌅 Session 1 (08:45 AM)
+          </button>
+          <button
+            type="button"
+            className={`btn btn-sm rounded-pill px-3 py-1.5 fw-bold shadow-sm ${activeFilter === 'SESSION_2' ? 'btn-info text-dark' : 'btn-outline-info text-dark'}`}
+            onClick={() => setActiveFilter('SESSION_2')}
+          >
+            🕒 Session 2 (02:05 PM) {isSession2WindowActive ? '🔴 LIVE' : ''} ({session2DealsCount})
           </button>
           <button
             type="button"
