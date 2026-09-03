@@ -8,6 +8,8 @@ import {
   toIsoDateString,
   getSuggestedTargetDates,
   isNseTradingDay,
+  getTodayNseDate,
+  getNextNseTradingDay,
 } from '../../services/calendar/nseCalendarService';
 import {
   runTargetDateStrategyScan,
@@ -22,18 +24,25 @@ const STORAGE_KEY = 'user_selected_portfolio_stocks';
 export default function WatchForNextDay({ onQuickTrade = null, onAddToPortfolio = null }) {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('TOP_10'); // 'TOP_10' | 'FULL_TABLE' | 'DATE_HISTORY'
-  const [buyDate, setBuyDate] = useState('2026-08-28');
-  const [targetSellDate, setTargetSellDate] = useState('2026-08-31');
-  const [customDateInput, setCustomDateInput] = useState('2026-08-31');
+
+  // Dynamic NSE Date Initialization (IST)
+  const today = getTodayNseDate();
+  const defaultBuyIso = toIsoDateString(today);
+  const defaultTargetDate = getNextNseTradingDay(today, false);
+  const defaultTargetIso = toIsoDateString(defaultTargetDate);
+
+  const [buyDate, setBuyDate] = useState(defaultBuyIso);
+  const [targetSellDate, setTargetSellDate] = useState(defaultTargetIso);
+  const [customDateInput, setCustomDateInput] = useState(defaultTargetIso);
 
   // Scanner results
-  const [scanResult, setScanResult] = useState({
-    sessionInfo: calculateTradingSessions('2026-08-28', '2026-08-31'),
+  const [scanResult, setScanResult] = useState(() => ({
+    sessionInfo: calculateTradingSessions(defaultBuyIso, defaultTargetIso),
     top10: [],
     allCandidates: [],
     totalScanned: 0,
     qualifiedCount: 0,
-  });
+  }));
 
   // Filters & State
   const [selectedSignalTier, setSelectedSignalTier] = useState('ALL'); // 'ALL' | 'HIGH CONVICTION' | 'STRONG' | 'WATCH'

@@ -19,7 +19,7 @@ export const NSE_HOLIDAYS_MAP: Record<string, string> = {
   '2026-05-28': 'Bakri Id (Id-Ul-Adha)',
   '2026-06-26': 'Muharram',
   '2026-08-15': 'Independence Day',
-  '2026-09-04': 'Milad-un-Nabi (Id-e-Milad)',
+  '2026-09-14': 'Ganesh Chaturthi',
   '2026-10-02': 'Mahatma Gandhi Jayanti',
   '2026-10-20': 'Dussehra',
   '2026-11-09': 'Diwali Laxmi Pujan (Muhurat Trading only)',
@@ -115,6 +115,24 @@ export function formatNseDate(date: Date | string): string {
   const month = MONTH_NAMES[d.getMonth()];
   const year = d.getFullYear();
   return `${day}-${month}-${year}`;
+}
+
+/**
+ * Returns today's date normalized in Indian Standard Time (Asia/Kolkata).
+ */
+export function getTodayNseDate(): Date {
+  try {
+    const formatter = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Kolkata',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    });
+    return normalizeDate(formatter.format(new Date()));
+  } catch {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  }
 }
 
 /**
