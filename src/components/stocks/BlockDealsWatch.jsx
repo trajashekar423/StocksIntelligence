@@ -213,21 +213,31 @@ export default function BlockDealsWatch({
       const upperBand = Number((matchedScanner?.upperBand || (prevClose * 1.10)).toFixed(2));
       const distToUcPct = upperBand > 0 ? Math.max(0, Number((((upperBand - currentLtp) / upperBand) * 100).toFixed(1))) : 5.0;
 
+      // Discount Block Deal Analysis
+      const isDiscountDeal = prevClose > 0 && dealPrice < (prevClose * 0.99);
+      const discountPct = prevClose > 0 ? Number((((dealPrice - prevClose) / prevClose) * 100).toFixed(2)) : 0;
+
       // BigShot 100-Point Scoring Logic
       let score = 50;
-      if (dealValueCr >= 1000) score += 30;
-      else if (dealValueCr >= 500) score += 25;
-      else if (dealValueCr >= 100) score += 15;
-      else if (dealValueCr >= 50) score += 10;
+      if (dealValueCr >= 1000) score += 25;
+      else if (dealValueCr >= 500) score += 20;
+      else if (dealValueCr >= 100) score += 10;
+      else if (dealValueCr >= 50) score += 5;
 
-      if (isAboveVwap) score += 15;
-      else score -= 25; // Penalty for trading below VWAP
+      if (isDiscountDeal) {
+        score -= 40; // Heavy penalty for discount stake dump
+      }
 
-      if (isHoldingDealPrice) score += 10;
-      if (pchange > 0) score += 10;
-      if (distToUcPct <= 1.5) score += 15;
+      if (isAboveVwap && pchange > 0) {
+        score += 25;
+      } else {
+        score -= 30; // Heavy penalty for trading red or below VWAP
+      }
 
-      score = Math.max(10, Math.min(100, Math.round(score)));
+      if (pchange > 1.0) score += 10;
+      if (distToUcPct <= 1.5 && pchange > 0) score += 15;
+
+      score = Math.max(5, Math.min(100, Math.round(score)));
 
       // Institutional Tier
       const isMegaBlock = dealValueCr >= 500;
@@ -238,28 +248,35 @@ export default function BlockDealsWatch({
         ? '⚡ LARGE BLOCK (≥ ₹50 Cr)'
         : '📦 STANDARD BLOCK';
 
-      // BigShot Live Signal & Alert Logic
+      // BigShot Live Signal & Alert Logic (Strict Defense)
       let signal = 'WATCH';
       let signalText = '🟡 WATCH / CONSOLIDATING';
-      let signalAdvice = '⏳ Wait for clean breakout above Deal Price & VWAP';
+      let signalAdvice = '⏳ Wait for clean breakout above VWAP with buyer volume';
       let risk = 'Low';
 
-      if (!isAboveVwap && pchange <= 0) {
+      if (isDiscountDeal || (pchange < 0 && dealValueCr >= 100)) {
+        // e.g. MEESHO: 8 Crore shares sold at -2.5% discount creates massive supply overhang!
         signal = 'STRONG_SELLING';
-        signalText = '🔴 STRONG SELLING (Below VWAP)';
-        signalAdvice = '❌ DO NOT BUY / Institutional Supply Dumping (Capital Defense)';
+        signalText = `⚠️ DISCOUNT STAKE DUMP (${discountPct}%)`;
+        signalAdvice = `❌ DO NOT BUY — Institutional supply overhang (${discountPct}% discount). High dump risk!`;
         risk = 'High';
-      } else if (distToUcPct <= 1.5) {
+      } else if (!isAboveVwap || pchange < 0) {
+        // Trading below VWAP or in the red
+        signal = 'STRONG_SELLING';
+        signalText = '🔴 STRONG SELLING (Below VWAP / Red)';
+        signalAdvice = '❌ DO NOT BUY / Capital Defense (Never buy red stocks below VWAP)';
+        risk = 'High';
+      } else if (distToUcPct <= 1.5 && pchange >= 2.0) {
         signal = 'LOCKED_CIRCUIT';
         signalText = distToUcPct === 0 ? '🔒 100% LOCKED IN UC' : '⚡ NEAR UC (Golden Window)';
         signalAdvice = '💰 Hold for Tomorrow Gap-Up Open (Sell 50% at 09:15 AM)';
         risk = 'Low';
-      } else if (isAboveVwap && (isHoldingDealPrice || pchange >= 0.5)) {
+      } else if (isAboveVwap && pchange >= 0.8 && !isDiscountDeal) {
         signal = 'STRONG_BUY';
-        signalText = '🟢 STRONG BUY (Holding Floor)';
+        signalText = '🟢 STRONG BUY (Holding Premium Floor)';
         signalAdvice = '🎯 Take 50% at T1 (+2.5%) & Move SL to Cost (Never-Red)';
         risk = 'Low';
-      } else if (score >= 60) {
+      } else if (score >= 60 && pchange >= 0) {
         signal = 'ACCUMULATING';
         signalText = '💎 INSTITUTIONAL ACCUMULATION';
         signalAdvice = '📈 Building base above Deal Price. Buy near VWAP support.';
