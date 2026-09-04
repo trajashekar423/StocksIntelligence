@@ -223,16 +223,18 @@ export default function PracticeStockMarket() {
             const pnlPct = Number((((currentPrice - pos.entryPrice) / pos.entryPrice) * 100).toFixed(2));
 
             let highestPrice = Math.max(pos.highestPrice || pos.entryPrice, currentPrice);
+            let peakPnl = Math.max(pos.peakPnl || 0, pnl);
             let trailingStop = pos.trailingStop || pos.stopLoss;
 
-            // Never-Red Rule 1: If price touched Target 1 (+2%), Move SL to Cost (Entry Price)!
-            if (highestPrice >= pos.target1 && trailingStop < pos.entryPrice) {
+            // Never-Red Rule 1: Move SL to Cost as soon as gain touches +1.0% (Lock in Breakeven!)
+            const onePctTarget = Number((pos.entryPrice * 1.01).toFixed(2));
+            if ((highestPrice >= onePctTarget || highestPrice >= pos.target1 || pnlPct >= 1.0) && trailingStop < pos.entryPrice) {
               trailingStop = pos.entryPrice;
             }
 
-            // Never-Red Rule 2: Monotonic Trailing SL as price climbs higher (+1.0% trail)
-            if (pnlPct >= 3.0) {
-              const trailTarget = Number((currentPrice * 0.985).toFixed(2)); // trail 1.5% below peak
+            // Never-Red Rule 2: Monotonic Trailing SL as price climbs higher (trail 1.2% below peak once gain >= 1.8%)
+            if (pnlPct >= 1.8) {
+              const trailTarget = Number((highestPrice * 0.988).toFixed(2));
               if (trailTarget > trailingStop) trailingStop = trailTarget;
             }
 
@@ -317,6 +319,7 @@ export default function PracticeStockMarket() {
               currentPrice,
               vwap,
               highestPrice,
+              peakPnl,
               trailingStop,
               pnl,
               pnlPct,
@@ -429,6 +432,7 @@ export default function PracticeStockMarket() {
       target1: entryAnalysis.calculatedTgt1,
       target2: entryAnalysis.calculatedTgt2,
       highestPrice: quoteData.price,
+      peakPnl: 0,
       pnl: 0,
       pnlPct: 0,
       entryTime: new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata' }),
@@ -539,6 +543,65 @@ export default function PracticeStockMarket() {
     if (pos.pnl > 0) playSound('WIN');
     setOrderFeedback(`Closed ${pos.symbol} @ ₹${pos.currentPrice.toFixed(2)} (P&L: ₹${pos.pnl > 0 ? '+' : ''}${pos.pnl})`);
     setTimeout(() => setOrderFeedback(null), 4000);
+  };
+
+  // 10b. Check if market is past 03:15 PM IST (Closing square-off zone)
+  const isPast315Pm = useMemo(() => {
+    try {
+      const now = new Date();
+      const parts = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'Asia/Kolkata',
+        hour: 'numeric',
+        minute: 'numeric',
+        hour12: false,
+      }).formatToParts(now);
+      const hour = Number(parts.find((p) => p.type === 'hour')?.value || 0);
+      const min = Number(parts.find((p) => p.type === 'minute')?.value || 0);
+      return (hour * 60 + min) >= (15 * 60 + 15); // >= 3:15 PM (15:15 IST)
+    } catch {
+      return false;
+    }
+  }, []);
+
+  // 10c. Close all open profitable positions (3:15 PM Profit Sweep)
+  const handleCloseAllProfitablePositions = () => {
+    const profitable = openPositions.filter((p) => (p.pnl || 0) > 0);
+    if (profitable.length === 0) return;
+
+    let totalReturnedCash = 0;
+    const closedRecords = [];
+
+    profitable.forEach((pos) => {
+      totalReturnedCash += (pos.qty * pos.entryPrice) + pos.pnl;
+      closedRecords.push({
+        id: `${pos.id}-CLOSE-315`,
+        symbol: pos.symbol,
+        companyName: pos.companyName,
+        qty: pos.qty,
+        entryPrice: pos.entryPrice,
+        exitPrice: pos.currentPrice,
+        pnl: pos.pnl,
+        pnlPct: pos.pnlPct,
+        exitReason: '⏰ 03:15 PM Mandatory Intraday Profit Sweep',
+        lesson: 'Flawless time discipline! You locked in your daily profits before closing square-off algorithms wiped them out.',
+        entryTime: pos.entryTime,
+        exitTime: new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata' }),
+      });
+    });
+
+    const nextWallet = {
+      ...wallet,
+      balance: Number((wallet.balance + totalReturnedCash).toFixed(2)),
+    };
+    updateWallet(nextWallet);
+    updateHistory([...closedRecords, ...tradeHistory]);
+
+    const remaining = openPositions.filter((p) => (p.pnl || 0) <= 0);
+    updatePositions(remaining);
+
+    playSound('WIN');
+    setOrderFeedback(`💰 Successfully swept & locked profits across all open intraday trades!`);
+    setTimeout(() => setOrderFeedback(null), 5000);
   };
 
   // Portfolio Aggregates
@@ -928,6 +991,73 @@ export default function PracticeStockMarket() {
           </span>
         </div>
 
+        {/* ⏰ 3:15 PM Mandatory Profit Sweep Alert */}
+        {isPast315Pm && openPositions.some((p) => (p.pnl || 0) > 0) && (
+          <div className="alert alert-warning border-2 border-warning shadow-sm rounded-4 p-3 mb-3 d-flex flex-column flex-md-row justify-content-between align-items-center gap-3" style={{ background: '#fffbeb', borderColor: '#f59e0b' }}>
+            <div>
+              <div className="d-flex align-items-center gap-2">
+                <span className="fs-3">⏰</span>
+                <div>
+                  <strong className="fs-6 text-dark d-block">03:15 PM Mandatory Square-Off Time!</strong>
+                  <span className="badge bg-danger text-white">Intraday Session Ending</span>
+                </div>
+              </div>
+              <p className="text-secondary small mb-0 mt-2">
+                Brokers auto-square off intraday trades now. You have open profits on screen! Lock in your gains immediately before closing selling wipes them out.
+              </p>
+            </div>
+            <button
+              type="button"
+              className="btn btn-warning btn-sm rounded-pill px-4 py-2 fw-bold shadow text-dark"
+              onClick={handleCloseAllProfitablePositions}
+            >
+              💰 Lock All Open Profits Now
+            </button>
+          </div>
+        )}
+
+        {/* 🎯 Intraday Profit Expectation Ladder Guide */}
+        {openPositions.length > 0 && (
+          <div className="card border-0 rounded-3 p-3 mb-3" style={{ background: '#f1f5f9', border: '1px solid #cbd5e1' }}>
+            <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+              <span className="fw-bold text-dark small">
+                🎯 Institutional Intraday Profit Expectation Rules (Never Turn a Green Trade Red):
+              </span>
+              <span className="badge bg-primary px-2.5 py-1">REALISTIC EXPECTATIONS</span>
+            </div>
+            <div className="row g-2 text-center small">
+              <div className="col-12 col-md-3">
+                <div className="p-2 rounded bg-white border border-success border-opacity-50">
+                  <strong className="text-success d-block">🥉 Level 1 (+1.0% Gain)</strong>
+                  <span className="text-muted" style={{ fontSize: 11 }}>Good Profit: <strong>Click [ 🎯 Book 50% ]</strong></span>
+                  <div className="text-success fw-semibold" style={{ fontSize: 10 }}>Locks cash & moves SL to Cost!</div>
+                </div>
+              </div>
+              <div className="col-12 col-md-3">
+                <div className="p-2 rounded bg-white border border-warning border-opacity-50">
+                  <strong className="text-warning-emphasis d-block">🥈 Level 2 (+1.8% Gain)</strong>
+                  <span className="text-muted" style={{ fontSize: 11 }}>Great Profit: <strong>Book remaining 50%</strong></span>
+                  <div className="text-secondary fw-semibold" style={{ fontSize: 10 }}>Bank full profits cleanly.</div>
+                </div>
+              </div>
+              <div className="col-12 col-md-3">
+                <div className="p-2 rounded bg-white border border-danger border-opacity-50">
+                  <strong className="text-danger d-block">🛡️ 25% Giveback Rule</strong>
+                  <span className="text-muted" style={{ fontSize: 11 }}>If peak profit drops 25%:</span>
+                  <div className="text-danger fw-semibold" style={{ fontSize: 10 }}>Exit immediately! Never let gains die.</div>
+                </div>
+              </div>
+              <div className="col-12 col-md-3">
+                <div className="p-2 rounded bg-white border border-info border-opacity-50">
+                  <strong className="text-info d-block">⏰ 03:15 PM Hard Stop</strong>
+                  <span className="text-muted" style={{ fontSize: 11 }}>Intraday closes at 3:15 PM:</span>
+                  <div className="text-info fw-semibold" style={{ fontSize: 10 }}>Take whatever profit is on screen!</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {openPositions.length === 0 ? (
           <div className="text-center py-5 bg-light rounded-3">
             <span className="fs-1 d-block mb-2">🎯</span>
@@ -979,6 +1109,16 @@ export default function PracticeStockMarket() {
                         <span className={`badge ${isGreen ? 'bg-success' : 'bg-danger'} fw-bold px-2.5 py-1 fs-6`}>
                           {isGreen ? '+₹' : '-₹'}{Math.abs(pos.pnl).toFixed(2)} ({pos.pnlPct}%)
                         </span>
+                        {pos.peakPnl >= 300 && pos.pnl > 0 && pos.pnl <= pos.peakPnl * 0.75 && (
+                          <span className="badge bg-danger text-white d-block mt-1 py-1" style={{ fontSize: 9.5 }}>
+                            ⚠️ Gave back 25%+ (Peak: +₹{pos.peakPnl.toFixed(0)}) • Exit Now!
+                          </span>
+                        )}
+                        {pos.peakPnl >= 300 && pos.pnl > pos.peakPnl * 0.75 && (
+                          <span className="text-muted d-block mt-0.5" style={{ fontSize: 9.5 }}>
+                            Peak: +₹{pos.peakPnl.toFixed(0)}
+                          </span>
+                        )}
                       </td>
                       <td>
                         <span className="text-danger fw-bold">₹{Number(pos.trailingStop).toFixed(2)}</span>
