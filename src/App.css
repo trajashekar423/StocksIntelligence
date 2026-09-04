@@ -6326,6 +6326,24 @@
   color: #fff;
 }
 
+.st-tab-btn--gold {
+  border-color: #fcd34d;
+  color: #b45309;
+  background: #fffdf5;
+}
+
+.st-tab-btn--gold:hover {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.st-tab-btn--gold.active {
+  background: #f59e0b;
+  border-color: #d97706;
+  color: #0f172a;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.35);
+}
+
 .st-tab-btn--neutral.active {
   background: #2563eb;
   border-color: #2563eb;
@@ -6353,6 +6371,12 @@
 .st-tab-help--orange {
   border-left-color: #f97316;
   background: #fff7ed;
+}
+
+.st-tab-help--gold {
+  border-left-color: #f59e0b;
+  background: #fffbeb;
+  border-color: #fef3c7;
 }
 
 .st-tab-help--red {

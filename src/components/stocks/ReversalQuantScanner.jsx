@@ -410,22 +410,22 @@ export default function ReversalQuantScanner({ onQuickTrade = null, onSendToPrac
               <h5 className="mb-0 fw-bold text-white tracking-wide">
                 Institutional Bullish Reversal & 3-Way Setup Engine
               </h5>
-              <span className="badge rounded-pill bg-warning text-dark fw-bold px-2 py-1" style={{ fontSize: '11px' }}>
+              <span className="badge rounded-pill bg-warning text-dark fw-bold px-2.5 py-1" style={{ fontSize: '11px', color: '#0f172a' }}>
                 100-PT QUANT SCANNER
               </span>
             </div>
-            <p className="text-muted small mb-0 mt-1">
-              Catches genuine bottoms at 20-candle swing support with strict <strong>Candle 2 Confirmation Gate</strong> & <strong>ATR-buffered stop loss</strong>.
+            <p className="small mb-0 mt-1" style={{ color: '#cbd5e1', fontSize: '13px' }}>
+              Catches genuine bottoms at 20-candle swing support with strict <strong className="text-warning">Candle 2 Confirmation Gate</strong> &amp; <strong className="text-info">ATR-buffered stop loss</strong>.
             </p>
           </div>
 
           <div className="d-flex align-items-center gap-2">
-            <span className="badge bg-dark border border-secondary text-secondary small py-2 px-3">
-              🕒 Last Refreshed: <span className="text-info">{lastRefreshed || 'Just now'}</span>
+            <span className="badge bg-dark border border-secondary small py-2 px-3" style={{ color: '#e2e8f0' }}>
+              🕒 Last Refreshed: <span className="text-info fw-bold">{lastRefreshed || 'Just now'}</span>
             </span>
             <button
               type="button"
-              className="btn btn-outline-info btn-sm rounded-pill px-3 fw-semibold"
+              className="btn btn-outline-info btn-sm rounded-pill px-3 fw-semibold shadow-sm"
               onClick={fetchMarketFeed}
               disabled={loading}
             >
@@ -437,26 +437,26 @@ export default function ReversalQuantScanner({ onQuickTrade = null, onSendToPrac
         {/* Quick Setup Stats */}
         <div className="row g-2 mt-3">
           <div className="col-6 col-md-3">
-            <div className="p-2 rounded border border-secondary border-opacity-25 text-center" style={{ background: 'rgba(30, 41, 59, 0.7)' }}>
-              <span className="text-muted small d-block" style={{ fontSize: 11 }}>1. DOWN → UP REVERSALS</span>
-              <strong className="fs-5 text-emerald text-success">{scanResult.downToUpReversals.length} Setups</strong>
+            <div className="p-2 rounded border border-secondary border-opacity-50 text-center" style={{ background: 'rgba(30, 41, 59, 0.7)' }}>
+              <span className="small d-block fw-bold" style={{ fontSize: 11, color: '#94a3b8' }}>1. DOWN → UP REVERSALS</span>
+              <strong className="fs-5 text-success">{scanResult.downToUpReversals.length} Setups</strong>
             </div>
           </div>
           <div className="col-6 col-md-3">
-            <div className="p-2 rounded border border-secondary border-opacity-25 text-center" style={{ background: 'rgba(30, 41, 59, 0.7)' }}>
-              <span className="text-muted small d-block" style={{ fontSize: 11 }}>2. UP → PULLBACK → UP</span>
+            <div className="p-2 rounded border border-secondary border-opacity-50 text-center" style={{ background: 'rgba(30, 41, 59, 0.7)' }}>
+              <span className="small d-block fw-bold" style={{ fontSize: 11, color: '#94a3b8' }}>2. UP → PULLBACK → UP</span>
               <strong className="fs-5 text-info">{scanResult.pullbackContinuations.length} Continuations</strong>
             </div>
           </div>
           <div className="col-6 col-md-3">
-            <div className="p-2 rounded border border-secondary border-opacity-25 text-center" style={{ background: 'rgba(30, 41, 59, 0.7)' }}>
-              <span className="text-muted small d-block" style={{ fontSize: 11 }}>3. UP → REVERSAL → DOWN</span>
+            <div className="p-2 rounded border border-secondary border-opacity-50 text-center" style={{ background: 'rgba(30, 41, 59, 0.7)' }}>
+              <span className="small d-block fw-bold" style={{ fontSize: 11, color: '#94a3b8' }}>3. UP → REVERSAL → DOWN</span>
               <strong className="fs-5 text-warning">{scanResult.topReversalShorts.length} Short Setups</strong>
             </div>
           </div>
           <div className="col-6 col-md-3">
-            <div className="p-2 rounded border border-secondary border-opacity-25 text-center" style={{ background: 'rgba(30, 41, 59, 0.7)' }}>
-              <span className="text-muted small d-block" style={{ fontSize: 11 }}>🟢 2ND CANDLE CONFIRMED</span>
+            <div className="p-2 rounded border border-secondary border-opacity-50 text-center" style={{ background: 'rgba(30, 41, 59, 0.7)' }}>
+              <span className="small d-block fw-bold" style={{ fontSize: 11, color: '#94a3b8' }}>🟢 2ND CANDLE CONFIRMED</span>
               <strong className="fs-5 text-success">{confirmedCount} Ready to Enter</strong>
             </div>
           </div>
@@ -466,20 +466,20 @@ export default function ReversalQuantScanner({ onQuickTrade = null, onSendToPrac
       {/* ── EDUCATIONAL ARCHITECTURE BANNER ── */}
       <div className="p-3 border-bottom border-secondary border-opacity-25" style={{ background: 'rgba(15, 23, 42, 0.6)' }}>
         <div className="d-flex flex-wrap align-items-center justify-content-between gap-2">
-          <div className="d-flex align-items-center gap-2">
+          <div className="d-flex align-items-center flex-wrap gap-2">
             <span className="badge bg-success bg-opacity-25 text-success border border-success px-2 py-1">Step 1: Trend Exhaustion</span>
-            <span className="text-muted">➔</span>
+            <span style={{ color: '#94a3b8' }}>➔</span>
             <span className="badge bg-info bg-opacity-25 text-info border border-info px-2 py-1">Step 2: 20-Low Support (≤3%)</span>
-            <span className="text-muted">➔</span>
+            <span style={{ color: '#94a3b8' }}>➔</span>
             <span className="badge bg-warning bg-opacity-25 text-warning border border-warning px-2 py-1">Step 3: Hammer/Engulfing</span>
-            <span className="text-muted">➔</span>
+            <span style={{ color: '#94a3b8' }}>➔</span>
             <span className="badge bg-primary bg-opacity-25 text-primary border border-primary px-2 py-1">Step 4: RVOL ≥1.2x</span>
-            <span className="text-muted">➔</span>
+            <span style={{ color: '#94a3b8' }}>➔</span>
             <span className="badge bg-secondary bg-opacity-25 text-light border border-secondary px-2 py-1">Step 5: RSI Hook &lt;35</span>
-            <span className="text-muted">➔</span>
+            <span style={{ color: '#94a3b8' }}>➔</span>
             <span className="badge bg-success text-white px-2 py-1 fw-bold">🎯 Candle 2 Breakout Gate</span>
           </div>
-          <div className="small text-muted fst-italic">
+          <div className="small fst-italic" style={{ color: '#cbd5e1' }}>
             🛡️ Never buy Candle 1 alone. Enforce Candle 2 Close &gt; Candle 1 High.
           </div>
         </div>
@@ -491,28 +491,32 @@ export default function ReversalQuantScanner({ onQuickTrade = null, onSendToPrac
         <div className="btn-group" role="group" aria-label="Setup Type Selection">
           <button
             type="button"
-            className={`btn btn-sm ${activeSetupTab === 'ALL' ? 'btn-primary text-white fw-bold' : 'btn-outline-secondary text-light'}`}
+            className={`btn btn-sm ${activeSetupTab === 'ALL' ? 'btn-primary text-white fw-bold' : 'btn-outline-secondary'}`}
+            style={activeSetupTab !== 'ALL' ? { color: '#f8fafc', borderColor: 'rgba(148, 163, 184, 0.4)', background: 'rgba(30, 41, 59, 0.6)' } : {}}
             onClick={() => setActiveSetupTab('ALL')}
           >
             📊 All Setups ({scanResult.totalScanned})
           </button>
           <button
             type="button"
-            className={`btn btn-sm ${activeSetupTab === 'REVERSAL' ? 'btn-success text-white fw-bold' : 'btn-outline-secondary text-light'}`}
+            className={`btn btn-sm ${activeSetupTab === 'REVERSAL' ? 'btn-success text-white fw-bold' : 'btn-outline-secondary'}`}
+            style={activeSetupTab !== 'REVERSAL' ? { color: '#f8fafc', borderColor: 'rgba(148, 163, 184, 0.4)', background: 'rgba(30, 41, 59, 0.6)' } : {}}
             onClick={() => setActiveSetupTab('REVERSAL')}
           >
             🔄 1. Down → Up Reversal ({scanResult.downToUpReversals.length})
           </button>
           <button
             type="button"
-            className={`btn btn-sm ${activeSetupTab === 'PULLBACK' ? 'btn-info text-dark fw-bold' : 'btn-outline-secondary text-light'}`}
+            className={`btn btn-sm ${activeSetupTab === 'PULLBACK' ? 'btn-info fw-bold' : 'btn-outline-secondary'}`}
+            style={activeSetupTab === 'PULLBACK' ? { color: '#0f172a' } : { color: '#f8fafc', borderColor: 'rgba(148, 163, 184, 0.4)', background: 'rgba(30, 41, 59, 0.6)' }}
             onClick={() => setActiveSetupTab('PULLBACK')}
           >
             📈 2. Up → Pullback → Up ({scanResult.pullbackContinuations.length})
           </button>
           <button
             type="button"
-            className={`btn btn-sm ${activeSetupTab === 'SHORT' ? 'btn-warning text-dark fw-bold' : 'btn-outline-secondary text-light'}`}
+            className={`btn btn-sm ${activeSetupTab === 'SHORT' ? 'btn-warning fw-bold' : 'btn-outline-secondary'}`}
+            style={activeSetupTab === 'SHORT' ? { color: '#0f172a' } : { color: '#f8fafc', borderColor: 'rgba(148, 163, 184, 0.4)', background: 'rgba(30, 41, 59, 0.6)' }}
             onClick={() => setActiveSetupTab('SHORT')}
           >
             📉 3. Up → Reversal → Down ({scanResult.topReversalShorts.length})
@@ -548,7 +552,7 @@ export default function ReversalQuantScanner({ onQuickTrade = null, onSendToPrac
         {loading && (
           <div className="text-center py-5">
             <div className="spinner-border text-info mb-2" role="status" />
-            <div className="text-muted small">Scanning 20-candle swing structures, patterns &amp; volume confirmations...</div>
+            <div className="small" style={{ color: '#cbd5e1' }}>Scanning 20-candle swing structures, patterns &amp; volume confirmations...</div>
           </div>
         )}
 
@@ -556,7 +560,7 @@ export default function ReversalQuantScanner({ onQuickTrade = null, onSendToPrac
           <div className="text-center py-5 border border-dashed border-secondary rounded p-4">
             <span className="fs-1 d-block mb-2">🔍</span>
             <h6 className="fw-bold text-light">No Matching Reversal Setups Found</h6>
-            <p className="text-muted small mb-3">Try adjusting your filters or search terms.</p>
+            <p className="small mb-3" style={{ color: '#cbd5e1' }}>Try adjusting your filters or search terms.</p>
             <button
               type="button"
               className="btn btn-outline-info btn-sm rounded-pill px-3"
@@ -597,21 +601,21 @@ export default function ReversalQuantScanner({ onQuickTrade = null, onSendToPrac
                         <div>
                           <div className="d-flex align-items-center gap-2">
                             <h5 className="mb-0 fw-bold text-white">{candidate.symbol}</h5>
-                            <span className="badge bg-secondary bg-opacity-50 text-light small px-2 py-0" style={{ fontSize: 10 }}>
+                            <span className="badge bg-secondary bg-opacity-75 text-light small px-2 py-0" style={{ fontSize: 10.5 }}>
                               {candidate.sector}
                             </span>
-                            <span className="badge bg-dark border border-secondary text-info small" style={{ fontSize: 10 }}>
+                            <span className="badge bg-dark border border-secondary text-info small" style={{ fontSize: 10.5 }}>
                               {candidate.candlestickPattern} {candidate.patternEmoji}
                             </span>
                           </div>
-                          <div className="text-muted small" style={{ fontSize: 11 }}>
+                          <div className="small mt-0.5" style={{ fontSize: 12, color: '#cbd5e1' }}>
                             {candidate.companyName}
                           </div>
                         </div>
 
                         <div className="text-end">
                           <div className="fs-5 fw-bold text-white">₹{candidate.currentPrice.toFixed(2)}</div>
-                          <span className={`badge rounded-pill ${candidate.signalBadgeClass} px-2 py-1`} style={{ fontSize: 11 }}>
+                          <span className={`badge rounded-pill ${candidate.signalBadgeClass} px-2.5 py-1`} style={{ fontSize: 11.5 }}>
                             Score: {candidate.reversalScore}/100
                           </span>
                         </div>
@@ -620,21 +624,21 @@ export default function ReversalQuantScanner({ onQuickTrade = null, onSendToPrac
                       {/* Setup Type & Confirmation Gate Banner */}
                       <div className="mb-3 p-2 rounded d-flex align-items-center justify-content-between gap-2" style={{ background: 'rgba(30, 41, 59, 0.7)' }}>
                         <div className="small">
-                          <span className="text-muted d-block" style={{ fontSize: 10 }}>SETUP TYPE</span>
-                          <strong className="text-warning" style={{ fontSize: 12 }}>{candidate.setupLabel}</strong>
+                          <span className="d-block fw-bold" style={{ fontSize: 10, color: '#94a3b8' }}>SETUP TYPE</span>
+                          <strong className="text-warning" style={{ fontSize: 12.5 }}>{candidate.setupLabel}</strong>
                         </div>
 
                         <div>
                           {isConfirmed ? (
-                            <span className="badge bg-success text-white py-1 px-2 fw-bold" style={{ fontSize: 12 }}>
+                            <span className="badge bg-success text-white py-1 px-2.5 fw-bold" style={{ fontSize: 12 }}>
                               🟢 BUY CONFIRMED
                             </span>
                           ) : isAwaiting ? (
-                            <span className="badge bg-warning text-dark py-1 px-2 fw-bold" style={{ fontSize: 11 }}>
+                            <span className="badge bg-warning text-dark py-1 px-2.5 fw-bold" style={{ fontSize: 11.5, color: '#0f172a' }}>
                               🟡 AWAITING CANDLE 2 (&gt;₹{candidate.reversalHigh.toFixed(2)})
                             </span>
                           ) : (
-                            <span className="badge bg-danger text-white py-1 px-2 fw-bold" style={{ fontSize: 11 }}>
+                            <span className="badge bg-danger text-white py-1 px-2.5 fw-bold" style={{ fontSize: 11.5 }}>
                               🔴 SETUP INVALIDATED
                             </span>
                           )}
@@ -644,34 +648,34 @@ export default function ReversalQuantScanner({ onQuickTrade = null, onSendToPrac
                       {/* Technical Checklist Pills */}
                       <div className="row g-2 mb-3">
                         <div className="col-4">
-                          <div className="p-2 rounded text-center border border-secondary border-opacity-25" style={{ background: 'rgba(2, 6, 23, 0.4)' }}>
-                            <span className="text-muted small d-block" style={{ fontSize: 10 }}>20-LOW SUPPORT</span>
-                            <strong className="text-light" style={{ fontSize: 12 }}>
+                          <div className="p-2 rounded text-center border border-secondary border-opacity-50" style={{ background: 'rgba(2, 6, 23, 0.5)' }}>
+                            <span className="small d-block fw-bold" style={{ fontSize: 10.5, color: '#94a3b8' }}>20-LOW SUPPORT</span>
+                            <strong className="text-light" style={{ fontSize: 12.5 }}>
                               ₹{candidate.lowestLow20.toFixed(2)}
                             </strong>
-                            <div className="text-muted" style={{ fontSize: 10 }}>
+                            <div style={{ fontSize: 11, color: '#cbd5e1' }}>
                               {candidate.distanceToSupportPct}% away
                             </div>
                           </div>
                         </div>
                         <div className="col-4">
-                          <div className="p-2 rounded text-center border border-secondary border-opacity-25" style={{ background: 'rgba(2, 6, 23, 0.4)' }}>
-                            <span className="text-muted small d-block" style={{ fontSize: 10 }}>VOLUME SURGE</span>
-                            <strong className={candidate.volumeRatio >= 1.5 ? 'text-success' : 'text-light'} style={{ fontSize: 12 }}>
+                          <div className="p-2 rounded text-center border border-secondary border-opacity-50" style={{ background: 'rgba(2, 6, 23, 0.5)' }}>
+                            <span className="small d-block fw-bold" style={{ fontSize: 10.5, color: '#94a3b8' }}>VOLUME SURGE</span>
+                            <strong className={candidate.volumeRatio >= 1.5 ? 'text-success' : 'text-light'} style={{ fontSize: 12.5 }}>
                               {candidate.volumeRatio}x RVOL
                             </strong>
-                            <div className="text-muted" style={{ fontSize: 10 }}>
+                            <div style={{ fontSize: 11, color: '#cbd5e1' }}>
                               {candidate.volumeRatio >= 1.5 ? 'Surge Active' : 'Normal'}
                             </div>
                           </div>
                         </div>
                         <div className="col-4">
-                          <div className="p-2 rounded text-center border border-secondary border-opacity-25" style={{ background: 'rgba(2, 6, 23, 0.4)' }}>
-                            <span className="text-muted small d-block" style={{ fontSize: 10 }}>RSI HOOK</span>
-                            <strong className={candidate.isRsiRecovering ? 'text-success' : 'text-light'} style={{ fontSize: 12 }}>
+                          <div className="p-2 rounded text-center border border-secondary border-opacity-50" style={{ background: 'rgba(2, 6, 23, 0.5)' }}>
+                            <span className="small d-block fw-bold" style={{ fontSize: 10.5, color: '#94a3b8' }}>RSI HOOK</span>
+                            <strong className={candidate.isRsiRecovering ? 'text-success' : 'text-light'} style={{ fontSize: 12.5 }}>
                               {candidate.rsiPrevious} → {candidate.rsiCurrent}
                             </strong>
-                            <div className="text-muted" style={{ fontSize: 10 }}>
+                            <div style={{ fontSize: 11, color: '#cbd5e1' }}>
                               {candidate.isRsiRecovering ? 'Recovery Hook' : 'Neutral'}
                             </div>
                           </div>
@@ -681,23 +685,23 @@ export default function ReversalQuantScanner({ onQuickTrade = null, onSendToPrac
                       {/* Stop Loss & Targets Bar */}
                       <div className="p-2 rounded border border-secondary border-opacity-50 mb-3" style={{ background: 'rgba(15, 23, 42, 0.6)' }}>
                         <div className="d-flex align-items-center justify-content-between small mb-1">
-                          <span className="text-muted">🛑 ATR Stop Loss:</span>
+                          <span style={{ color: '#cbd5e1', fontWeight: 600 }}>🛑 ATR Stop Loss:</span>
                           <strong className="text-danger">₹{candidate.stopLossPrice.toFixed(2)} (-₹{candidate.riskPerShare.toFixed(2)}/sh)</strong>
                         </div>
                         <div className="d-flex align-items-center justify-content-between small mb-1">
-                          <span className="text-muted">🎯 Target 1 (1:2 R:R):</span>
+                          <span style={{ color: '#cbd5e1', fontWeight: 600 }}>🎯 Target 1 (1:2 R:R):</span>
                           <strong className="text-success">₹{candidate.target1.toFixed(2)} (+₹{(candidate.riskPerShare * 2).toFixed(2)})</strong>
                         </div>
                         <div className="d-flex align-items-center justify-content-between small">
-                          <span className="text-muted">🚀 Target 2 (1:3 R:R):</span>
+                          <span style={{ color: '#cbd5e1', fontWeight: 600 }}>🚀 Target 2 (1:3 R:R):</span>
                           <strong className="text-info">₹{candidate.target2.toFixed(2)} (+₹{(candidate.riskPerShare * 3).toFixed(2)})</strong>
                         </div>
                       </div>
 
                       {/* Key Reasons / Explainability */}
                       {candidate.reasons && candidate.reasons.length > 0 && (
-                        <div className="small text-muted mb-3" style={{ fontSize: 11 }}>
-                          <span className="text-light fw-semibold">Quant Logic: </span>
+                        <div className="small mb-3" style={{ fontSize: 11.5, color: '#cbd5e1' }}>
+                          <span className="text-white fw-bold">Quant Logic: </span>
                           {candidate.reasons.slice(0, 2).join(' • ')}
                         </div>
                       )}
@@ -706,7 +710,7 @@ export default function ReversalQuantScanner({ onQuickTrade = null, onSendToPrac
                       <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 pt-2 border-top border-secondary border-opacity-25">
                         <button
                           type="button"
-                          className="btn btn-outline-light btn-sm rounded-pill px-3"
+                          className="btn btn-outline-light btn-sm rounded-pill px-3 fw-semibold shadow-sm"
                           onClick={() => setSelectedStockForModal(candidate)}
                         >
                           🔬 100-Pt Breakdown
@@ -716,7 +720,8 @@ export default function ReversalQuantScanner({ onQuickTrade = null, onSendToPrac
                           {onSendToPractice && (
                             <button
                               type="button"
-                              className="btn btn-warning btn-sm rounded-pill px-3 fw-bold text-dark"
+                              className="btn btn-warning btn-sm rounded-pill px-3 fw-bold"
+                              style={{ color: '#0f172a' }}
                               onClick={() => onSendToPractice(candidate)}
                             >
                               🎓 Practice Dummy
@@ -725,7 +730,7 @@ export default function ReversalQuantScanner({ onQuickTrade = null, onSendToPrac
                           {onQuickTrade && (
                             <button
                               type="button"
-                              className="btn btn-primary btn-sm rounded-pill px-3 fw-bold"
+                              className="btn btn-primary btn-sm rounded-pill px-3 fw-bold shadow-sm"
                               onClick={() => onQuickTrade(candidate)}
                             >
                               ⚡ Trade
@@ -761,7 +766,7 @@ export default function ReversalQuantScanner({ onQuickTrade = null, onSendToPrac
                       {selectedStockForModal.signalTier.replace(/_/g, ' ')}
                     </span>
                   </div>
-                  <div className="text-muted small mt-1">{selectedStockForModal.companyName}</div>
+                  <div className="small mt-1" style={{ color: '#cbd5e1' }}>{selectedStockForModal.companyName}</div>
                 </div>
                 <button
                   type="button"
@@ -774,11 +779,11 @@ export default function ReversalQuantScanner({ onQuickTrade = null, onSendToPrac
                 {/* 100-Pt Score Header */}
                 <div className="p-3 rounded mb-4 d-flex align-items-center justify-content-between" style={{ background: 'rgba(30, 41, 59, 0.8)' }}>
                   <div>
-                    <div className="text-muted small">TOTAL REVERSAL SCORE</div>
+                    <div className="small fw-bold" style={{ color: '#94a3b8' }}>TOTAL REVERSAL SCORE</div>
                     <div className="display-6 fw-bold text-success">{selectedStockForModal.reversalScore} / 100</div>
                   </div>
                   <div className="text-end">
-                    <div className="text-muted small">CURRENT PRICE</div>
+                    <div className="small fw-bold" style={{ color: '#94a3b8' }}>CURRENT PRICE</div>
                     <div className="fs-4 fw-bold text-white">₹{selectedStockForModal.currentPrice.toFixed(2)}</div>
                   </div>
                 </div>
@@ -789,7 +794,7 @@ export default function ReversalQuantScanner({ onQuickTrade = null, onSendToPrac
                   <div className="col-12 col-md-6">
                     <div className="p-2 rounded bg-dark border border-secondary border-opacity-50">
                       <div className="d-flex justify-content-between small mb-1">
-                        <span>1. Candlestick Pattern ({selectedStockForModal.candlestickPattern} {selectedStockForModal.patternEmoji})</span>
+                        <span className="text-light fw-medium">1. Candlestick Pattern ({selectedStockForModal.candlestickPattern} {selectedStockForModal.patternEmoji})</span>
                         <strong className="text-success">{selectedStockForModal.breakdown.candlestickScore} / 20 pts</strong>
                       </div>
                       <div className="progress" style={{ height: 6 }}>
@@ -801,7 +806,7 @@ export default function ReversalQuantScanner({ onQuickTrade = null, onSendToPrac
                   <div className="col-12 col-md-6">
                     <div className="p-2 rounded bg-dark border border-secondary border-opacity-50">
                       <div className="d-flex justify-content-between small mb-1">
-                        <span>2. Support Floor Proximity (≤3%)</span>
+                        <span className="text-light fw-medium">2. Support Floor Proximity (≤3%)</span>
                         <strong className="text-info">{selectedStockForModal.breakdown.supportProximityScore} / 20 pts</strong>
                       </div>
                       <div className="progress" style={{ height: 6 }}>
@@ -813,7 +818,7 @@ export default function ReversalQuantScanner({ onQuickTrade = null, onSendToPrac
                   <div className="col-12 col-md-6">
                     <div className="p-2 rounded bg-dark border border-secondary border-opacity-50">
                       <div className="d-flex justify-content-between small mb-1">
-                        <span>3. Downtrend Exhaustion (EMA20&lt;EMA50)</span>
+                        <span className="text-light fw-medium">3. Downtrend Exhaustion (EMA20&lt;EMA50)</span>
                         <strong className="text-warning">{selectedStockForModal.breakdown.downtrendExhaustionScore} / 15 pts</strong>
                       </div>
                       <div className="progress" style={{ height: 6 }}>
@@ -825,7 +830,7 @@ export default function ReversalQuantScanner({ onQuickTrade = null, onSendToPrac
                   <div className="col-12 col-md-6">
                     <div className="p-2 rounded bg-dark border border-secondary border-opacity-50">
                       <div className="d-flex justify-content-between small mb-1">
-                        <span>4. Volume Surge Ratio (RVOL)</span>
+                        <span className="text-light fw-medium">4. Volume Surge Ratio (RVOL)</span>
                         <strong className="text-primary">{selectedStockForModal.breakdown.volumeScore} / 15 pts</strong>
                       </div>
                       <div className="progress" style={{ height: 6 }}>
@@ -837,7 +842,7 @@ export default function ReversalQuantScanner({ onQuickTrade = null, onSendToPrac
                   <div className="col-12 col-md-6">
                     <div className="p-2 rounded bg-dark border border-secondary border-opacity-50">
                       <div className="d-flex justify-content-between small mb-1">
-                        <span>5. RSI Recovery Hook (&lt;35 Hook)</span>
+                        <span className="text-light fw-medium">5. RSI Recovery Hook (&lt;35 Hook)</span>
                         <strong className="text-success">{selectedStockForModal.breakdown.rsiRecoveryScore} / 10 pts</strong>
                       </div>
                       <div className="progress" style={{ height: 6 }}>
@@ -849,7 +854,7 @@ export default function ReversalQuantScanner({ onQuickTrade = null, onSendToPrac
                   <div className="col-12 col-md-6">
                     <div className="p-2 rounded bg-dark border border-secondary border-opacity-50">
                       <div className="d-flex justify-content-between small mb-1">
-                        <span>6. EMA Reclaim &amp; MACD Inflection</span>
+                        <span className="text-light fw-medium">6. EMA Reclaim &amp; MACD Inflection</span>
                         <strong className="text-info">{selectedStockForModal.breakdown.emaConfirmationScore + selectedStockForModal.breakdown.macdConfirmationScore} / 20 pts</strong>
                       </div>
                       <div className="progress" style={{ height: 6 }}>
@@ -862,16 +867,16 @@ export default function ReversalQuantScanner({ onQuickTrade = null, onSendToPrac
                 {/* 2nd Candle Confirmation Gate Verification */}
                 <div className="p-3 rounded mb-4 border border-secondary border-opacity-50" style={{ background: 'rgba(15, 23, 42, 0.9)' }}>
                   <h6 className="fw-bold text-white mb-2">🎯 Candle 2 Confirmation Gate Verification</h6>
-                  <p className="small text-muted mb-2">
-                    Candle 1 Reversal High is <strong>₹{selectedStockForModal.reversalHigh.toFixed(2)}</strong>.
-                    Candle 1 Reversal Low is <strong>₹{selectedStockForModal.reversalLow.toFixed(2)}</strong>.
+                  <p className="small mb-2" style={{ color: '#e2e8f0' }}>
+                    Candle 1 Reversal High is <strong className="text-warning">₹{selectedStockForModal.reversalHigh.toFixed(2)}</strong>.
+                    Candle 1 Reversal Low is <strong className="text-danger">₹{selectedStockForModal.reversalLow.toFixed(2)}</strong>.
                   </p>
                   {selectedStockForModal.isBuyConfirmed ? (
                     <div className="alert alert-success py-2 px-3 mb-0 small">
                       ✅ <strong>Gate Passed:</strong> Candle 2 closed above ₹{selectedStockForModal.reversalHigh.toFixed(2)} with volume support ({selectedStockForModal.volumeRatio}x). Institutional entry confirmed!
                     </div>
                   ) : (
-                    <div className="alert alert-warning py-2 px-3 mb-0 small">
+                    <div className="alert alert-warning py-2 px-3 mb-0 small text-dark">
                       ⏳ <strong>Gate Pending:</strong> Waiting for Candle 2 close above ₹{selectedStockForModal.reversalHigh.toFixed(2)}. Do NOT enter early to prevent false bottom traps!
                     </div>
                   )}
@@ -880,19 +885,19 @@ export default function ReversalQuantScanner({ onQuickTrade = null, onSendToPrac
                 {/* ATR Risk Levels */}
                 <div className="row g-2 mb-3">
                   <div className="col-6 col-md-3 text-center p-2 rounded bg-dark border border-secondary border-opacity-50">
-                    <span className="text-muted small d-block" style={{ fontSize: 10 }}>ATR STOP LOSS</span>
+                    <span className="small d-block fw-bold" style={{ fontSize: 10.5, color: '#94a3b8' }}>ATR STOP LOSS</span>
                     <strong className="text-danger">₹{selectedStockForModal.stopLossPrice.toFixed(2)}</strong>
                   </div>
                   <div className="col-6 col-md-3 text-center p-2 rounded bg-dark border border-secondary border-opacity-50">
-                    <span className="text-muted small d-block" style={{ fontSize: 10 }}>RISK PER SHARE</span>
+                    <span className="small d-block fw-bold" style={{ fontSize: 10.5, color: '#94a3b8' }}>RISK PER SHARE</span>
                     <strong className="text-warning">₹{selectedStockForModal.riskPerShare.toFixed(2)}</strong>
                   </div>
                   <div className="col-6 col-md-3 text-center p-2 rounded bg-dark border border-secondary border-opacity-50">
-                    <span className="text-muted small d-block" style={{ fontSize: 10 }}>TARGET 1 (1:2 R:R)</span>
+                    <span className="small d-block fw-bold" style={{ fontSize: 10.5, color: '#94a3b8' }}>TARGET 1 (1:2 R:R)</span>
                     <strong className="text-success">₹{selectedStockForModal.target1.toFixed(2)}</strong>
                   </div>
                   <div className="col-6 col-md-3 text-center p-2 rounded bg-dark border border-secondary border-opacity-50">
-                    <span className="text-muted small d-block" style={{ fontSize: 10 }}>TARGET 2 (1:3 R:R)</span>
+                    <span className="small d-block fw-bold" style={{ fontSize: 10.5, color: '#94a3b8' }}>TARGET 2 (1:3 R:R)</span>
                     <strong className="text-info">₹{selectedStockForModal.target2.toFixed(2)}</strong>
                   </div>
                 </div>
@@ -941,3 +946,4 @@ export default function ReversalQuantScanner({ onQuickTrade = null, onSendToPrac
     </div>
   );
 }
+

@@ -275,3 +275,4 @@ describe('Bullish Reversal & 3-Way Setup Engine', () => {
     assert.ok(scanResult.topReversalShorts.some((c) => c.symbol === 'SHORT_STOCK'));
   });
 });
+

@@ -431,3 +431,4 @@ export function runReversalScanner(candidates: ReversalEvaluationInput[]): Rever
     topReversalShorts,
   };
 }
+
