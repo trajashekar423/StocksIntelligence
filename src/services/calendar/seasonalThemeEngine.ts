@@ -285,3 +285,4 @@ export function getSeasonalAnalysis(targetDate: Date = new Date()): SeasonalAnal
     recommendedAccumulationBaskets,
   };
 }
+

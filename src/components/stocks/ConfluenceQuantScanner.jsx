@@ -591,3 +591,4 @@ export default function ConfluenceQuantScanner({ onQuickTrade = null, onSendToPr
     </div>
   );
 }
+

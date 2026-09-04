@@ -7,7 +7,6 @@ export const MARKET_INTELLIGENCE_DEAL_MODES = {
 export const MARKET_INTELLIGENCE_TABS = [
   { key: 'dashboard', label: 'Dashboard', tone: 'neutral' },
   { key: 'scanner', label: 'Live Scanner', tone: 'neutral' },
-  { key: 'entry-ready', label: 'Entry Ready', tone: 'green' },
   { key: 'breakouts', label: 'Breakouts', tone: 'green' },
   { key: 'favorites', label: 'Favorites', tone: 'green' },
 ];
@@ -24,12 +23,6 @@ export const STOCK_TAB_HELP = {
     tone: 'neutral',
     description: 'Shows all stocks scanned by the technical engine with price, score, entry, stop loss, target, volume, risk, and confidence.',
     beginnerTip: 'Do not buy only because a stock appears here. Compare score, risk, and entry readiness.',
-  },
-  'entry-ready': {
-    title: 'Entry Ready',
-    tone: 'green',
-    description: 'Shows only stocks that pass the strongest intraday checks: score >= 80, breakout, price above VWAP, bullish EMA order, strong volume, and bullish market.',
-    beginnerTip: 'This is the strictest opportunity tab. Still use stop loss and position sizing.',
   },
   breakouts: {
     title: 'Breakouts',
@@ -78,6 +71,12 @@ export const STOCK_TAB_HELP = {
     tone: 'gold',
     description: 'Front-run Dalal Street’s cultural and festive cycles from Jan to Dec (Gold, Auto deliveries, Wedding season monopolies, Budget plays).',
     beginnerTip: 'Smart money enters 2–4 weeks BEFORE the festival and books profit before the event.',
+  },
+  'reversal-scanner': {
+    title: 'Reversal & Multi-Setup Scanner',
+    tone: 'gold',
+    description: 'Institutional 100-pt Bullish Reversal engine + 3 Master Setups (Down→Up Reversal, Up→Pullback→Up, Up→Reversal→Down) with strict 2nd candle confirmation gate and ATR stop loss.',
+    beginnerTip: 'Never buy on Candle 1 alone. Wait for Candle 2 to break above the reversal candle high with volume.',
   },
 };
 

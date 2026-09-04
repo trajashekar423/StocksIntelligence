@@ -62,3 +62,4 @@ describe('Indian Seasonal & Festival Market Cycle Engine', () => {
     assert.ok(summerSymbols.includes('VBL'));
   });
 });
+

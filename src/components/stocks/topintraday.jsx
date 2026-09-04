@@ -13,6 +13,7 @@ export default function TopIntraday({ activeTab, onChange }) {
     { key: 'bigshot-radar', label: '⭐ BigShot Radar (5x Vol & Mega Blocks)', tone: 'gold' },
     { key: 'confluence-quant', label: '🎯 Confluence Quant Scanner (Long/Short)', tone: 'gold' },
     { key: 'seasonal-radar', label: '🗓️ Seasonal & Festival Radar', tone: 'gold' },
+    { key: 'reversal-scanner', label: '🔄 Reversal & Multi-Setup Scanner', tone: 'gold' },
     { key: 'tomorrow', label: 'Tomorrow Intraday', tone: 'green' },
     { key: 'top', label: 'Top Gainers', tone: 'green' },
     { key: 'mystocks', label: '💼 My Portfolio', tone: 'green' },

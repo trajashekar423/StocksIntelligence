@@ -45,6 +45,7 @@ import PracticeStockMarket from './PracticeStockMarket.jsx';
 import { calculateIntradayScore } from '../../services/strategy/intradayScoreEngine';
 import ConfluenceQuantScanner from './ConfluenceQuantScanner.jsx';
 import SeasonalThematicRadar from './SeasonalThematicRadar.jsx';
+import ReversalQuantScanner from './ReversalQuantScanner.jsx';
 
 const UNAVAILABLE = 'Unavailable';
 
@@ -2851,29 +2852,7 @@ export default function Stocks() {
             </div>
           )}
 
-          <div className="row g-3 mt-2">
-            <div className="col-12 col-xl-6">
-              <MarketIntelligenceTable
-                title="Entry Ready"
-                rows={marketIntelligence.entryReadyRows}
-                columns={LIVE_SCANNER_COLUMNS}
-                loading={loading}
-                noDataMessage="No entry-ready stocks right now. This is normal when breakout, VWAP, EMA, volume, buy-ratio, or market confirmation filters are not all aligned."
-                onRowClick={setSelectedStock}
-              />
-            </div>
 
-            <div className="col-12 col-xl-6">
-              <MarketIntelligenceTable
-                title="Watchlist"
-                rows={dashboardWatchlistRows}
-                columns={LIVE_SCANNER_COLUMNS}
-                loading={loading}
-                noDataMessage="No watchlist stocks right now. Scanner rows may be unavailable, or all current scores are below 60."
-                onRowClick={setSelectedStock}
-              />
-            </div>
-          </div>
         </>
       )}
 
@@ -3013,17 +2992,6 @@ export default function Stocks() {
             </div>
           </div>
         </>
-      )}
-
-      {activeTab ===
-        'entry-ready' && (
-        <MarketIntelligenceTable
-          title="Entry Ready"
-          rows={marketIntelligence.entryReadyRows}
-          columns={LIVE_SCANNER_COLUMNS}
-          loading={loading}
-          onRowClick={setSelectedStock}
-        />
       )}
 
       {activeTab ===
@@ -3515,6 +3483,18 @@ export default function Stocks() {
 
       {activeTab === 'seasonal-radar' && (
         <SeasonalThematicRadar
+          onQuickTrade={(s) => {
+            setSelectedStock(s);
+            setActiveTab('trading');
+          }}
+          onSendToPractice={() => {
+            setActiveTab('practice-trading');
+          }}
+        />
+      )}
+
+      {activeTab === 'reversal-scanner' && (
+        <ReversalQuantScanner
           onQuickTrade={(s) => {
             setSelectedStock(s);
             setActiveTab('trading');

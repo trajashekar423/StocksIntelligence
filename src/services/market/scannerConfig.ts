@@ -88,3 +88,4 @@ export const SCANNER_CONFIG = {
 export type MarketRegimeType = 'STRONG_BULL' | 'BULL' | 'NEUTRAL' | 'BEAR' | 'STRONG_BEAR';
 export type CandidateSignalType = 'LONG' | 'SHORT' | 'WATCH' | 'AVOID';
 export type RiskLevelType = 'LOW' | 'MEDIUM' | 'HIGH';
+

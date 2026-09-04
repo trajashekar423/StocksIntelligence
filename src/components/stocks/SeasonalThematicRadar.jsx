@@ -351,7 +351,7 @@ export default function SeasonalThematicRadar({ onQuickTrade = null, onSendToPra
             <div className="p-3 rounded-3 h-100" style={{ background: '#1e293b' }}>
               <span className="badge bg-primary mb-2">STAGE 1</span>
               <strong className="text-white d-block mb-1">Quiet Accumulation</strong>
-              <small className="text-muted d-block" style={{ color: '#94a3b8' }}>
+              <small className="d-block" style={{ color: '#ffffff' }}>
                 3 to 4 weeks before the festival. Volumes are quiet. FIIs & Mutual Funds quietly build positions while retail traders are not paying attention.
               </small>
             </div>
@@ -360,7 +360,7 @@ export default function SeasonalThematicRadar({ onQuickTrade = null, onSendToPra
             <div className="p-3 rounded-3 h-100" style={{ background: '#1e293b' }}>
               <span className="badge bg-info mb-2">STAGE 2</span>
               <strong className="text-white d-block mb-1">Media Hype & Markup</strong>
-              <small className="text-muted d-block" style={{ color: '#94a3b8' }}>
+              <small className="d-block" style={{ color: '#ffffff' }}>
                 1 to 2 weeks before. News channels talk about "Festive Demand", retail volume surges, and prices make sharp momentum breakouts.
               </small>
             </div>
@@ -369,7 +369,7 @@ export default function SeasonalThematicRadar({ onQuickTrade = null, onSendToPra
             <div className="p-3 rounded-3 h-100" style={{ background: '#1e293b' }}>
               <span className="badge bg-success mb-2">STAGE 3</span>
               <strong className="text-white d-block mb-1">The Harvest (Profit Booking)</strong>
-              <small className="text-muted d-block" style={{ color: '#94a3b8' }}>
+              <small className="d-block" style={{ color: '#ffffff' }}>
                 1 to 2 days before peak festival. Smart money dumps shares into retail euphoria and locks in +10% to +20% festive gains!
               </small>
             </div>
@@ -378,7 +378,7 @@ export default function SeasonalThematicRadar({ onQuickTrade = null, onSendToPra
             <div className="p-3 rounded-3 h-100" style={{ background: '#1e293b' }}>
               <span className="badge bg-danger mb-2">STAGE 4</span>
               <strong className="text-white d-block mb-1">The Hangover (Trap)</strong>
-              <small className="text-muted d-block" style={{ color: '#94a3b8' }}>
+              <small className="d-block" style={{ color: '#ffffff' }}>
                 Festival day itself. Retail traders rush to buy on Dhanteras or Dussehra morning. Stock dumps or stays flat. Never buy here!
               </small>
             </div>
@@ -397,3 +397,4 @@ export default function SeasonalThematicRadar({ onQuickTrade = null, onSendToPra
     </div>
   );
 }
+
