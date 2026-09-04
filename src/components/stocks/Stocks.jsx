@@ -44,6 +44,7 @@ import MarketSentimentAlertBanner from './MarketSentimentAlertBanner.jsx';
 import PracticeStockMarket from './PracticeStockMarket.jsx';
 import { calculateIntradayScore } from '../../services/strategy/intradayScoreEngine';
 import ConfluenceQuantScanner from './ConfluenceQuantScanner.jsx';
+import SeasonalThematicRadar from './SeasonalThematicRadar.jsx';
 
 const UNAVAILABLE = 'Unavailable';
 
@@ -3502,6 +3503,18 @@ export default function Stocks() {
 
       {activeTab === 'confluence-quant' && (
         <ConfluenceQuantScanner
+          onQuickTrade={(s) => {
+            setSelectedStock(s);
+            setActiveTab('trading');
+          }}
+          onSendToPractice={() => {
+            setActiveTab('practice-trading');
+          }}
+        />
+      )}
+
+      {activeTab === 'seasonal-radar' && (
+        <SeasonalThematicRadar
           onQuickTrade={(s) => {
             setSelectedStock(s);
             setActiveTab('trading');

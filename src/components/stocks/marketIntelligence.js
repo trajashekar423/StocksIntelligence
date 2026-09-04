@@ -73,6 +73,12 @@ export const STOCK_TAB_HELP = {
     description: 'Institutional quantitative confluence: Global Macro (20%) + Indian Market Regime (30%) + Stock Technicals (35%) + Liquidity (10%) + Risk Gate (5%).',
     beginnerTip: 'Identifies Top 10 LONG on bullish days and Top 10 SHORT on bearish days with complete mathematical explainability.',
   },
+  'seasonal-radar': {
+    title: 'Indian Seasonal & Festival Market Radar',
+    tone: 'gold',
+    description: 'Front-run Dalal Street’s cultural and festive cycles from Jan to Dec (Gold, Auto deliveries, Wedding season monopolies, Budget plays).',
+    beginnerTip: 'Smart money enters 2–4 weeks BEFORE the festival and books profit before the event.',
+  },
 };
 
 function getSymbolKey(symbol) {
