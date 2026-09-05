@@ -46,6 +46,7 @@ import { calculateIntradayScore } from '../../services/strategy/intradayScoreEng
 import ConfluenceQuantScanner from './ConfluenceQuantScanner.jsx';
 import SeasonalThematicRadar from './SeasonalThematicRadar.jsx';
 import ReversalQuantScanner from './ReversalQuantScanner.jsx';
+import StockBonusDividend from './StockBonusDividend.jsx';
 
 const UNAVAILABLE = 'Unavailable';
 
@@ -3572,6 +3573,10 @@ export default function Stocks() {
         <CandleExplainer
           selectedStock={selectedStock || momentumCandidateRows?.[0] || null}
         />
+      )}
+
+      {activeTab === 'stock-bonus-dividend' && (
+        <StockBonusDividend />
       )}
 
       {selectedStock && (

@@ -21,6 +21,7 @@ export default function TopIntraday({ activeTab, onChange }) {
     { key: 'trading', label: '⚡ Groww Intraday Trading', tone: 'green' },
     { key: 'momentum', label: '🚀 Momentum Scanner', tone: 'green' },
     { key: 'fno', label: '📊 F&O Options Engine', tone: 'orange' },
+    { key: 'stock-bonus-dividend', label: '🎁 Stock Bonus / Dividend', tone: 'green' },
   ];
 
   return (
