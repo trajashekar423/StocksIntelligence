@@ -6,6 +6,7 @@ export default function TopIntraday({ activeTab, onChange }) {
   const tabs = [
     ...MARKET_INTELLIGENCE_TABS,
     { key: 'practice-trading', label: '🎓 Practice Stock Market (Dummy Funds)', tone: 'gold' },
+    { key: 'short-sell', label: '🔻 Short Sell Radar', tone: 'gold' },
     { key: 'nifty50', label: '🇮🇳 NIFTY50', tone: 'green' },
     { key: 'watchfornextday', label: '🔮 Watch For Next Day', isBtst: true, tone: 'gold' },
     { key: 'block-deals', label: '🏢 Block Deals', tone: 'green' },

@@ -46,6 +46,7 @@ import ConfluenceQuantScanner from './ConfluenceQuantScanner.jsx';
 import SeasonalThematicRadar from './SeasonalThematicRadar.jsx';
 import ReversalQuantScanner from './ReversalQuantScanner.jsx';
 import StockBonusDividend from './StockBonusDividend.jsx';
+import ShortSellRadar from './ShortSellRadar.jsx';
 
 const UNAVAILABLE = 'Unavailable';
 
@@ -3345,6 +3346,16 @@ export default function Stocks() {
       {/* PRACTICE STOCK MARKET (DUMMY FUNDS & LIVE REAL NSE DATA) */}
       {activeTab === 'practice-trading' && (
         <PracticeStockMarket />
+      )}
+
+      {/* SHORT SELL RADAR: DOWN AT OPEN & NEWS CATALYSTS */}
+      {activeTab === 'short-sell' && (
+        <ShortSellRadar
+          stocks={scanner.scanned || []}
+          onOpenPractice={(s) => {
+            setActiveTab('practice-trading');
+          }}
+        />
       )}
 
       {/* NIFTY50 MOMENTUM & BREAKOUT SCANNER */}
