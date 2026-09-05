@@ -192,6 +192,18 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
+
+  if (!nsePath && url.pathname === '/api/nse/corporate-actions') {
+    const caType = url.searchParams.get('type') || 'equities';
+    const fromDate = url.searchParams.get('from_date') || '';
+    const toDate = url.searchParams.get('to_date') || '';
+    const query = new URLSearchParams();
+    query.set('index', caType);
+    if (fromDate) query.set('from_date', fromDate);
+    if (toDate) query.set('to_date', toDate);
+    nsePath = `/api/corporates?${query.toString()}`;
+  }
+
   if (!nsePath) {
     sendJson(res, 404, { error: 'Unknown NSE proxy route', path: url.pathname });
     return;
