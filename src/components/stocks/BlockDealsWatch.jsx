@@ -965,9 +965,9 @@ export default function BlockDealsWatch({
       </div>
 
       {/* ── 3A. DESKTOP RESULTS TABLE (Large Screens) ── */}
-      <div className="d-none d-lg-block card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
-        <div className="table-responsive">
-          <table className="table table-hover align-middle table-striped table-sm small mb-0 text-nowrap">
+      <div className="d-none d-lg-block card border-0 shadow-sm rounded-4 overflow-hidden mb-4 w-100">
+        <div className="table-responsive w-100 st-responsive-table-container" style={{ maxWidth: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+          <table className="table table-hover align-middle table-striped table-sm small mb-0 text-nowrap w-100">
             <thead className="table-dark">
               <tr>
                 <th>#</th>
