@@ -39,7 +39,6 @@ import WatchForNextDay from './WatchForNextDay.jsx';
 import BlockDealsWatch from './BlockDealsWatch.jsx';
 import BigShotRadar from './BigShotRadar.jsx';
 import Nifty50Scanner from './Nifty50Scanner.jsx';
-import LivePositionRiskMonitor from '../trading/LivePositionRiskMonitor';
 import MarketSentimentAlertBanner from './MarketSentimentAlertBanner.jsx';
 import PracticeStockMarket from './PracticeStockMarket.jsx';
 import { calculateIntradayScore } from '../../services/strategy/intradayScoreEngine';
@@ -2995,28 +2994,6 @@ export default function Stocks() {
         </>
       )}
 
-      {activeTab ===
-        'breakouts' && (
-        <MarketIntelligenceTable
-          title="Breakouts"
-          rows={marketIntelligence.breakoutRows}
-          columns={BREAKOUT_COLUMNS}
-          loading={loading}
-          onRowClick={setSelectedStock}
-        />
-      )}
-
-      {activeTab ===
-        'favorites' && (
-        <MarketIntelligenceTable
-          title="Favorites"
-          rows={marketIntelligence.favoriteRows}
-          columns={LIVE_SCANNER_COLUMNS}
-          loading={loading}
-          onRowClick={setSelectedStock}
-        />
-      )}
-
       {/* TOP GAINERS */}
 
       {activeTab ===
@@ -3368,11 +3345,6 @@ export default function Stocks() {
       {/* PRACTICE STOCK MARKET (DUMMY FUNDS & LIVE REAL NSE DATA) */}
       {activeTab === 'practice-trading' && (
         <PracticeStockMarket />
-      )}
-
-      {/* LIVE OPEN POSITION RISK & EXIT ALERT ENGINE */}
-      {activeTab === 'risk-monitor' && (
-        <LivePositionRiskMonitor />
       )}
 
       {/* NIFTY50 MOMENTUM & BREAKOUT SCANNER */}

@@ -7,8 +7,6 @@ export const MARKET_INTELLIGENCE_DEAL_MODES = {
 export const MARKET_INTELLIGENCE_TABS = [
   { key: 'dashboard', label: 'Dashboard', tone: 'neutral' },
   { key: 'scanner', label: 'Live Scanner', tone: 'neutral' },
-  { key: 'breakouts', label: 'Breakouts', tone: 'green' },
-  { key: 'favorites', label: 'Favorites', tone: 'green' },
 ];
 
 export const STOCK_TAB_HELP = {
