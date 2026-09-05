@@ -3058,8 +3058,12 @@ export default function Stocks() {
         <>
           <div className="d-flex flex-wrap justify-content-between align-items-center mb-3">
             <div>
-              <h3 className="mb-1 text-primary fw-bold">
-                🎯 TOP 10 NSE STOCKS FOR TOMORROW INTRADAY
+              <h3 className="mb-1 text-primary fw-bold d-flex align-items-center gap-2 flex-wrap">
+                <span>🎯 TOP 10 NSE STOCKS FOR TOMORROW INTRADAY</span>
+                <span className="btst-badge-blink">
+                  <span className="btst-dot"></span>
+                  BTST CANDIDATES
+                </span>
               </h3>
               <div className="small text-muted">
                 Calculated on Market Close & EOD Volume Profile · Data Date: <strong className="text-dark">{tomorrowScanner.dataDate}</strong> · Time: <strong className="text-dark">{tomorrowScanner.dataTime}</strong>

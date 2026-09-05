@@ -277,6 +277,10 @@ export default function WatchForNextDay({ onQuickTrade = null, onAddToPortfolio 
             <div className="d-flex flex-wrap align-items-center gap-2">
               <span className="fs-3">🔮</span>
               <h4 className="mb-0 fw-bold">Target-Date NSE Pre-Close Momentum Scanner</h4>
+              <span className="btst-badge-blink">
+                <span className="btst-dot"></span>
+                BTST ACTIVE
+              </span>
               <span className="badge bg-warning text-dark fw-bold px-2.5 py-1 small shadow-sm">
                 ⏰ PRE-CLOSE STRATEGY ENGINE
               </span>
@@ -346,16 +350,23 @@ export default function WatchForNextDay({ onQuickTrade = null, onAddToPortfolio 
           <span className="small text-secondary fw-bold me-1">Quick Select Target Date:</span>
           {suggestedPresets.map((preset) => {
             const isSelected = targetSellDate === preset.isoDate;
+            const isBtst = preset.label?.includes('BTST') || preset.holdingType === 'BTST / 1-DAY';
             return (
               <button
                 key={preset.isoDate}
                 type="button"
-                className={`btn btn-sm rounded-pill fw-bold px-3 shadow-sm ${
+                className={`btn btn-sm rounded-pill fw-bold px-3 shadow-sm d-inline-flex align-items-center gap-1.5 ${
                   isSelected ? 'btn-primary text-white' : 'btn-outline-secondary'
                 }`}
                 onClick={() => handleSelectPresetTargetDate(preset.isoDate)}
               >
-                {preset.label}
+                <span>{preset.label}</span>
+                {isBtst && (
+                  <span className="btst-badge-blink ms-1" style={{ fontSize: '0.62rem', padding: '1px 5px' }}>
+                    <span className="btst-dot"></span>
+                    BTST
+                  </span>
+                )}
               </button>
             );
           })}
@@ -502,6 +513,10 @@ export default function WatchForNextDay({ onQuickTrade = null, onAddToPortfolio 
                           <div>
                             <div className="d-flex flex-wrap align-items-center gap-2">
                               <span className="badge bg-dark fs-6 px-3 py-1 fw-bold">{stock.symbol}</span>
+                              <span className="btst-badge-blink">
+                                <span className="btst-dot"></span>
+                                BTST SETUP
+                              </span>
                               <h5 className="mb-0 fw-bold text-dark">{stock.companyName}</h5>
                               <span className="badge bg-light text-secondary border small">{stock.sector}</span>
                             </div>

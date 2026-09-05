@@ -570,7 +570,10 @@ export default function BigShotRadar({
             >
               <div className="d-flex align-items-center justify-content-between mb-1.5">
                 <span className="text-white fw-bold small">🔒 Algorithm 3: Upper Circuit Radar</span>
-                <span className="badge bg-danger text-white small">3:15 PM BTST Window</span>
+                <span className="btst-badge-blink">
+                  <span className="btst-dot"></span>
+                  3:15 PM BTST Window
+                </span>
               </div>
               <p className="small text-light opacity-90 mb-2">
                 <strong>Near-UC (0.5%–2% away)</strong> is the golden buy window before sellers freeze. Stocks closing locked in Upper Circuit have a <strong>92% next-morning gap-up rate (+4% to +8%)</strong>!
