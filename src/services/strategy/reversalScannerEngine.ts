@@ -44,6 +44,27 @@ export interface ReversalEvaluationInput {
   averageVolume20?: number;
 }
 
+export interface SafeEntryInput {
+  currentPrice: number;
+  recommendedEntry: number;
+  stopLoss: number;
+  target1: number;
+  vwap?: number;
+}
+
+export interface SafeEntryResult {
+  status: '✅ SAFE TO ENTER' | '⛔ DO NOT CHASE' | '⚠️ POOR RISK/REWARD' | '❌ BELOW VWAP';
+  safe: boolean;
+  reason?: string;
+  entryZone?: string;
+  stopLoss?: number;
+  breakevenTrigger?: number; // When to move SL to cost (1:1 R:R)
+  bookHalfAt?: number;       // Target 1 price
+  slippage?: number;
+  slippagePct?: number;
+  currentRR?: number;
+}
+
 export interface ReversalEvaluationResult {
   symbol: string;
   companyName: string;
@@ -97,6 +118,9 @@ export interface ReversalEvaluationResult {
   reversalHigh: number;
   reversalLow: number;
   confirmationStatus: 'BUY_CONFIRMED' | 'AWAITING_CANDLE_2' | 'SETUP_INVALID';
+
+  // 🛡️ Real-Time Safe Entry Guard
+  safeEntry: SafeEntryResult;
 
   // 🛑 Risk Management & Targets
   atr: number;
@@ -359,6 +383,22 @@ export function evaluateReversalCandidate(input: ReversalEvaluationInput): Rever
   if (distanceToSupportPct > 3.0) warnings.push(`Distance to support (${distanceToSupportPct}%) exceeds 3.0% threshold`);
   if (volumeRatio < 1.0) warnings.push(`Thin volume (${volumeRatio}x) — needs institutional buying`);
 
+  // ── 🛡️ REAL-TIME SAFE ENTRY GUARD ──
+  const recommendedEntry = reversalHigh;
+  const safeEntry = evaluateSafeEntry({
+    currentPrice,
+    recommendedEntry,
+    stopLoss: stopLossPrice,
+    target1,
+    vwap: input.vwap,
+  });
+
+  if (safeEntry.safe) {
+    reasons.push(`Safe Entry Zone Active (${safeEntry.entryZone}) • Move SL to Cost at ₹${safeEntry.breakevenTrigger}`);
+  } else if (safeEntry.reason) {
+    warnings.push(safeEntry.reason);
+  }
+
   return {
     symbol,
     companyName,
@@ -394,6 +434,7 @@ export function evaluateReversalCandidate(input: ReversalEvaluationInput): Rever
     reversalHigh,
     reversalLow,
     confirmationStatus,
+    safeEntry,
     atr,
     stopLossPrice,
     riskPerShare,
@@ -402,6 +443,77 @@ export function evaluateReversalCandidate(input: ReversalEvaluationInput): Rever
     riskRewardRatio,
     reasons,
     warnings,
+  };
+}
+
+/**
+ * Safe Logic Decision Engine for Intraday Entries
+ * Validates against slippage chasing (>0.35%), poor R:R (<1.5:1), and VWAP positioning.
+ */
+export function evaluateSafeEntry({
+  currentPrice,
+  recommendedEntry,
+  stopLoss,
+  target1,
+  vwap,
+}: SafeEntryInput): SafeEntryResult {
+  const effectiveVwap = vwap ?? (recommendedEntry * 0.998);
+  const slippage = Number((currentPrice - recommendedEntry).toFixed(2));
+  const slippagePct = recommendedEntry > 0 ? Number(((slippage / recommendedEntry) * 100).toFixed(2)) : 0;
+  const currentRisk = Number((currentPrice - stopLoss).toFixed(2));
+  const remainingReward = Number((target1 - currentPrice).toFixed(2));
+  const currentRR = currentRisk > 0 ? Number((remainingReward / currentRisk).toFixed(2)) : 0;
+
+  // 1. Safety Check: Did the user chase the price too far?
+  if (slippagePct > 0.35) {
+    return {
+      status: '⛔ DO NOT CHASE',
+      safe: false,
+      slippage,
+      slippagePct,
+      currentRR,
+      stopLoss,
+      reason: `Price is ₹${slippage.toFixed(2)} (+${slippagePct.toFixed(2)}%) above ideal entry. Wait for pullback to ₹${recommendedEntry.toFixed(2)}.`,
+    };
+  }
+
+  // 2. Safety Check: Is the remaining Risk-to-Reward favorable?
+  if (currentRR < 1.5) {
+    return {
+      status: '⚠️ POOR RISK/REWARD',
+      safe: false,
+      slippage,
+      slippagePct,
+      currentRR,
+      stopLoss,
+      reason: `Current R:R is only ${currentRR.toFixed(2)}:1. Must be >= 1.5:1 to enter.`,
+    };
+  }
+
+  // 3. Safety Check: Is price above VWAP?
+  if (currentPrice < effectiveVwap) {
+    return {
+      status: '❌ BELOW VWAP',
+      safe: false,
+      slippage,
+      slippagePct,
+      currentRR,
+      stopLoss,
+      reason: 'Price is below institutional VWAP. Long trade is unsafe.',
+    };
+  }
+
+  // If all safety conditions pass:
+  return {
+    status: '✅ SAFE TO ENTER',
+    safe: true,
+    slippage,
+    slippagePct,
+    currentRR,
+    entryZone: `₹${recommendedEntry.toFixed(2)} - ₹${(recommendedEntry * 1.002).toFixed(2)}`,
+    stopLoss,
+    breakevenTrigger: Number((currentPrice + currentRisk).toFixed(2)), // When to move SL to cost
+    bookHalfAt: target1,
   };
 }
 

@@ -622,7 +622,7 @@ export default function ReversalQuantScanner({ onQuickTrade = null, onSendToPrac
                       </div>
 
                       {/* Setup Type & Confirmation Gate Banner */}
-                      <div className="mb-3 p-2 rounded d-flex align-items-center justify-content-between gap-2" style={{ background: 'rgba(30, 41, 59, 0.7)' }}>
+                      <div className="mb-2 p-2 rounded d-flex align-items-center justify-content-between gap-2" style={{ background: 'rgba(30, 41, 59, 0.7)' }}>
                         <div className="small">
                           <span className="d-block fw-bold" style={{ fontSize: 10, color: '#94a3b8' }}>SETUP TYPE</span>
                           <strong className="text-warning" style={{ fontSize: 12.5 }}>{candidate.setupLabel}</strong>
@@ -644,6 +644,50 @@ export default function ReversalQuantScanner({ onQuickTrade = null, onSendToPrac
                           )}
                         </div>
                       </div>
+
+                      {/* 🛡️ Real-Time Safe Entry Guard Shield */}
+                      {candidate.safeEntry && (
+                        <div
+                          className={`p-2 rounded mb-3 border ${
+                            candidate.safeEntry.safe
+                              ? 'border-success bg-success bg-opacity-10'
+                              : candidate.safeEntry.status === '⛔ DO NOT CHASE'
+                              ? 'border-danger bg-danger bg-opacity-10'
+                              : 'border-warning bg-warning bg-opacity-10'
+                          }`}
+                        >
+                          <div className="d-flex align-items-center justify-content-between gap-2">
+                            <span
+                              className={`badge ${
+                                candidate.safeEntry.safe
+                                  ? 'bg-success text-white'
+                                  : candidate.safeEntry.status === '⛔ DO NOT CHASE'
+                                  ? 'bg-danger text-white'
+                                  : 'bg-warning text-dark'
+                              } fw-bold px-2 py-1`}
+                              style={{ fontSize: 11, color: candidate.safeEntry.safe ? '#fff' : candidate.safeEntry.status === '⛔ DO NOT CHASE' ? '#fff' : '#0f172a' }}
+                            >
+                              {candidate.safeEntry.status}
+                            </span>
+                            <span className="small text-end" style={{ fontSize: 11, color: '#cbd5e1' }}>
+                              {candidate.safeEntry.safe ? (
+                                <>
+                                  Entry Zone: <strong className="text-warning">{candidate.safeEntry.entryZone}</strong>
+                                </>
+                              ) : (
+                                <span>{candidate.safeEntry.reason}</span>
+                              )}
+                            </span>
+                          </div>
+
+                          {candidate.safeEntry.safe && (
+                            <div className="d-flex justify-content-between small mt-1 pt-1 border-top border-secondary border-opacity-25" style={{ fontSize: 10.5, color: '#94a3b8' }}>
+                              <span>🛡️ Move SL to Cost: <strong className="text-light">₹{candidate.safeEntry.breakevenTrigger}</strong></span>
+                              <span>💰 Book 50% Qty: <strong className="text-success">₹{candidate.safeEntry.bookHalfAt}</strong></span>
+                            </div>
+                          )}
+                        </div>
+                      )}
 
                       {/* Technical Checklist Pills */}
                       <div className="row g-2 mb-3">

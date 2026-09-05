@@ -2,6 +2,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   evaluateReversalCandidate,
+  evaluateSafeEntry,
   runReversalScanner,
   type CandleData,
   type ReversalEvaluationInput,
@@ -273,6 +274,69 @@ describe('Bullish Reversal & 3-Way Setup Engine', () => {
     assert.strictEqual(scanResult.downToUpReversals[0].symbol, 'REVERSAL_STOCK');
     assert.ok(scanResult.pullbackContinuations.some((c) => c.symbol === 'PULLBACK_STOCK'));
     assert.ok(scanResult.topReversalShorts.some((c) => c.symbol === 'SHORT_STOCK'));
+  });
+
+  it('Safe Logic Guard: triggers ⛔ DO NOT CHASE when price is > 0.35% above recommended entry', () => {
+    // Recommended entry 1000, current price 1005 (0.50% slippage)
+    const result = evaluateSafeEntry({
+      recommendedEntry: 1000,
+      currentPrice: 1005,
+      stopLoss: 980,
+      target1: 1050,
+      vwap: 995,
+    });
+
+    assert.strictEqual(result.safe, false);
+    assert.strictEqual(result.status, '⛔ DO NOT CHASE');
+    assert.ok(result.reason?.includes('above ideal entry'));
+    assert.ok(result.reason?.includes('Wait for pullback'));
+  });
+
+  it('Safe Logic Guard: triggers ⚠️ POOR RISK/REWARD when remaining R:R is < 1.5:1', () => {
+    // Current price 1002, Stop loss 990 (Risk = 12), Target1 = 1014 (Reward = 12) -> R:R = 1.0 < 1.5
+    const result = evaluateSafeEntry({
+      recommendedEntry: 1000,
+      currentPrice: 1002,
+      stopLoss: 990,
+      target1: 1014,
+      vwap: 995,
+    });
+
+    assert.strictEqual(result.safe, false);
+    assert.strictEqual(result.status, '⚠️ POOR RISK/REWARD');
+    assert.ok(result.reason?.includes('Must be >= 1.5:1 to enter'));
+  });
+
+  it('Safe Logic Guard: triggers ❌ BELOW VWAP when current price is below VWAP', () => {
+    const result = evaluateSafeEntry({
+      recommendedEntry: 1000,
+      currentPrice: 1001,
+      stopLoss: 985,
+      target1: 1040,
+      vwap: 1008, // Price 1001 < VWAP 1008
+    });
+
+    assert.strictEqual(result.safe, false);
+    assert.strictEqual(result.status, '❌ BELOW VWAP');
+    assert.ok(result.reason?.includes('below institutional VWAP'));
+  });
+
+  it('Safe Logic Guard: triggers ✅ SAFE TO ENTER when slippage <= 0.35%, R:R >= 1.5, and price >= VWAP', () => {
+    // Entry 1648, Current price 1650 (slippage 0.12%), SL 1625 (Risk 25), Target1 1700 (Reward 50) -> R:R 2.0, VWAP 1645
+    const result = evaluateSafeEntry({
+      recommendedEntry: 1648,
+      currentPrice: 1650,
+      stopLoss: 1625,
+      target1: 1700,
+      vwap: 1645,
+    });
+
+    assert.strictEqual(result.safe, true);
+    assert.strictEqual(result.status, '✅ SAFE TO ENTER');
+    assert.strictEqual(result.stopLoss, 1625);
+    assert.strictEqual(result.breakevenTrigger, 1675); // 1650 + 25
+    assert.strictEqual(result.bookHalfAt, 1700);
+    assert.strictEqual(result.entryZone, '₹1648.00 - ₹1651.30');
   });
 });
 
