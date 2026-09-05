@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import CandleChart from './CandleChart';
 import CandleExplainer from './CandleExplainer';
+import { evaluateOverboughtStatus } from '../../services/risk/overboughtEngine';
 
 export default function StockDetailModal({
   stock,
@@ -25,6 +26,14 @@ export default function StockDetailModal({
   const vwap = Number(stock.vwap || stock.VWAP || 0);
   const isBelowVwap = vwap > 0 && ltp < vwap;
 
+  // Universal Overbought Safe Exit Evaluation for ANY stock
+  const obEval = evaluateOverboughtStatus({
+    currentPrice: ltp,
+    entryPrice: stock.entryPrice || null,
+    vwap: vwap > 0 ? vwap : null,
+    rsi: Number(stock.rsi || 60),
+  });
+
   return (
     <div className="modal d-block" tabIndex="-1" role="dialog" style={{ backgroundColor: 'rgba(15, 23, 42, 0.65)', backdropFilter: 'blur(4px)', zIndex: 1060 }}>
       <div className={`modal-dialog ${isFullModal ? 'modal-fullscreen' : 'modal-xl modal-dialog-centered modal-dialog-scrollable'}`} role="document">
@@ -39,6 +48,11 @@ export default function StockDetailModal({
                   {isBelowVwap && (
                     <span className="badge bg-danger text-white fw-bold px-2 py-1 shadow-sm">
                       ❌ DO NOT BUY — Still dumping below ₹{vwap.toFixed(2)} VWAP
+                    </span>
+                  )}
+                  {obEval.isOverbought && (
+                    <span className={`badge bg-${obEval.badgeColor} text-white fw-bold px-2 py-1 shadow-sm`}>
+                      {obEval.badgeText}
                     </span>
                   )}
                 </div>
@@ -234,6 +248,46 @@ export default function StockDetailModal({
                         <div className="list-group-item d-flex justify-content-between px-0">
                           <span className="text-muted">Relative Volume (RVOL):</span>
                           <strong className="text-dark">{Number(stock.volumeRatio || stock.rvol || 1.8).toFixed(2)}x</strong>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Overbought Safe Exit Analysis Card */}
+                  <div className="col-12">
+                    <div className={`card border-0 shadow-sm p-3 rounded-4 ${obEval.isOverbought ? 'bg-danger bg-opacity-10 border border-danger' : 'bg-white'}`}>
+                      <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                        <h6 className="fw-bold mb-0 d-flex align-items-center gap-1.5">
+                          🛡️ Universal Overbought & Safe Exit Guard ({symbol})
+                        </h6>
+                        <span className={`badge bg-${obEval.badgeColor} text-white fw-bold px-3 py-1`}>
+                          {obEval.badgeText}
+                        </span>
+                      </div>
+                      <div className="row g-2 small">
+                        <div className="col-12 col-md-4">
+                          <div className="p-2 rounded bg-white border">
+                            <span className="text-muted d-block" style={{ fontSize: 11 }}>VWAP Deviation:</span>
+                            <strong className="text-dark">
+                              {obEval.vwapDeviationPct >= 0 ? '+' : ''}{obEval.vwapDeviationPct}% vs VWAP (₹{Number(stock.vwap || ltp * 0.995).toFixed(2)})
+                            </strong>
+                          </div>
+                        </div>
+                        <div className="col-12 col-md-4">
+                          <div className="p-2 rounded bg-white border">
+                            <span className="text-muted d-block" style={{ fontSize: 11 }}>Calculated Trailing Stop:</span>
+                            <strong className="text-warning">
+                              ₹{obEval.trailingStopPrice.toFixed(2)} (Protects Capital & Profit)
+                            </strong>
+                          </div>
+                        </div>
+                        <div className="col-12 col-md-4">
+                          <div className="p-2 rounded bg-white border">
+                            <span className="text-muted d-block" style={{ fontSize: 11 }}>Safe Intraday Action:</span>
+                            <strong className={obEval.isOverbought ? 'text-danger' : 'text-success'}>
+                              {obEval.actionAdvice}
+                            </strong>
+                          </div>
                         </div>
                       </div>
                     </div>
