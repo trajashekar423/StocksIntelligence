@@ -194,6 +194,17 @@ export async function GET(req, context = {}) {
     }
   }
 
+  if (!nsePath && (routeKey === 'corporate-actions' || routeKey === 'corporate' || routeKey === 'corporates-corporateActions')) {
+    const caType = url.searchParams.get('type') || url.searchParams.get('index') || 'equities';
+    const fromDate = url.searchParams.get('from_date') || '';
+    const toDate = url.searchParams.get('to_date') || '';
+    const q = new URLSearchParams();
+    q.set('index', caType);
+    if (fromDate) q.set('from_date', fromDate);
+    if (toDate) q.set('to_date', toDate);
+    nsePath = `/api/corporates-corporateActions?${q.toString()}`;
+  }
+
   if (!nsePath) {
     return jsonResponse({ error: 'Unknown NSE proxy route', path: routeKey }, 404);
   }
