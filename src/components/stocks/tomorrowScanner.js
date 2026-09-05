@@ -159,8 +159,20 @@ export function buildTomorrowScanner(rows = [], context = {}) {
   };
 }
 
-export function renderTomorrowSetup(row) {
+export function renderTomorrowSetup(row, budgetPerStock = 25000) {
   const safe = row?.safeEntry;
+  const price = Number(row?.price || 1);
+  const qty = Math.max(Math.floor(budgetPerStock / Math.max(price, 0.01)), 1);
+  const invested = Math.round(qty * price);
+  const t1 = Number(row?.target1 || price * 1.04);
+  const t2 = Number(row?.target2 || price * 1.07);
+  const sl = Number(row?.stopLoss || price * 0.985);
+  const t1Profit = Math.round(qty * (t1 - price));
+  const t2Profit = Math.round(qty * (t2 - price));
+  const slLoss = Math.round(qty * Math.max(price - sl, 0.01));
+  const halfQty = Math.max(Math.floor(qty / 2), 1);
+  const halfProfitT1 = Math.round(halfQty * (t1 - price));
+
   return {
     entry: formatMoney(row?.entryZone),
     stopLoss: formatMoney(row?.stopLoss),
@@ -174,5 +186,12 @@ export function renderTomorrowSetup(row) {
     breakevenTrigger: safe?.breakevenTrigger ? formatMoney(safe.breakevenTrigger) : 'N/A',
     bookHalfAt: safe?.bookHalfAt ? formatMoney(safe.bookHalfAt) : 'N/A',
     entryRange: safe?.entryZone || formatMoney(row?.entryZone),
+    qty,
+    invested,
+    t1Profit,
+    t2Profit,
+    slLoss,
+    halfQty,
+    halfProfitT1,
   };
 }

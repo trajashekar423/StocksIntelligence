@@ -3203,6 +3203,9 @@ export default function Stocks() {
                     <tr>
                       <th>Symbol</th>
                       <th>LTP / VWAP</th>
+                      <th>Suggested Qty</th>
+                      <th>Invested (₹)</th>
+                      <th>Exp Profit (T1)</th>
                       <th>Safe Entry Zone</th>
                       <th>Stop Loss</th>
                       <th>Target 1 (50% Qty)</th>
@@ -3215,7 +3218,7 @@ export default function Stocks() {
 
                   <tbody>
                     {tomorrowScanner.top10.map((row) => {
-                      const setup = renderTomorrowSetup(row);
+                      const setup = renderTomorrowSetup(row, (capital || 50000) / 2);
                       const isSafe = setup.isSafe;
                       const isChase = setup.safeStatus === '⛔ DO NOT CHASE';
 
@@ -3233,6 +3236,22 @@ export default function Stocks() {
                             <small className="text-muted d-block" style={{ fontSize: '0.78rem' }}>
                               VWAP: <strong className="text-dark">{formatMoney(row.vwap)}</strong>
                             </small>
+                          </td>
+
+                          <td>
+                            <span className="badge bg-primary text-white fw-bold px-2 py-1" style={{ fontSize: '0.85rem' }}>
+                              {setup.qty} Qty
+                            </span>
+                          </td>
+
+                          <td className="fw-semibold text-dark" style={{ fontSize: '0.85rem' }}>
+                            ₹{setup.invested.toLocaleString('en-IN')}
+                          </td>
+
+                          <td>
+                            <span className="text-success fw-bold" style={{ fontSize: '0.88rem' }}>
+                              +₹{setup.t1Profit.toLocaleString('en-IN')}
+                            </span>
                           </td>
 
                           <td>
@@ -3282,7 +3301,7 @@ export default function Stocks() {
                               {isSafe ? (
                                 <div className="small mt-1" style={{ fontSize: '0.78rem' }}>
                                   <div className="text-dark">🛡️ Move SL to Cost: <strong className="text-primary">₹{setup.breakevenTrigger}</strong></div>
-                                  <div className="text-dark">💰 Book 50% at: <strong className="text-success">₹{setup.bookHalfAt}</strong></div>
+                                  <div className="text-dark">💰 Book 50% ({setup.halfQty} Qty) at: <strong className="text-success">₹{setup.bookHalfAt}</strong> (+₹{setup.halfProfitT1.toLocaleString('en-IN')})</div>
                                 </div>
                               ) : (
                                 <div className="small text-danger fw-bold mt-1" style={{ fontSize: '0.78rem' }}>
@@ -3299,22 +3318,38 @@ export default function Stocks() {
                                 className="btn btn-outline-primary btn-sm py-1 px-2 fw-semibold"
                                 style={{ fontSize: '0.78rem' }}
                                 onClick={() => {
-                                  setSelectedStock(row);
+                                  setSelectedStock({
+                                    ...row,
+                                    sharesQuantity: setup.qty,
+                                    allocatedBudget: setup.invested,
+                                    buyPrice: row.price,
+                                    stopLoss: row.stopLoss,
+                                    target1: row.target1,
+                                    target2: row.target2,
+                                  });
                                   setActiveTab('practice-trading');
                                 }}
                               >
-                                🎓 Practice Dummy
+                                🎓 Practice ({setup.qty} Qty)
                               </button>
                               <button
                                 type="button"
                                 className="btn btn-primary btn-sm py-1 px-2 fw-semibold text-white"
                                 style={{ fontSize: '0.78rem' }}
                                 onClick={() => {
-                                  setSelectedStock(row);
+                                  setSelectedStock({
+                                    ...row,
+                                    sharesQuantity: setup.qty,
+                                    allocatedBudget: setup.invested,
+                                    buyPrice: row.price,
+                                    stopLoss: row.stopLoss,
+                                    target1: row.target1,
+                                    target2: row.target2,
+                                  });
                                   setActiveTab('trading');
                                 }}
                               >
-                                ⚡ Trade
+                                ⚡ Trade ({setup.qty} Qty)
                               </button>
                             </div>
                           </td>

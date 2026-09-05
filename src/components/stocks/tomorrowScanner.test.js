@@ -81,4 +81,39 @@ test('Tomorrow Scanner Engine Suite', async (t) => {
     assert.equal(infy.safeEntry.safe, false);
     assert.match(infy.safeEntry.reason, /Wait for pullback/);
   });
+
+  await t.test('calculates exact shares quantity and expected profit from allocated budget', () => {
+    const mockStock = {
+      symbol: 'TATAMOTORS',
+      companyName: 'Tata Motors Ltd',
+      price: 1000,
+      previousClose: 980,
+      changePercent: 2.04,
+      volume: 1500000,
+      averageVolume: 1000000,
+      vwap: 990,
+      dayLow: 975,
+      dayHigh: 1005,
+      previousDayHigh: 985,
+      supportLevel: 980,
+      resistanceLevel: 1050,
+    };
+
+    const result = buildTomorrowScanner([mockStock]);
+    const stock = result.top10[0];
+    assert.ok(stock);
+
+    // Test with ₹25,000 budget per stock
+    const setup25k = renderTomorrowSetup(stock, 25000);
+    assert.equal(setup25k.qty, 25); // 25000 / 1000 = 25 shares
+    assert.equal(setup25k.invested, 25000);
+    assert.ok(setup25k.t1Profit > 0, 'Target 1 profit should be positive');
+    assert.ok(setup25k.t2Profit > setup25k.t1Profit, 'Target 2 profit should be greater than Target 1');
+    assert.equal(setup25k.halfQty, 12); // Math.floor(25/2) = 12
+
+    // Test with ₹50,000 budget per stock
+    const setup50k = renderTomorrowSetup(stock, 50000);
+    assert.equal(setup50k.qty, 50); // 50000 / 1000 = 50 shares
+    assert.equal(setup50k.invested, 50000);
+  });
 });

@@ -55,6 +55,10 @@ export default function WatchForNextDay({ onQuickTrade = null, onAddToPortfolio 
   const [lastRefreshed, setLastRefreshed] = useState('');
   const [feedbackMsg, setFeedbackMsg] = useState(null);
 
+  // Capital Budget & Quantity Sizing State
+  const [userBudget, setUserBudget] = useState(50000);
+  const [allocationSplit, setAllocationSplit] = useState('SPLIT_2'); // 'SPLIT_2' | 'SPLIT_3' | 'ALL_IN_1'
+
   // Dynamic Suggested Target Date Presets based on Buy Date
   const suggestedPresets = useMemo(() => {
     return getSuggestedTargetDates(buyDate);
@@ -205,6 +209,41 @@ export default function WatchForNextDay({ onQuickTrade = null, onAddToPortfolio 
     if (selectedSignalTier === 'ALL') return scanResult.top10;
     return scanResult.top10.filter((s) => s.signalTier === selectedSignalTier);
   }, [scanResult.top10, selectedSignalTier]);
+
+  // 💰 Dynamic Shares Quantity & Budget Allocation Calculator
+  const getStockBudgetPlan = useCallback((stock) => {
+    const price = Number(stock.price || stock.entryPrice || 1);
+    const sl = Number(stock.stopLoss || price * 0.97);
+    const t1 = Number(stock.target1 || stock.targetDateTarget || price * 1.04);
+    const t2 = Number(stock.target2 || price * 1.07);
+
+    const numSplits = allocationSplit === 'SPLIT_3' ? 3 : allocationSplit === 'ALL_IN_1' ? 1 : 2;
+    const budgetPerStock = Math.max(userBudget / numSplits, 1000);
+    const rawQty = Math.floor(budgetPerStock / Math.max(price, 0.01));
+    const qty = Math.max(rawQty, 1);
+    const invested = Math.round(qty * price);
+
+    const t1Profit = Math.round(qty * (t1 - price));
+    const t2Profit = Math.round(qty * (t2 - price));
+    const slLoss = Math.round(qty * Math.max(price - sl, 0.01));
+    const halfQty = Math.max(Math.floor(qty / 2), 1);
+    const halfProfitT1 = Math.round(halfQty * (t1 - price));
+    const trailingProfit = Math.round(halfProfitT1 + (qty - halfQty) * (t2 - price));
+
+    return {
+      numSplits,
+      budgetPerStock,
+      qty,
+      invested,
+      t1Profit,
+      t2Profit,
+      slLoss,
+      halfQty,
+      halfProfitT1,
+      trailingProfit,
+      rrRatio: slLoss > 0 ? (t1Profit / slLoss).toFixed(1) : '2.0',
+    };
+  }, [userBudget, allocationSplit]);
 
   // Active History Record for selected past date
   const activeHistoryRecord = useMemo(() => {
@@ -406,6 +445,116 @@ export default function WatchForNextDay({ onQuickTrade = null, onAddToPortfolio 
         </div>
       </div>
 
+      {/* ── 2.5 💰 CAPITAL BUDGET & QUANTITY SIZING PLANNER ── */}
+      <div
+        className="card border-0 shadow-sm rounded-4 p-3 p-md-4 mb-4"
+        style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', color: '#f8fafc' }}
+      >
+        <div className="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3 pb-2 border-bottom border-secondary border-opacity-50">
+          <div className="d-flex align-items-center gap-2">
+            <span className="fs-4">💰</span>
+            <div>
+              <h5 className="mb-0 fw-bold text-white d-flex align-items-center gap-2 flex-wrap">
+                <span>Capital Budget & Quantity Sizing Engine</span>
+                <span className="btst-badge-blink" style={{ fontSize: '0.65rem' }}>
+                  <span className="btst-dot"></span>
+                  LIVE CALCULATOR
+                </span>
+              </h5>
+              <small className="text-light text-opacity-75">
+                Calculates exact shares to buy, expected profit at Target 1 & 2, max risk, and 50% profit lock
+              </small>
+            </div>
+          </div>
+
+          {/* Quick Preset Buttons */}
+          <div className="d-flex align-items-center gap-1.5 flex-wrap">
+            <span className="small text-light text-opacity-75 me-1">Quick Budget:</span>
+            {[25000, 50000, 100000, 200000].map((amt) => (
+              <button
+                key={amt}
+                type="button"
+                className={`btn btn-sm rounded-pill fw-bold px-2.5 ${
+                  userBudget === amt ? 'btn-warning text-dark' : 'btn-outline-light'
+                }`}
+                style={{ fontSize: '0.75rem' }}
+                onClick={() => setUserBudget(amt)}
+              >
+                ₹{(amt / 1000).toFixed(0)}k
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="row g-3 align-items-center">
+          {/* Budget Input */}
+          <div className="col-12 col-md-3">
+            <label className="small text-light text-opacity-75 fw-bold mb-1 d-block">
+              Total Budget (₹):
+            </label>
+            <div className="input-group input-group-sm">
+              <span className="input-group-text bg-dark text-warning border-secondary fw-bold">₹</span>
+              <input
+                type="number"
+                min="1000"
+                step="5000"
+                className="form-control form-control-sm bg-dark text-white border-secondary fw-bold fs-6"
+                value={userBudget}
+                onChange={(e) => setUserBudget(Math.max(Number(e.target.value) || 0, 1000))}
+              />
+            </div>
+          </div>
+
+          {/* Strategy Split Switcher */}
+          <div className="col-12 col-md-5">
+            <label className="small text-light text-opacity-75 fw-bold mb-1 d-block">
+              Portfolio Allocation Strategy:
+            </label>
+            <div className="btn-group btn-group-sm w-100 shadow-sm" role="group">
+              <button
+                type="button"
+                className={`btn fw-bold ${allocationSplit === 'SPLIT_2' ? 'btn-primary text-white' : 'btn-outline-light'}`}
+                onClick={() => setAllocationSplit('SPLIT_2')}
+              >
+                🎯 2 Stocks (₹{(userBudget / 2).toLocaleString('en-IN')}/ea)
+              </button>
+              <button
+                type="button"
+                className={`btn fw-bold ${allocationSplit === 'SPLIT_3' ? 'btn-primary text-white' : 'btn-outline-light'}`}
+                onClick={() => setAllocationSplit('SPLIT_3')}
+              >
+                🛡️ 3 Stocks (₹{Math.round(userBudget / 3).toLocaleString('en-IN')}/ea)
+              </button>
+              <button
+                type="button"
+                className={`btn fw-bold ${allocationSplit === 'ALL_IN_1' ? 'btn-primary text-white' : 'btn-outline-light'}`}
+                onClick={() => setAllocationSplit('ALL_IN_1')}
+              >
+                🚀 1 Stock (100%)
+              </button>
+            </div>
+          </div>
+
+          {/* Portfolio Target Goals Metric */}
+          <div className="col-12 col-md-4">
+            <div className="p-2.5 rounded-3 border border-secondary border-opacity-50" style={{ background: 'rgba(2, 6, 23, 0.5)' }}>
+              <div className="d-flex justify-content-between align-items-center mb-1">
+                <span className="small text-light text-opacity-75">Target Profit (+4% to +10%):</span>
+                <strong className="text-success fw-bold">
+                  +₹{Math.round(userBudget * 0.04).toLocaleString('en-IN')} to +₹{Math.round(userBudget * 0.10).toLocaleString('en-IN')}
+                </strong>
+              </div>
+              <div className="d-flex justify-content-between align-items-center">
+                <span className="small text-light text-opacity-75">Max Risk (Stop Loss ~2.5%):</span>
+                <strong className="text-danger fw-bold">
+                  -₹{Math.round(userBudget * 0.025).toLocaleString('en-IN')}
+                </strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* ── 3. VIEW MODE NAVIGATION TABS ── */}
       <div className="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
         <div className="btn-group shadow-sm" role="group">
@@ -491,6 +640,7 @@ export default function WatchForNextDay({ onQuickTrade = null, onAddToPortfolio 
               {filteredTop10.map((stock) => {
                 const isTracked = riskTrackedSymbols.has(stock.symbol);
                 const isPositive = stock.changePercent >= 0;
+                const plan = getStockBudgetPlan(stock);
 
                 return (
                   <div className="col-12" key={stock.symbol}>
@@ -558,27 +708,78 @@ export default function WatchForNextDay({ onQuickTrade = null, onAddToPortfolio 
                         </div>
                       </div>
 
+                      {/* 💰 Suggested Capital & Shares Quantity Plan */}
+                      <div
+                        className="p-3 rounded-3 mb-3 border border-primary border-opacity-30"
+                        style={{ background: 'linear-gradient(135deg, rgba(238, 242, 255, 0.7) 0%, rgba(240, 253, 244, 0.7) 100%)' }}
+                      >
+                        <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2 pb-2 border-bottom border-secondary border-opacity-25">
+                          <div className="d-flex align-items-center gap-2 flex-wrap">
+                            <span className="badge bg-primary text-white fw-bold px-2 py-1">
+                              💰 ₹{userBudget.toLocaleString('en-IN')} BUDGET PLAN ({plan.numSplits === 1 ? '100% Allocation' : `1 of ${plan.numSplits} Stocks`})
+                            </span>
+                            <span className="text-dark fw-bold">
+                              Buy <span className="text-primary fs-5">{plan.qty} Shares</span> (₹{plan.invested.toLocaleString('en-IN')})
+                            </span>
+                          </div>
+                          <span className="badge bg-success bg-opacity-25 text-success border border-success fw-bold px-2 py-1">
+                            R:R 1 : {plan.rrRatio}
+                          </span>
+                        </div>
+
+                        <div className="row g-2 text-start small">
+                          <div className="col-6 col-md-3">
+                            <div className="p-2 rounded bg-white border">
+                              <span className="text-muted d-block" style={{ fontSize: 11 }}>🎯 TARGET 1 PROFIT</span>
+                              <strong className="text-success fs-6">+₹{plan.t1Profit.toLocaleString('en-IN')}</strong>
+                              <small className="text-muted d-block" style={{ fontSize: 10 }}>at ₹{Number(stock.target1 || stock.targetDateTarget).toFixed(2)} (+{stock.potentialReturnPct}%)</small>
+                            </div>
+                          </div>
+                          <div className="col-6 col-md-3">
+                            <div className="p-2 rounded bg-white border">
+                              <span className="text-muted d-block" style={{ fontSize: 11 }}>🎯 TARGET 2 PROFIT</span>
+                              <strong className="text-success fs-6">+₹{plan.t2Profit.toLocaleString('en-IN')}</strong>
+                              <small className="text-muted d-block" style={{ fontSize: 10 }}>at ₹{Number(stock.target2 || stock.price * 1.07).toFixed(2)}</small>
+                            </div>
+                          </div>
+                          <div className="col-6 col-md-3">
+                            <div className="p-2 rounded bg-white border">
+                              <span className="text-muted d-block" style={{ fontSize: 11 }}>🛑 MAX RISK AT SL</span>
+                              <strong className="text-danger fs-6">-₹{plan.slLoss.toLocaleString('en-IN')}</strong>
+                              <small className="text-muted d-block" style={{ fontSize: 10 }}>at ₹{stock.stopLoss.toFixed(2)} (-{((stock.price - stock.stopLoss)/stock.price*100).toFixed(1)}%)</small>
+                            </div>
+                          </div>
+                          <div className="col-6 col-md-3">
+                            <div className="p-2 rounded bg-white border">
+                              <span className="text-muted d-block" style={{ fontSize: 11 }}>🔒 50% LOCK STRATEGY</span>
+                              <strong className="text-dark" style={{ fontSize: 11.5 }}>Sell {plan.halfQty} Qty at T1</strong>
+                              <small className="text-success fw-bold d-block" style={{ fontSize: 10 }}>Lock +₹{plan.halfProfitT1} & Trail</small>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
                       {/* Trade Plan & Strategy Metrics */}
                       <div className="row g-3 align-items-center mb-3">
-                        <div className="col-12 col-md-9">
+                        <div className="col-12 col-md-7">
                           <div className="row g-2 text-center text-md-start">
                             <div className="col-6 col-md-3">
                               <span className="text-muted small d-block">Entry Zone:</span>
                               {stock.price < stock.vwap ? (
                                 <strong className="text-danger small" style={{ fontSize: 11 }}>
-                                  ❌ Still dumping below ₹{Number(stock.vwap).toFixed(2)} VWAP
+                                  ❌ Dumping below ₹{Number(stock.vwap).toFixed(2)} VWAP
                                 </strong>
                               ) : (
                                 <strong className="text-dark">{stock.entryZone}</strong>
                               )}
                             </div>
                             <div className="col-6 col-md-3">
-                              <span className="text-muted small d-block">Stop Loss (Invalidation):</span>
+                              <span className="text-muted small d-block">Stop Loss:</span>
                               <strong className="text-danger">₹{stock.stopLoss.toFixed(2)}</strong>
                             </div>
                             <div className="col-6 col-md-3">
                               <span className="text-muted small d-block">
-                                Target Date Target ({scanResult.sessionInfo.adjustedTargetSellDateFormatted}):
+                                Target ({scanResult.sessionInfo.adjustedTargetSellDateFormatted}):
                               </span>
                               <strong className="text-success fs-6">
                                 ₹{stock.targetDateTarget.toFixed(2)} (+{stock.potentialReturnPct}%)
@@ -593,18 +794,56 @@ export default function WatchForNextDay({ onQuickTrade = null, onAddToPortfolio 
                           </div>
                         </div>
 
-                        <div className="col-12 col-md-3 text-md-end d-flex flex-wrap justify-content-md-end gap-2">
+                        <div className="col-12 col-md-5 text-md-end d-flex flex-wrap justify-content-md-end gap-2">
                           <button
                             type="button"
-                            className="btn btn-sm btn-outline-warning text-dark fw-bold px-3 shadow-sm d-flex align-items-center gap-1"
-                            onClick={() => handleTrackInRiskEngine(stock)}
-                            disabled={isTracked}
+                            className="btn btn-sm btn-outline-info text-dark fw-bold px-2.5 shadow-sm"
+                            onClick={() => {
+                              if (onQuickTrade) {
+                                onQuickTrade({
+                                  ...stock,
+                                  sharesQuantity: plan.qty,
+                                  allocatedBudget: plan.invested,
+                                  buyPrice: stock.price,
+                                  stopLoss: stock.stopLoss,
+                                  target1: stock.target1 || stock.targetDateTarget,
+                                  target2: stock.target2,
+                                });
+                              }
+                            }}
                           >
-                            {isTracked ? '✓ Tracked in Risk Monitor' : '🛡️ Track in Risk Engine'}
+                            🎓 Practice ({plan.qty} Qty)
                           </button>
                           <button
                             type="button"
-                            className="btn btn-sm btn-outline-primary fw-semibold px-3"
+                            className="btn btn-sm btn-success text-white fw-bold px-2.5 shadow-sm"
+                            onClick={() => {
+                              if (onQuickTrade) {
+                                onQuickTrade({
+                                  ...stock,
+                                  sharesQuantity: plan.qty,
+                                  allocatedBudget: plan.invested,
+                                  buyPrice: stock.price,
+                                  stopLoss: stock.stopLoss,
+                                  target1: stock.target1 || stock.targetDateTarget,
+                                  target2: stock.target2,
+                                });
+                              }
+                            }}
+                          >
+                            ⚡ Trade ({plan.qty} Qty)
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-outline-warning text-dark fw-bold px-2 shadow-sm d-flex align-items-center gap-1"
+                            onClick={() => handleTrackInRiskEngine(stock)}
+                            disabled={isTracked}
+                          >
+                            {isTracked ? '✓ Tracked' : '🛡️ Risk'}
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-outline-primary fw-semibold px-2"
                             onClick={() => setSelectedStockForChart({
                               symbol: stock.symbol,
                               companyName: stock.companyName,
@@ -617,7 +856,7 @@ export default function WatchForNextDay({ onQuickTrade = null, onAddToPortfolio 
                               vwap: stock.vwap,
                             })}
                           >
-                            📈 View Chart
+                            📈 Chart
                           </button>
                         </div>
                       </div>
@@ -674,6 +913,9 @@ export default function WatchForNextDay({ onQuickTrade = null, onAddToPortfolio 
                   <th>Target Sell Date</th>
                   <th>Sessions</th>
                   <th>LTP (₹)</th>
+                  <th>Suggested Qty</th>
+                  <th>Invested (₹)</th>
+                  <th>T1 Profit (₹)</th>
                   <th>Change %</th>
                   <th>VWAP (₹)</th>
                   <th>Vol Ratio</th>
@@ -703,6 +945,7 @@ export default function WatchForNextDay({ onQuickTrade = null, onAddToPortfolio 
                 {scanResult.allCandidates.map((stock) => {
                   const isPositive = stock.changePercent >= 0;
                   const isTracked = riskTrackedSymbols.has(stock.symbol);
+                  const plan = getStockBudgetPlan(stock);
 
                   return (
                     <tr key={stock.symbol}>
@@ -713,6 +956,17 @@ export default function WatchForNextDay({ onQuickTrade = null, onAddToPortfolio 
                       <td>{stock.targetSellDateFormatted}</td>
                       <td><span className="badge bg-light text-dark border">{stock.holdingSessions}</span></td>
                       <td className="fw-bold">₹{stock.price.toFixed(2)}</td>
+                      <td>
+                        <span className="badge bg-primary text-white fw-bold px-2 py-1">
+                          {plan.qty} Qty
+                        </span>
+                      </td>
+                      <td className="fw-semibold">₹{plan.invested.toLocaleString('en-IN')}</td>
+                      <td>
+                        <span className="text-success fw-bold">
+                          +₹{plan.t1Profit.toLocaleString('en-IN')}
+                        </span>
+                      </td>
                       <td className={isPositive ? 'text-success fw-bold' : 'text-danger fw-bold'}>
                         {isPositive ? '+' : ''}{stock.changePercent.toFixed(2)}%
                       </td>
@@ -750,15 +1004,59 @@ export default function WatchForNextDay({ onQuickTrade = null, onAddToPortfolio 
                       <td className="text-success fw-bold">+{stock.potentialReturnPct}%</td>
                       <td><strong>1 : {stock.riskRewardRatio}</strong></td>
                       <td>
-                        <button
-                          type="button"
-                          className="btn btn-xs btn-outline-warning text-dark fw-bold px-2 py-0.5"
-                          onClick={() => handleTrackInRiskEngine(stock)}
-                          disabled={isTracked}
-                          style={{ fontSize: 11 }}
-                        >
-                          {isTracked ? '✓ Tracked' : '🛡️ Track'}
-                        </button>
+                        <div className="d-flex align-items-center gap-1">
+                          <button
+                            type="button"
+                            className="btn btn-xs btn-outline-info text-dark fw-bold px-2 py-0.5"
+                            onClick={() => {
+                              if (onQuickTrade) {
+                                onQuickTrade({
+                                  ...stock,
+                                  sharesQuantity: plan.qty,
+                                  allocatedBudget: plan.invested,
+                                  buyPrice: stock.price,
+                                  stopLoss: stock.stopLoss,
+                                  target1: stock.target1 || stock.targetDateTarget,
+                                  target2: stock.target2,
+                                });
+                              }
+                            }}
+                            title={`Practice trade with ${plan.qty} shares`}
+                            style={{ fontSize: 11 }}
+                          >
+                            🎓 Practice
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-xs btn-success text-white fw-bold px-2 py-0.5"
+                            onClick={() => {
+                              if (onQuickTrade) {
+                                onQuickTrade({
+                                  ...stock,
+                                  sharesQuantity: plan.qty,
+                                  allocatedBudget: plan.invested,
+                                  buyPrice: stock.price,
+                                  stopLoss: stock.stopLoss,
+                                  target1: stock.target1 || stock.targetDateTarget,
+                                  target2: stock.target2,
+                                });
+                              }
+                            }}
+                            title={`Live trade with ${plan.qty} shares`}
+                            style={{ fontSize: 11 }}
+                          >
+                            ⚡ Trade
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-xs btn-outline-warning text-dark fw-bold px-2 py-0.5"
+                            onClick={() => handleTrackInRiskEngine(stock)}
+                            disabled={isTracked}
+                            style={{ fontSize: 11 }}
+                          >
+                            {isTracked ? '✓ Tracked' : '🛡️ Risk'}
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
