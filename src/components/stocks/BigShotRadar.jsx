@@ -517,14 +517,14 @@ export default function BigShotRadar({
         )}
 
         {/* ── 3 STAT & STRATEGY CARDS ── */}
-        <div className="row g-2.5 g-md-3">
+        <div className="row g-3">
           {/* Card A: Mega Block Accumulators */}
-          <div className="col-12 col-md-4">
+          <div className="col-12 col-lg-4">
             <div
               className="p-3 rounded-3 border border-light border-opacity-10 h-100"
               style={{ background: 'rgba(255, 255, 255, 0.05)' }}
             >
-              <div className="d-flex align-items-center justify-content-between mb-1.5">
+              <div className="d-flex flex-wrap align-items-center justify-content-between gap-1 mb-1.5">
                 <span className="text-warning fw-bold small">🏢 Algorithm 1: Mega Block (&ge; ₹500 Cr)</span>
                 <span className="badge bg-success text-white small">T+1 to T+3 Run</span>
               </div>
@@ -542,12 +542,12 @@ export default function BigShotRadar({
           </div>
 
           {/* Card B: 5x Volume News Breakouts */}
-          <div className="col-12 col-md-4">
+          <div className="col-12 col-lg-4">
             <div
               className="p-3 rounded-3 border border-light border-opacity-10 h-100"
               style={{ background: 'rgba(255, 255, 255, 0.05)' }}
             >
-              <div className="d-flex align-items-center justify-content-between mb-1.5">
+              <div className="d-flex flex-wrap align-items-center justify-content-between gap-1 mb-1.5">
                 <span className="text-info fw-bold small">⚡ Algorithm 2: 5x Morning Volume</span>
                 <span className="badge bg-info text-dark small">9:30 AM Breakout</span>
               </div>
@@ -565,16 +565,16 @@ export default function BigShotRadar({
           </div>
 
           {/* Card C: 🔒 Upper Circuit & Lock Strategy */}
-          <div className="col-12 col-md-4">
+          <div className="col-12 col-lg-4">
             <div
               className="p-3 rounded-3 border border-danger border-opacity-30 h-100"
               style={{ background: 'rgba(220, 53, 69, 0.12)' }}
             >
-              <div className="d-flex align-items-center justify-content-between mb-1.5">
-                <span className="text-white fw-bold small">🔒 Algorithm 3: Upper Circuit Radar</span>
+              <div className="d-flex flex-wrap align-items-center justify-content-between gap-1 mb-1.5">
+                <span className="text-white fw-bold small">🔒 Algorithm 3: Upper Circuit</span>
                 <span className="btst-badge-blink">
                   <span className="btst-dot"></span>
-                  3:15 PM BTST Window
+                  3:15 PM BTST
                 </span>
               </div>
               <p className="small text-light opacity-90 mb-2">
