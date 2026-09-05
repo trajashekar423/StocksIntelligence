@@ -6737,3 +6737,46 @@
   animation: btst-text-blink 0.8s infinite alternate;
 }
 
+/* ── Market Sentiment Alert Banner Accordion Toggle ── */
+.sentiment-accordion-wrapper {
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sentiment-accordion-body {
+  overflow: hidden;
+  transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease-in-out, margin 0.3s ease-in-out;
+}
+
+.sentiment-accordion-body.expanded {
+  max-height: 2200px;
+  opacity: 1;
+}
+
+.sentiment-accordion-body.collapsed {
+  max-height: 0;
+  opacity: 0;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  pointer-events: none;
+}
+
+.sentiment-accordion-header {
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s ease;
+}
+
+.sentiment-accordion-header:hover {
+  filter: brightness(1.08);
+}
+
+.sentiment-chevron-icon {
+  display: inline-block;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sentiment-chevron-icon.rotated {
+  transform: rotate(180deg);
+}
+
+

@@ -201,7 +201,7 @@ const server = http.createServer(async (req, res) => {
     query.set('index', caType);
     if (fromDate) query.set('from_date', fromDate);
     if (toDate) query.set('to_date', toDate);
-    nsePath = `/api/corporates?${query.toString()}`;
+    nsePath = `/api/corporates-corporateActions?${query.toString()}`;
   }
 
   if (!nsePath) {
