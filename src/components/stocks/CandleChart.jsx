@@ -23,7 +23,8 @@ export default function CandleChart({
   const [showEMA, setShowEMA] = useState(true);
   const [showVWAP, setShowVWAP] = useState(true);
   const [showSignals, setShowSignals] = useState(true);
-  const [showOverboughtGuard, setShowOverboughtGuard] = useState(true);
+  // 'auto' (default: auto-activates near overbought) | 'on' | 'off'
+  const [overboughtMode, setOverboughtMode] = useState('auto');
   const [userEntryPrice, setUserEntryPrice] = useState(initialEntryPrice ? String(initialEntryPrice) : '');
   const [zoomLevel, setZoomLevel] = useState(40); // number of visible candles
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -169,7 +170,7 @@ export default function CandleChart({
     return rawCandles.slice(-zoomLevel);
   }, [rawCandles, zoomLevel]);
 
-  // Derived indicator calculations: VWAP, EMA9, EMA21, RSI(14), and Buy/Sell/Overbought Signals
+  // Derived indicator calculations: VWAP, EMA9, EMA21, RSI(14), and Decoupled Buy/Sell/Overbought Signals
   const {
     minPrice,
     maxPrice,
@@ -178,8 +179,10 @@ export default function CandleChart({
     ema9Series,
     ema21Series,
     rsiSeries,
-    candleSignals,
+    buySellSignals,
+    overboughtSignals,
     overboughtEvaluations,
+    isApproachingOverbought,
   } = useMemo(() => {
     if (!visibleCandles.length) {
       return {
@@ -190,8 +193,10 @@ export default function CandleChart({
         ema9Series: [],
         ema21Series: [],
         rsiSeries: [],
-        candleSignals: [],
+        buySellSignals: [],
+        overboughtSignals: [],
         overboughtEvaluations: [],
+        isApproachingOverbought: false,
       };
     }
 
@@ -254,33 +259,18 @@ export default function CandleChart({
       });
     });
 
-    // Compute Buy / Sell / Overbought signals on individual candles
-    const signals = visibleCandles.map((c, i) => {
-      if (i < 2) return null;
+    // Check if current active stock is approaching or inside overbought zone
+    const latestRsi = rsi.at(-1) || 50;
+    const latestOb = obEvals.at(-1);
+    const isApproaching = latestRsi >= 68 || (latestOb && latestOb.isOverbought);
+
+    // Determine if Overbought display should be active
+    const isObActive = overboughtMode === 'on' || (overboughtMode === 'auto' && isApproaching);
+
+    // 1. STANDARD BUY / SELL SIGNALS (Always Computed and Never Overwritten)
+    const buySell = visibleCandles.map((c, i) => {
+      if (i < 1) return null;
       const patterns = detectAllCandlePatterns(visibleCandles.slice(0, i + 1));
-      const obEval = obEvals[i];
-
-      // 1. OVERBOUGHT / SAFE EXIT PIN (Highest Priority Alert)
-      if (showOverboughtGuard && obEval && obEval.isOverbought) {
-        if (obEval.level === 'BEARISH_REVERSAL_EXIT' || obEval.level === 'OVERBOUGHT_CRITICAL') {
-          return {
-            type: 'OVERBOUGHT_EXIT',
-            label: '🚨 EXIT',
-            title: `🚨 SAFE EXIT ALERT: ${obEval.actionAdvice}`,
-            color: '#dc2626',
-          };
-        }
-        if (obEval.level === 'OVERBOUGHT_WARN') {
-          return {
-            type: 'OVERBOUGHT_WARN',
-            label: '⚠️ OB',
-            title: `⚠️ Overbought Zone: ${obEval.actionAdvice}`,
-            color: '#f59e0b',
-          };
-        }
-      }
-
-      // 2. STANDARD BUY / SELL PATTERNS
       const hasBullishPattern = patterns.some((p) =>
         ['Bullish Engulfing', 'Hammer', 'Morning Star', 'Three White Soldiers', 'Piercing Pattern'].includes(p.name)
       );
@@ -288,12 +278,47 @@ export default function CandleChart({
         ['Bearish Engulfing', 'Shooting Star', 'Evening Star'].includes(p.name)
       );
 
-      if (hasBullishPattern && c.close >= vwap[i]) {
+      // Buy signal when bullish pattern occurs above/at VWAP
+      if (hasBullishPattern && c.close >= vwap[i] * 0.998) {
         return { type: 'BUY', label: '🟢 BUY', pattern: patterns[0]?.name || 'Bullish', color: '#16a34a' };
       }
       if (hasBearishPattern && c.close < vwap[i]) {
         return { type: 'SELL', label: '🔴 SELL', pattern: patterns[0]?.name || 'Bearish', color: '#dc2626' };
       }
+      return null;
+    });
+
+    // 2. OVERBOUGHT PEAK EXIT PINS (Only Shown on Peak Exhaustion / Upper Wick Candles)
+    const obSignals = visibleCandles.map((c, i) => {
+      if (!isObActive) return null;
+      const obEval = obEvals[i];
+      if (!obEval || !obEval.isOverbought) return null;
+
+      const prev = visibleCandles[i - 1];
+      const next = visibleCandles[i + 1];
+      const isLocalHigh = (!prev || c.high >= prev.high) && (!next || c.high >= next.high);
+      const isUpperWick = obEval.hasUpperWickRejection;
+      const isExtreme = obEval.level === 'OVERBOUGHT_CRITICAL' || obEval.level === 'BEARISH_REVERSAL_EXIT';
+
+      // Pin EXIT on upper wick exhaustion or highest peak candles
+      if (isUpperWick || (isLocalHigh && isExtreme)) {
+        return {
+          type: 'OVERBOUGHT_EXIT',
+          label: '🚨 EXIT',
+          title: `🚨 SAFE EXIT: ${obEval.actionAdvice}`,
+          color: '#dc2626',
+        };
+      }
+
+      if (isLocalHigh && obEval.level === 'OVERBOUGHT_WARN') {
+        return {
+          type: 'OVERBOUGHT_WARN',
+          label: '⚠️ OB',
+          title: `⚠️ Overbought: ${obEval.actionAdvice}`,
+          color: '#f59e0b',
+        };
+      }
+
       return null;
     });
 
@@ -305,10 +330,12 @@ export default function CandleChart({
       ema9Series: ema9,
       ema21Series: ema21,
       rsiSeries: rsi,
-      candleSignals: signals,
+      buySellSignals: buySell,
+      overboughtSignals: obSignals,
       overboughtEvaluations: obEvals,
+      isApproachingOverbought: isApproaching,
     };
-  }, [visibleCandles, userEntryPrice, showOverboughtGuard]);
+  }, [visibleCandles, userEntryPrice, overboughtMode]);
 
   // Dynamic Layout Dimensions: Fullwidth HD SVG
   const paddingLeft = 20;
@@ -353,10 +380,7 @@ export default function CandleChart({
   const entryY = hasUserEntry ? getY(parsedEntry) : null;
   const trailingStopY = activeEval?.trailingStopPrice ? getY(activeEval.trailingStopPrice) : null;
 
-  const activePatterns = useMemo(() => {
-    if (!activeCandle) return [];
-    return detectAllCandlePatterns(visibleCandles.slice(0, activeCandleIndex + 1));
-  }, [visibleCandles, activeCandleIndex]);
+  const isObDisplayActive = overboughtMode === 'on' || (overboughtMode === 'auto' && isApproachingOverbought);
 
   const handleMouseMove = (e) => {
     if (!svgRef.current) return;
@@ -374,6 +398,14 @@ export default function CandleChart({
 
   const handleMouseLeave = () => {
     setHoverIndex(null);
+  };
+
+  const toggleOverboughtMode = () => {
+    setOverboughtMode((prev) => {
+      if (prev === 'auto') return 'on';
+      if (prev === 'on') return 'off';
+      return 'auto';
+    });
   };
 
   return (
@@ -412,34 +444,39 @@ export default function CandleChart({
 
         {/* Timeframe, Overlays & Fullscreen Button */}
         <div className="d-flex flex-wrap align-items-center gap-2">
-          {/* Overbought Guard Toggle */}
+          {/* Signal overlay toggle (Always Visible) */}
           <button
             type="button"
             className={`btn btn-sm fw-bold shadow-sm d-flex align-items-center gap-1 ${
-              showOverboughtGuard
-                ? activeEval?.isOverbought
-                  ? 'btn-danger text-white animate-pulse'
-                  : 'btn-warning text-dark'
-                : isFullscreen
-                ? 'btn-outline-light'
-                : 'btn-outline-secondary'
-            }`}
-            onClick={() => setShowOverboughtGuard(!showOverboughtGuard)}
-            title="Toggle Real-Time Overbought Safe Exit Alerts"
-          >
-            🛡️ Overbought Guard
-          </button>
-
-          {/* Signal overlay toggle */}
-          <button
-            type="button"
-            className={`btn btn-sm fw-semibold shadow-sm ${
               showSignals ? 'btn-success text-white' : isFullscreen ? 'btn-outline-light' : 'btn-outline-secondary'
             }`}
             onClick={() => setShowSignals(!showSignals)}
-            title="Toggle Live Buy/Sell Signals"
+            title="Toggle Live 🟢 BUY & 🔴 SELL Pattern Signals"
           >
-            🎯 Signals
+            🎯 🟢 BUY Signals
+          </button>
+
+          {/* Smart Auto-Activating Overbought Guard Toggle */}
+          <button
+            type="button"
+            className={`btn btn-sm fw-bold shadow-sm d-flex align-items-center gap-1 ${
+              isObDisplayActive
+                ? activeEval?.level === 'OVERBOUGHT_CRITICAL' || activeEval?.level === 'BEARISH_REVERSAL_EXIT'
+                  ? 'btn-danger text-white animate-pulse'
+                  : 'btn-warning text-dark'
+                : 'btn-outline-secondary'
+            }`}
+            onClick={toggleOverboughtMode}
+            title="Click to cycle: Auto (activates near overbought) -> Always ON -> OFF"
+          >
+            🛡️ Overbought:{' '}
+            {overboughtMode === 'auto'
+              ? isApproachingOverbought
+                ? '⚡ AUTO ACTIVE'
+                : 'Auto (Watching)'
+              : overboughtMode === 'on'
+              ? 'ON'
+              : 'OFF'}
           </button>
 
           {/* Timeframe selector */}
@@ -530,7 +567,7 @@ export default function CandleChart({
       {/* ── INTERACTIVE INTRADAY SAFE EXIT & OVERBOUGHT MONITOR BAR ── */}
       <div
         className={`px-3 py-2 border-bottom ${
-          activeEval?.isOverbought
+          isObDisplayActive && activeEval?.isOverbought
             ? activeEval.level === 'BEARISH_REVERSAL_EXIT' || activeEval.level === 'OVERBOUGHT_CRITICAL'
               ? 'bg-danger bg-opacity-10 border-danger'
               : 'bg-warning bg-opacity-10 border-warning'
@@ -559,8 +596,13 @@ export default function CandleChart({
               </span>
             )}
             <span className={`badge bg-${activeEval?.badgeColor || 'secondary'} text-white fw-bold shadow-sm`}>
-              {activeEval?.badgeText || 'NORMAL'}
+              {activeEval?.badgeText || 'HEALTHY'}
             </span>
+            {isApproachingOverbought && (
+              <span className="badge bg-warning text-dark fw-bold border border-warning shadow-sm">
+                ⚡ Overbought Guard Auto-Activated
+              </span>
+            )}
           </div>
 
           {/* User Entry Price Input & Live Profit Tracker */}
@@ -706,7 +748,8 @@ export default function CandleChart({
 
             const volY = getVolY(c.volume);
             const volH = volumeTop + volumePlotHeight - volY;
-            const sig = candleSignals[i];
+            const buySig = buySellSignals[i];
+            const obSig = overboughtSignals[i];
 
             return (
               <g key={`candle-${i}`}>
@@ -752,48 +795,47 @@ export default function CandleChart({
                   rx="1.5"
                 />
 
-                {/* Buy / Sell / Overbought Signal Marker Pin directly on Candle */}
-                {sig && (
-                  <g>
-                    {sig.type === 'BUY' && showSignals && (
-                      <g transform={`translate(${x}, ${lowY + 14})`}>
-                        <polygon points="0,-6 -6,4 6,4" fill="#16a34a" />
-                        <rect x="-18" y="5" width="36" height="14" rx="3" fill="#16a34a" />
-                        <text x="0" y="15" fill="#ffffff" fontSize="8" fontWeight="bold" textAnchor="middle">
-                          BUY
-                        </text>
-                      </g>
-                    )}
+                {/* 1. 🟢 BUY Signal Pin (Below Candle at lowY + 14) */}
+                {showSignals && buySig && buySig.type === 'BUY' && (
+                  <g transform={`translate(${x}, ${lowY + 14})`}>
+                    <polygon points="0,-6 -6,4 6,4" fill="#16a34a" />
+                    <rect x="-18" y="5" width="36" height="14" rx="3" fill="#16a34a" />
+                    <text x="0" y="15" fill="#ffffff" fontSize="8" fontWeight="bold" textAnchor="middle">
+                      BUY
+                    </text>
+                  </g>
+                )}
 
-                    {sig.type === 'SELL' && showSignals && (
-                      <g transform={`translate(${x}, ${highY - 14})`}>
-                        <polygon points="0,6 -6,-4 6,-4" fill="#dc2626" />
-                        <rect x="-18" y="-18" width="36" height="14" rx="3" fill="#dc2626" />
-                        <text x="0" y="-8" fill="#ffffff" fontSize="8" fontWeight="bold" textAnchor="middle">
-                          SELL
-                        </text>
-                      </g>
-                    )}
+                {/* 2. 🔴 SELL Signal Pin (Above Candle at highY - 14) */}
+                {showSignals && buySig && buySig.type === 'SELL' && (
+                  <g transform={`translate(${x}, ${highY - 14})`}>
+                    <polygon points="0,6 -6,-4 6,-4" fill="#dc2626" />
+                    <rect x="-18" y="-18" width="36" height="14" rx="3" fill="#dc2626" />
+                    <text x="0" y="-8" fill="#ffffff" fontSize="8" fontWeight="bold" textAnchor="middle">
+                      SELL
+                    </text>
+                  </g>
+                )}
 
-                    {sig.type === 'OVERBOUGHT_EXIT' && showOverboughtGuard && (
-                      <g transform={`translate(${x}, ${highY - 16})`}>
-                        <polygon points="0,6 -6,-4 6,-4" fill="#dc2626" />
-                        <rect x="-24" y="-20" width="48" height="16" rx="4" fill="#dc2626" filter="drop-shadow(0px 2px 4px rgba(220,38,38,0.5))" />
-                        <text x="0" y="-8" fill="#ffffff" fontSize="8.5" fontWeight="900" textAnchor="middle">
-                          🚨 EXIT
-                        </text>
-                      </g>
-                    )}
+                {/* 3. 🚨 OVERBOUGHT SAFE EXIT PIN (Above Candle at highY - 20) */}
+                {isObDisplayActive && obSig && obSig.type === 'OVERBOUGHT_EXIT' && (
+                  <g transform={`translate(${x}, ${highY - 20})`}>
+                    <polygon points="0,6 -6,-4 6,-4" fill="#dc2626" />
+                    <rect x="-24" y="-20" width="48" height="16" rx="4" fill="#dc2626" filter="drop-shadow(0px 2px 4px rgba(220,38,38,0.6))" />
+                    <text x="0" y="-8" fill="#ffffff" fontSize="8.5" fontWeight="900" textAnchor="middle">
+                      🚨 EXIT
+                    </text>
+                  </g>
+                )}
 
-                    {sig.type === 'OVERBOUGHT_WARN' && showOverboughtGuard && (
-                      <g transform={`translate(${x}, ${highY - 16})`}>
-                        <polygon points="0,6 -6,-4 6,-4" fill="#f59e0b" />
-                        <rect x="-20" y="-20" width="40" height="16" rx="4" fill="#f59e0b" />
-                        <text x="0" y="-8" fill="#1e293b" fontSize="8.5" fontWeight="900" textAnchor="middle">
-                          ⚠️ OB
-                        </text>
-                      </g>
-                    )}
+                {/* 4. ⚠️ OVERBOUGHT WARNING PIN (Above Candle at highY - 20) */}
+                {isObDisplayActive && obSig && obSig.type === 'OVERBOUGHT_WARN' && (
+                  <g transform={`translate(${x}, ${highY - 20})`}>
+                    <polygon points="0,6 -6,-4 6,-4" fill="#f59e0b" />
+                    <rect x="-20" y="-20" width="40" height="16" rx="4" fill="#f59e0b" />
+                    <text x="0" y="-8" fill="#1e293b" fontSize="8.5" fontWeight="900" textAnchor="middle">
+                      ⚠️ OB
+                    </text>
                   </g>
                 )}
               </g>
@@ -957,7 +999,14 @@ export default function CandleChart({
             <span className="d-inline-block rounded-1" style={{ width: 10, height: 10, backgroundColor: '#ef4444' }} />
             Bearish 🔴
           </span>
-          {showOverboughtGuard && (
+          {showSignals && (
+            <span className="d-flex align-items-center gap-1">
+              <span className="badge bg-success text-white" style={{ fontSize: 9 }}>🟢 BUY</span>
+              <span className="badge bg-danger text-white" style={{ fontSize: 9 }}>🔴 SELL</span>
+              Signals
+            </span>
+          )}
+          {isObDisplayActive && (
             <span className="d-flex align-items-center gap-1">
               <span className="badge bg-danger text-white" style={{ fontSize: 9 }}>🚨 EXIT</span>
               <span className="badge bg-warning text-dark" style={{ fontSize: 9 }}>⚠️ OB</span>
