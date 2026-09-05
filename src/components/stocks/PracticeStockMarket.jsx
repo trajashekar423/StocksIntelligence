@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import StockDetailModal from './StockDetailModal.jsx';
+import { evaluateOverboughtStatus } from '../../services/risk/overboughtEngine';
 
 const STORAGE_WALLET_KEY = 'practice_stock_market_wallet_v1';
 const STORAGE_POSITIONS_KEY = 'practice_stock_market_positions_v1';
@@ -10,13 +11,13 @@ const STORAGE_HISTORY_KEY = 'practice_stock_market_history_v1';
 const INITIAL_CAPITAL = 100000; // ₹1,00,000 default dummy budget
 
 const QUICK_STOCK_PICKS = [
-  { symbol: 'MEESHO', name: 'Meesho Limited', desc: '8 Cr Share Discount Block Deal' },
-  { symbol: 'GOCLCORP', name: 'GOCL Corporation', desc: '+10% Intraday Breakout' },
-  { symbol: 'IFCI', name: 'IFCI Limited', desc: 'High Volume Intraday Active' },
-  { symbol: 'CLEANMAX', name: 'CleanMax Enviro Energy', desc: '₹199 Cr Session 1 Block' },
-  { symbol: 'KRT', name: 'KRT Limited', desc: '₹31 Cr Session 2 Block Deal' },
+  { symbol: 'SWIGGY', name: 'Swiggy Limited', desc: 'Overbought Reversal & Intraday Short Demo' },
+  { symbol: 'INFY', name: 'Infosys Limited', desc: 'Tech Intraday Active' },
+  { symbol: 'TATASTEEL', name: 'Tata Steel Limited', desc: 'Metal Momentum Setup' },
   { symbol: 'RELIANCE', name: 'Reliance Industries', desc: 'Nifty 50 Blue Chip' },
   { symbol: 'HDFCBANK', name: 'HDFC Bank Limited', desc: 'Banking Major' },
+  { symbol: 'CUPID', name: 'Cupid Limited', desc: 'High Volatility Runner' },
+  { symbol: 'IFCI', name: 'IFCI Limited', desc: 'High Volume Intraday Active' },
 ];
 
 export default function PracticeStockMarket() {
@@ -31,13 +32,14 @@ export default function PracticeStockMarket() {
   const [tradeHistory, setTradeHistory] = useState([]);
 
   // Selected Stock for Practice Analysis & Order Placement
-  const [selectedSymbol, setSelectedSymbol] = useState('MEESHO');
+  const [selectedSymbol, setSelectedSymbol] = useState('SWIGGY');
   const [searchSymbolInput, setSearchSymbolInput] = useState('');
   const [quoteData, setQuoteData] = useState(null);
   const [quoteLoading, setQuoteLoading] = useState(false);
   const [quoteError, setQuoteError] = useState(null);
 
-  // Order Placement Inputs
+  // Order Placement Direction: 'BUY' (Go Long) vs 'SELL' (Short Sell)
+  const [orderSide, setOrderSide] = useState('BUY');
   const [orderQty, setOrderQty] = useState(100);
   const [customSlPct, setCustomSlPct] = useState(1.5); // default 1.5% Stop Loss
   const [customTgtPct, setCustomTgtPct] = useState(2.5); // default 2.5% Target 1
@@ -59,7 +61,6 @@ export default function PracticeStockMarket() {
       const now = ctx.currentTime;
 
       if (type === 'WIN' || type === 'PROFIT') {
-        // High pitch pleasant rising chime (C5 -> E5 -> G5 -> C6)
         [523.25, 659.25, 783.99, 1046.5].forEach((freq, idx) => {
           const osc = ctx.createOscillator();
           const gain = ctx.createGain();
@@ -73,7 +74,6 @@ export default function PracticeStockMarket() {
           osc.stop(now + idx * 0.08 + 0.28);
         });
       } else if (type === 'STOP_LOSS') {
-        // Controlled warning beep (440Hz -> 330Hz)
         [440, 329.63].forEach((freq, idx) => {
           const osc = ctx.createOscillator();
           const gain = ctx.createGain();
@@ -219,99 +219,184 @@ export default function PracticeStockMarket() {
             const data = await res.json();
             const currentPrice = Number(data?.priceInfo?.lastPrice || pos.currentPrice);
             const vwap = Number(data?.priceInfo?.vwap || pos.vwap || currentPrice);
-            const pnl = Number(((currentPrice - pos.entryPrice) * pos.qty).toFixed(2));
-            const pnlPct = Number((((currentPrice - pos.entryPrice) / pos.entryPrice) * 100).toFixed(2));
+            const isShort = pos.side === 'SELL';
+
+            // P&L calculation:
+            // For BUY: (currentPrice - entryPrice) * qty
+            // For SELL (Short): (entryPrice - currentPrice) * qty
+            const pnl = isShort
+              ? Number(((pos.entryPrice - currentPrice) * pos.qty).toFixed(2))
+              : Number(((currentPrice - pos.entryPrice) * pos.qty).toFixed(2));
+            const pnlPct = isShort
+              ? Number((((pos.entryPrice - currentPrice) / pos.entryPrice) * 100).toFixed(2))
+              : Number((((currentPrice - pos.entryPrice) / pos.entryPrice) * 100).toFixed(2));
 
             let highestPrice = Math.max(pos.highestPrice || pos.entryPrice, currentPrice);
+            let lowestPrice = Math.min(pos.lowestPrice || pos.entryPrice, currentPrice);
             let peakPnl = Math.max(pos.peakPnl || 0, pnl);
             let trailingStop = pos.trailingStop || pos.stopLoss;
 
-            // Never-Red Rule 1: Move SL to Cost as soon as gain touches +1.0% (Lock in Breakeven!)
-            const onePctTarget = Number((pos.entryPrice * 1.01).toFixed(2));
-            if ((highestPrice >= onePctTarget || highestPrice >= pos.target1 || pnlPct >= 1.0) && trailingStop < pos.entryPrice) {
-              trailingStop = pos.entryPrice;
-            }
+            // Trailing Stop Logic:
+            if (!isShort) {
+              // ── LONG POSITION TRAILING SL ──
+              if (pnlPct >= 1.0 && trailingStop < pos.entryPrice) {
+                trailingStop = pos.entryPrice; // Move to Cost
+              }
+              if (pnlPct >= 1.8) {
+                const trailTarget = Number((highestPrice * 0.988).toFixed(2));
+                if (trailTarget > trailingStop) trailingStop = trailTarget;
+              }
 
-            // Never-Red Rule 2: Monotonic Trailing SL as price climbs higher (trail 1.2% below peak once gain >= 1.8%)
-            if (pnlPct >= 1.8) {
-              const trailTarget = Number((highestPrice * 0.988).toFixed(2));
-              if (trailTarget > trailingStop) trailingStop = trailTarget;
-            }
+              // AUTO-EXIT: STOP LOSS HIT FOR LONG
+              if (currentPrice <= trailingStop) {
+                playSound('STOP_LOSS');
+                const closedTrade = {
+                  id: pos.id,
+                  symbol: pos.symbol,
+                  companyName: pos.companyName,
+                  side: 'BUY',
+                  qty: pos.qty,
+                  entryPrice: pos.entryPrice,
+                  exitPrice: trailingStop,
+                  pnl: Number(((trailingStop - pos.entryPrice) * pos.qty).toFixed(2)),
+                  pnlPct: Number((((trailingStop - pos.entryPrice) / pos.entryPrice) * 100).toFixed(2)),
+                  exitReason: trailingStop >= pos.entryPrice ? '🛡️ Breakeven SL Protected (Never-Red)' : '🛑 Stop Loss Hit (Capital Defended)',
+                  lesson: trailingStop >= pos.entryPrice
+                    ? 'Excellent execution! You moved Stop Loss to Cost and avoided turning a winning trade into a loss.'
+                    : 'Great discipline! Taking a small controlled loss preserved your trading capital to fight another day.',
+                  entryTime: pos.entryTime,
+                  exitTime: new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata' }),
+                };
 
-            // AUTO-EXIT CHECK: STOP LOSS TRIGGERED
-            if (currentPrice <= trailingStop) {
-              // Simulated Stop Loss Hit
-              playSound('STOP_LOSS');
-              const closedTrade = {
-                id: pos.id,
-                symbol: pos.symbol,
-                companyName: pos.companyName,
-                qty: pos.qty,
-                entryPrice: pos.entryPrice,
-                exitPrice: trailingStop,
-                pnl: Number(((trailingStop - pos.entryPrice) * pos.qty).toFixed(2)),
-                pnlPct: Number((((trailingStop - pos.entryPrice) / pos.entryPrice) * 100).toFixed(2)),
-                exitReason: trailingStop >= pos.entryPrice ? '🛡️ Breakeven SL Protected (Never-Red)' : '🛑 Stop Loss Hit (Capital Defended)',
-                lesson: trailingStop >= pos.entryPrice 
-                  ? 'Excellent execution! You moved Stop Loss to Cost and avoided turning a winning trade into a loss.' 
-                  : 'Great discipline! Taking a small controlled loss preserved your trading capital to fight another day.',
-                entryTime: pos.entryTime,
-                exitTime: new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata' }),
-              };
+                const returnedCash = (pos.qty * pos.entryPrice) + closedTrade.pnl;
+                setWallet((prev) => {
+                  const nextWallet = { ...prev, balance: Number((prev.balance + returnedCash).toFixed(2)) };
+                  localStorage.setItem(STORAGE_WALLET_KEY, JSON.stringify(nextWallet));
+                  return nextWallet;
+                });
+                setTradeHistory((prev) => {
+                  const nextHist = [closedTrade, ...prev];
+                  localStorage.setItem(STORAGE_HISTORY_KEY, JSON.stringify(nextHist));
+                  return nextHist;
+                });
+                setOrderFeedback(`🛑 ${pos.symbol} Long Stop Loss Triggered at ₹${trailingStop.toFixed(2)} (P&L: ₹${closedTrade.pnl})`);
+                setTimeout(() => setOrderFeedback(null), 4000);
+                return null;
+              }
 
-              // Return capital back to wallet
-              const returnedCash = (pos.qty * pos.entryPrice) + closedTrade.pnl;
-              setWallet((prev) => {
-                const nextWallet = { ...prev, balance: Number((prev.balance + returnedCash).toFixed(2)) };
-                localStorage.setItem(STORAGE_WALLET_KEY, JSON.stringify(nextWallet));
-                return nextWallet;
-              });
+              // AUTO-EXIT: TARGET 2 HIT FOR LONG
+              if (pos.target2 && currentPrice >= pos.target2) {
+                playSound('WIN');
+                const closedTrade = {
+                  id: pos.id,
+                  symbol: pos.symbol,
+                  companyName: pos.companyName,
+                  side: 'BUY',
+                  qty: pos.qty,
+                  entryPrice: pos.entryPrice,
+                  exitPrice: pos.target2,
+                  pnl: Number(((pos.target2 - pos.entryPrice) * pos.qty).toFixed(2)),
+                  pnlPct: Number((((pos.target2 - pos.entryPrice) / pos.entryPrice) * 100).toFixed(2)),
+                  exitReason: '🎯 Target 2 (+5.0%) Runner Hit!',
+                  lesson: 'Masterclass trade! You let your runner position capture the full institutional expansion wave.',
+                  entryTime: pos.entryTime,
+                  exitTime: new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata' }),
+                };
 
-              setTradeHistory((prev) => {
-                const nextHist = [closedTrade, ...prev];
-                localStorage.setItem(STORAGE_HISTORY_KEY, JSON.stringify(nextHist));
-                return nextHist;
-              });
+                const returnedCash = (pos.qty * pos.entryPrice) + closedTrade.pnl;
+                setWallet((prev) => {
+                  const nextWallet = { ...prev, balance: Number((prev.balance + returnedCash).toFixed(2)) };
+                  localStorage.setItem(STORAGE_WALLET_KEY, JSON.stringify(nextWallet));
+                  return nextWallet;
+                });
+                setTradeHistory((prev) => {
+                  const nextHist = [closedTrade, ...prev];
+                  localStorage.setItem(STORAGE_HISTORY_KEY, JSON.stringify(nextHist));
+                  return nextHist;
+                });
+                setOrderFeedback(`🎉 ${pos.symbol} Target 2 Hit (+₹${closedTrade.pnl})! Full Profit Banked!`);
+                setTimeout(() => setOrderFeedback(null), 4000);
+                return null;
+              }
+            } else {
+              // ── SHORT POSITION TRAILING SL (Trails Downwards) ──
+              if (pnlPct >= 1.0 && trailingStop > pos.entryPrice) {
+                trailingStop = pos.entryPrice; // Move down to Cost
+              }
+              if (pnlPct >= 1.8) {
+                const trailTarget = Number((lowestPrice * 1.012).toFixed(2));
+                if (trailTarget < trailingStop) trailingStop = trailTarget;
+              }
 
-              setOrderFeedback(`🛑 ${pos.symbol} Stop Loss Triggered at ₹${trailingStop.toFixed(2)} (P&L: ₹${closedTrade.pnl})`);
-              setTimeout(() => setOrderFeedback(null), 4000);
-              return null; // remove from open
-            }
+              // AUTO-EXIT: STOP LOSS HIT FOR SHORT (Price rises above stop)
+              if (currentPrice >= trailingStop) {
+                playSound('STOP_LOSS');
+                const closedTrade = {
+                  id: pos.id,
+                  symbol: pos.symbol,
+                  companyName: pos.companyName,
+                  side: 'SELL',
+                  qty: pos.qty,
+                  entryPrice: pos.entryPrice,
+                  exitPrice: trailingStop,
+                  pnl: Number(((pos.entryPrice - trailingStop) * pos.qty).toFixed(2)),
+                  pnlPct: Number((((pos.entryPrice - trailingStop) / pos.entryPrice) * 100).toFixed(2)),
+                  exitReason: trailingStop <= pos.entryPrice ? '🛡️ Short Breakeven Protected' : '🛑 Short Stop Loss Hit',
+                  lesson: 'Flawless risk management on your short trade. Capital was strictly defended.',
+                  entryTime: pos.entryTime,
+                  exitTime: new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata' }),
+                };
 
-            // AUTO-EXIT CHECK: TARGET 2 HIT (+5.0% RUNNER)
-            if (pos.target2 && currentPrice >= pos.target2) {
-              playSound('WIN');
-              const closedTrade = {
-                id: pos.id,
-                symbol: pos.symbol,
-                companyName: pos.companyName,
-                qty: pos.qty,
-                entryPrice: pos.entryPrice,
-                exitPrice: pos.target2,
-                pnl: Number(((pos.target2 - pos.entryPrice) * pos.qty).toFixed(2)),
-                pnlPct: Number((((pos.target2 - pos.entryPrice) / pos.entryPrice) * 100).toFixed(2)),
-                exitReason: '🎯 Target 2 (+5.0%) Runner Hit!',
-                lesson: 'Masterclass trade! You let your runner position capture the full institutional expansion wave.',
-                entryTime: pos.entryTime,
-                exitTime: new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata' }),
-              };
+                const returnedCash = (pos.qty * pos.entryPrice) + closedTrade.pnl;
+                setWallet((prev) => {
+                  const nextWallet = { ...prev, balance: Number((prev.balance + returnedCash).toFixed(2)) };
+                  localStorage.setItem(STORAGE_WALLET_KEY, JSON.stringify(nextWallet));
+                  return nextWallet;
+                });
+                setTradeHistory((prev) => {
+                  const nextHist = [closedTrade, ...prev];
+                  localStorage.setItem(STORAGE_HISTORY_KEY, JSON.stringify(nextHist));
+                  return nextHist;
+                });
+                setOrderFeedback(`🛑 ${pos.symbol} Short Stop Loss Hit at ₹${trailingStop.toFixed(2)} (P&L: ₹${closedTrade.pnl})`);
+                setTimeout(() => setOrderFeedback(null), 4000);
+                return null;
+              }
 
-              const returnedCash = (pos.qty * pos.entryPrice) + closedTrade.pnl;
-              setWallet((prev) => {
-                const nextWallet = { ...prev, balance: Number((prev.balance + returnedCash).toFixed(2)) };
-                localStorage.setItem(STORAGE_WALLET_KEY, JSON.stringify(nextWallet));
-                return nextWallet;
-              });
+              // AUTO-EXIT: TARGET 2 HIT FOR SHORT (Price drops down to target)
+              if (pos.target2 && currentPrice <= pos.target2) {
+                playSound('WIN');
+                const closedTrade = {
+                  id: pos.id,
+                  symbol: pos.symbol,
+                  companyName: pos.companyName,
+                  side: 'SELL',
+                  qty: pos.qty,
+                  entryPrice: pos.entryPrice,
+                  exitPrice: pos.target2,
+                  pnl: Number(((pos.entryPrice - pos.target2) * pos.qty).toFixed(2)),
+                  pnlPct: Number((((pos.entryPrice - pos.target2) / pos.entryPrice) * 100).toFixed(2)),
+                  exitReason: '🎯 Short Target 2 (-5.0% Dump) Hit!',
+                  lesson: 'Incredible short selling execution! You capitalized on institutional dumping all the way to target.',
+                  entryTime: pos.entryTime,
+                  exitTime: new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata' }),
+                };
 
-              setTradeHistory((prev) => {
-                const nextHist = [closedTrade, ...prev];
-                localStorage.setItem(STORAGE_HISTORY_KEY, JSON.stringify(nextHist));
-                return nextHist;
-              });
-
-              setOrderFeedback(`🎉 ${pos.symbol} Target 2 Hit (+₹${closedTrade.pnl})! Full Profit Banked!`);
-              setTimeout(() => setOrderFeedback(null), 4000);
-              return null;
+                const returnedCash = (pos.qty * pos.entryPrice) + closedTrade.pnl;
+                setWallet((prev) => {
+                  const nextWallet = { ...prev, balance: Number((prev.balance + returnedCash).toFixed(2)) };
+                  localStorage.setItem(STORAGE_WALLET_KEY, JSON.stringify(nextWallet));
+                  return nextWallet;
+                });
+                setTradeHistory((prev) => {
+                  const nextHist = [closedTrade, ...prev];
+                  localStorage.setItem(STORAGE_HISTORY_KEY, JSON.stringify(nextHist));
+                  return nextHist;
+                });
+                setOrderFeedback(`🎉 ${pos.symbol} Short Target Hit (+₹${closedTrade.pnl})! Full Short Profit Banked!`);
+                setTimeout(() => setOrderFeedback(null), 4000);
+                return null;
+              }
             }
 
             return {
@@ -319,6 +404,7 @@ export default function PracticeStockMarket() {
               currentPrice,
               vwap,
               highestPrice,
+              lowestPrice,
               peakPnl,
               trailingStop,
               pnl,
@@ -344,7 +430,7 @@ export default function PracticeStockMarket() {
     };
   }, [openPositions, playSound]);
 
-  // 7. Educational Entry Checklist Logic (When to Enter vs When to Avoid)
+  // 7. Educational Entry & Overbought Checklist Analysis
   const entryAnalysis = useMemo(() => {
     if (!quoteData) return null;
     const price = quoteData.price;
@@ -354,40 +440,75 @@ export default function PracticeStockMarket() {
 
     const isAboveVwap = price >= vwap;
     const isGreen = pChange > 0;
-    const isHoldingLow = price > (low * 1.01);
 
-    let score = 50;
-    if (isAboveVwap) score += 30;
-    else score -= 30;
-
-    if (isGreen) score += 20;
-    else score -= 20;
+    // Overbought status
+    const obEval = evaluateOverboughtStatus({
+      currentPrice: price,
+      vwap: vwap,
+      rsi: isGreen ? 72 : 45,
+    });
 
     let status = 'CAUTION';
     let badgeClass = 'bg-warning text-dark';
     let title = '⚠️ CAUTION — WAIT FOR CONFIRMATION';
-    let guidance = 'Price is fluttering or below VWAP. Wait for a clean 5-minute candle close above VWAP!';
+    let guidance = 'Price is consolidating. Wait for confirmation!';
+    let score = 50;
 
-    if (score >= 80) {
-      status = 'SAFE_ENTRY';
-      badgeClass = 'bg-success text-white';
-      title = '🟢 SAFE ENTRY CONFIRMED (Institutional Floor Active)';
-      guidance = `Price (₹${price.toFixed(2)}) is defending VWAP (₹${vwap.toFixed(2)}) in the green (+${pChange.toFixed(2)}%). Safe to enter with Stop Loss below VWAP!`;
-    } else if (score <= 40 || !isAboveVwap) {
-      status = 'DUMP_TRAP';
-      badgeClass = 'bg-danger text-white';
-      title = '❌ DO NOT BUY — Still Dumping Below VWAP';
-      guidance = `❌ DO NOT BUY — Still dumping below ₹${vwap.toFixed(2)} VWAP. Must cross above ₹${vwap.toFixed(2)} to confirm buyers! Trapped sellers are dumping on rallies.`;
+    if (orderSide === 'BUY') {
+      if (obEval.isOverbought) {
+        status = 'OVERBOUGHT_WARN';
+        badgeClass = 'bg-danger text-white';
+        title = '🚨 OVERBOUGHT WARNING — DO NOT BUY AT PEAK';
+        guidance = `Stock is extended (+${obEval.vwapDeviationPct}% above VWAP). Buying here is a classic bull trap! Look for 🔴 Short Sell or wait for pullback to VWAP.`;
+        score = 25;
+      } else if (isAboveVwap && isGreen) {
+        status = 'SAFE_ENTRY';
+        badgeClass = 'bg-success text-white';
+        title = '🟢 SAFE LONG ENTRY (Above VWAP)';
+        guidance = `Price (₹${price.toFixed(2)}) is defending VWAP (₹${vwap.toFixed(2)}) in green (+${pChange.toFixed(2)}%). Safe to enter with SL below VWAP!`;
+        score = 85;
+      } else {
+        status = 'DUMP_TRAP';
+        badgeClass = 'bg-danger text-white';
+        title = '❌ DO NOT BUY — Still Dumping Below VWAP';
+        guidance = `Price is below VWAP (₹${vwap.toFixed(2)}). Sellers are in control.`;
+        score = 30;
+      }
+    } else {
+      // SHORT SELL (SELL FIRST)
+      if (obEval.isOverbought || !isAboveVwap) {
+        status = 'SAFE_SHORT';
+        badgeClass = 'bg-danger text-white';
+        title = '🔴 SAFE SHORT ENTRY (Sell High, Buy Low)';
+        guidance = obEval.isOverbought
+          ? `⚡ High conviction Short: Stock reached overbought exhaustion (+${obEval.vwapDeviationPct}% above VWAP). Sell at ₹${price.toFixed(2)} to capture dump back to VWAP!`
+          : `⚡ Bearish breakdown below VWAP (₹${vwap.toFixed(2)}). Short momentum active. Sell now and target lower support!`;
+        score = 90;
+      } else {
+        status = 'CAUTION';
+        badgeClass = 'bg-warning text-dark';
+        title = '⚠️ CAUTION — STRONG BULLISH MOMENTUM';
+        guidance = `Stock is rising strongly above VWAP. Do not short into strong buying momentum without exhaustion confirmation!`;
+        score = 40;
+      }
     }
 
-    // Calculated SL and Target
-    const calculatedSl = Number((price * (1 - (customSlPct / 100))).toFixed(2));
-    const calculatedTgt1 = Number((price * (1 + (customTgtPct / 100))).toFixed(2));
-    const calculatedTgt2 = Number((price * 1.05).toFixed(2));
+    // Calculated SL and Target for BUY vs SELL
+    let calculatedSl, calculatedTgt1, calculatedTgt2;
+    if (orderSide === 'BUY') {
+      calculatedSl = Number((price * (1 - customSlPct / 100)).toFixed(2));
+      calculatedTgt1 = Number((price * (1 + customTgtPct / 100)).toFixed(2));
+      calculatedTgt2 = Number((price * 1.05).toFixed(2));
+    } else {
+      // SHORT SELL: SL is ABOVE entry, Targets are BELOW entry
+      calculatedSl = Number((price * (1 + customSlPct / 100)).toFixed(2));
+      calculatedTgt1 = Number((price * (1 - customTgtPct / 100)).toFixed(2));
+      calculatedTgt2 = Number((price * 0.95).toFixed(2));
+    }
 
     const marginRequired = Number((price * orderQty).toFixed(2));
-    const maxRiskRupees = Number(((price - calculatedSl) * orderQty).toFixed(2));
-    const expectedGainRupees = Number(((calculatedTgt1 - price) * orderQty).toFixed(2));
+    const maxRiskRupees = Number((Math.abs(price - calculatedSl) * orderQty).toFixed(2));
+    const expectedGainRupees = Number((Math.abs(calculatedTgt1 - price) * orderQty).toFixed(2));
     const riskRewardRatio = maxRiskRupees > 0 ? (expectedGainRupees / maxRiskRupees).toFixed(1) : '2.0';
 
     return {
@@ -396,9 +517,9 @@ export default function PracticeStockMarket() {
       badgeClass,
       title,
       guidance,
+      obEval,
       isAboveVwap,
       isGreen,
-      isHoldingLow,
       calculatedSl,
       calculatedTgt1,
       calculatedTgt2,
@@ -407,14 +528,16 @@ export default function PracticeStockMarket() {
       expectedGainRupees,
       riskRewardRatio,
     };
-  }, [quoteData, customSlPct, customTgtPct, orderQty]);
+  }, [quoteData, customSlPct, customTgtPct, orderQty, orderSide]);
 
-  // 8. Place Virtual Practice Buy Order
+  // 8. Place Virtual Practice Order (BUY or SHORT SELL)
   const handlePlaceVirtualOrder = () => {
     if (!quoteData || !entryAnalysis) return;
 
     if (entryAnalysis.marginRequired > wallet.balance) {
-      alert(`Insufficient virtual balance! Required: ₹${entryAnalysis.marginRequired.toLocaleString('en-IN')}, Available: ₹${wallet.balance.toLocaleString('en-IN')}. Reduce quantity or reset balance.`);
+      alert(
+        `Insufficient virtual balance! Required: ₹${entryAnalysis.marginRequired.toLocaleString('en-IN')}, Available: ₹${wallet.balance.toLocaleString('en-IN')}. Reduce quantity or reset balance.`
+      );
       return;
     }
 
@@ -422,6 +545,7 @@ export default function PracticeStockMarket() {
       id: `PRACTICE-${Date.now()}-${quoteData.symbol}`,
       symbol: quoteData.symbol,
       companyName: quoteData.companyName,
+      side: orderSide, // 'BUY' or 'SELL'
       qty: orderQty,
       initialQty: orderQty,
       entryPrice: quoteData.price,
@@ -432,6 +556,7 @@ export default function PracticeStockMarket() {
       target1: entryAnalysis.calculatedTgt1,
       target2: entryAnalysis.calculatedTgt2,
       highestPrice: quoteData.price,
+      lowestPrice: quoteData.price,
       peakPnl: 0,
       pnl: 0,
       pnlPct: 0,
@@ -450,21 +575,29 @@ export default function PracticeStockMarket() {
     updatePositions(nextPositions);
 
     playSound('PROFIT');
-    setOrderFeedback(`🎉 Virtual Buy Placed: ${orderQty} shares of ${quoteData.symbol} @ ₹${quoteData.price.toFixed(2)} (SL: ₹${entryAnalysis.calculatedSl}, T1: ₹${entryAnalysis.calculatedTgt1})`);
-    setTimeout(() => setOrderFeedback(null), 4500);
+    setOrderFeedback(
+      orderSide === 'BUY'
+        ? `🟢 Long Position Opened: Bought ${orderQty} ${quoteData.symbol} @ ₹${quoteData.price.toFixed(2)} (SL: ₹${entryAnalysis.calculatedSl}, Tgt: ₹${entryAnalysis.calculatedTgt1})`
+        : `🔴 Short Position Opened: Sold ${orderQty} ${quoteData.symbol} @ ₹${quoteData.price.toFixed(2)} (SL: ₹${entryAnalysis.calculatedSl}, Tgt: ₹${entryAnalysis.calculatedTgt1})`
+    );
+    setTimeout(() => setOrderFeedback(null), 5000);
   };
 
-  // 9. Manual Partial Profit Booking (Take 50% Profit & Move SL to Cost)
-  const handleTakePartialProfit = (posId) => {
+  // 9. Manual Partial Book (50%)
+  const handlePartialBook50Pct = (posId) => {
     const pos = openPositions.find((p) => p.id === posId);
-    if (!pos || pos.halfBooked || pos.qty < 2) return;
+    if (!pos || pos.halfBooked || pos.qty <= 1) return;
 
     const sellQty = Math.floor(pos.qty / 2);
     const remainQty = pos.qty - sellQty;
-    const lockedPnl = Number(((pos.currentPrice - pos.entryPrice) * sellQty).toFixed(2));
-    const lockedPnlPct = Number((((pos.currentPrice - pos.entryPrice) / pos.entryPrice) * 100).toFixed(2));
+    const isShort = pos.side === 'SELL';
 
-    // Release margin + locked profit to wallet
+    const lockedPnl = isShort
+      ? Number(((pos.entryPrice - pos.currentPrice) * sellQty).toFixed(2))
+      : Number(((pos.currentPrice - pos.entryPrice) * sellQty).toFixed(2));
+    const lockedPnlPct = pos.pnlPct;
+
+    // Return margin + locked PnL
     const returnedCash = (sellQty * pos.entryPrice) + lockedPnl;
     const nextWallet = {
       ...wallet,
@@ -472,26 +605,24 @@ export default function PracticeStockMarket() {
     };
     updateWallet(nextWallet);
 
-    // Update remaining position with SL moved to COST (Never-Red rule!)
-    const updatedPositions = openPositions.map((p) => {
+    const updated = openPositions.map((p) => {
       if (p.id === posId) {
         return {
           ...p,
           qty: remainQty,
-          stopLoss: p.entryPrice, // SL to cost!
-          trailingStop: Math.max(p.trailingStop, p.entryPrice),
           halfBooked: true,
+          trailingStop: p.entryPrice, // Move SL to Cost
         };
       }
       return p;
     });
-    updatePositions(updatedPositions);
+    updatePositions(updated);
 
-    // Record partial booking in history
     const partialRecord = {
       id: `${pos.id}-PARTIAL`,
       symbol: pos.symbol,
       companyName: pos.companyName,
+      side: pos.side,
       qty: sellQty,
       entryPrice: pos.entryPrice,
       exitPrice: pos.currentPrice,
@@ -525,6 +656,7 @@ export default function PracticeStockMarket() {
       id: pos.id,
       symbol: pos.symbol,
       companyName: pos.companyName,
+      side: pos.side,
       qty: pos.qty,
       entryPrice: pos.entryPrice,
       exitPrice: pos.currentPrice,
@@ -541,11 +673,11 @@ export default function PracticeStockMarket() {
     updatePositions(remaining);
 
     if (pos.pnl > 0) playSound('WIN');
-    setOrderFeedback(`Closed ${pos.symbol} @ ₹${pos.currentPrice.toFixed(2)} (P&L: ₹${pos.pnl > 0 ? '+' : ''}${pos.pnl})`);
+    setOrderFeedback(`Closed ${pos.symbol} (${pos.side}) @ ₹${pos.currentPrice.toFixed(2)} (P&L: ₹${pos.pnl > 0 ? '+' : ''}${pos.pnl})`);
     setTimeout(() => setOrderFeedback(null), 4000);
   };
 
-  // 10b. Check if market is past 03:15 PM IST (Closing square-off zone)
+  // 10b. Check if market is past 03:15 PM IST
   const isPast315Pm = useMemo(() => {
     try {
       const now = new Date();
@@ -557,13 +689,13 @@ export default function PracticeStockMarket() {
       }).formatToParts(now);
       const hour = Number(parts.find((p) => p.type === 'hour')?.value || 0);
       const min = Number(parts.find((p) => p.type === 'minute')?.value || 0);
-      return (hour * 60 + min) >= (15 * 60 + 15); // >= 3:15 PM (15:15 IST)
+      return (hour * 60 + min) >= (15 * 60 + 15);
     } catch {
       return false;
     }
   }, []);
 
-  // 10c. Close all open profitable positions (3:15 PM Profit Sweep)
+  // 10c. Close all open profitable positions
   const handleCloseAllProfitablePositions = () => {
     const profitable = openPositions.filter((p) => (p.pnl || 0) > 0);
     if (profitable.length === 0) return;
@@ -577,6 +709,7 @@ export default function PracticeStockMarket() {
         id: `${pos.id}-CLOSE-315`,
         symbol: pos.symbol,
         companyName: pos.companyName,
+        side: pos.side,
         qty: pos.qty,
         entryPrice: pos.entryPrice,
         exitPrice: pos.currentPrice,
@@ -598,203 +731,124 @@ export default function PracticeStockMarket() {
 
     const remaining = openPositions.filter((p) => (p.pnl || 0) <= 0);
     updatePositions(remaining);
-
-    playSound('WIN');
-    setOrderFeedback(`💰 Successfully swept & locked profits across all open intraday trades!`);
-    setTimeout(() => setOrderFeedback(null), 5000);
   };
 
-  // Portfolio Aggregates
-  const totalInvestedMargin = openPositions.reduce((acc, p) => acc + (p.qty * p.entryPrice), 0);
-  const totalUnrealizedPnl = openPositions.reduce((acc, p) => acc + (p.pnl || 0), 0);
-  const totalNetWorth = Number((wallet.balance + totalInvestedMargin + totalUnrealizedPnl).toFixed(2));
-  const overallReturnPct = Number((((totalNetWorth - wallet.initialCapital) / wallet.initialCapital) * 100).toFixed(2));
+  // Portfolio Totals
+  const totalInvested = useMemo(() => {
+    return openPositions.reduce((sum, p) => sum + (p.qty * p.entryPrice), 0);
+  }, [openPositions]);
 
-  // Trade History Stats
-  const winTrades = tradeHistory.filter((t) => t.pnl > 0);
-  const winRatePct = tradeHistory.length > 0 ? Number(((winTrades.length / tradeHistory.length) * 100).toFixed(1)) : 0;
-  const totalRealizedPnl = tradeHistory.reduce((acc, t) => acc + t.pnl, 0);
+  const totalCurrentValue = useMemo(() => {
+    return openPositions.reduce((sum, p) => sum + (p.qty * p.entryPrice) + (p.pnl || 0), 0);
+  }, [openPositions]);
+
+  const totalUnrealizedPnl = useMemo(() => {
+    return openPositions.reduce((sum, p) => sum + (p.pnl || 0), 0);
+  }, [openPositions]);
+
+  const totalRealizedPnl = useMemo(() => {
+    return tradeHistory.reduce((sum, h) => sum + (h.pnl || 0), 0);
+  }, [tradeHistory]);
+
+  const winCount = useMemo(() => tradeHistory.filter((h) => h.pnl > 0).length, [tradeHistory]);
+  const lossCount = useMemo(() => tradeHistory.filter((h) => h.pnl < 0).length, [tradeHistory]);
+  const winRate = tradeHistory.length > 0 ? ((winCount / tradeHistory.length) * 100).toFixed(1) : '0.0';
 
   return (
-    <div className="practice-stock-market w-100 mb-5">
-      {/* ── 1. HEADER BANNER ── */}
-      <div
-        className="card border-0 shadow-sm rounded-4 overflow-hidden text-white mb-4 p-3 p-md-4"
-        style={{ background: 'linear-gradient(135deg, #091a13 0%, #113624 50%, #1c5237 100%)' }}
-      >
-        <div className="d-flex flex-column flex-lg-row align-items-start align-items-lg-center justify-content-between gap-3 mb-3">
+    <div className="practice-stock-market-module container-fluid px-0 pb-5">
+      {/* ── 1. HEADER & DUMMY WALLET DASHBOARD ── */}
+      <div className="card border-0 shadow-sm rounded-4 p-4 mb-4 text-white" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)' }}>
+        <div className="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
           <div>
-            <div className="d-flex flex-wrap align-items-center gap-2">
-              <span className="fs-3">🎓</span>
-              <h4 className="mb-0 fw-bold fs-5 fs-md-4">
-                Practice Stock Market • Zero-Risk Real-Time Trading Simulator
-              </h4>
-              <span className="badge bg-warning text-dark fw-bold px-2.5 py-1 small shadow-sm">
-                100% REAL LIVE NSE DATA • DUMMY MONEY
+            <div className="d-flex align-items-center gap-2 mb-1">
+              <span className="badge bg-warning text-dark px-3 py-1.5 fw-bold fs-6">
+                🎓 VIRTUAL INTRADAY SIMULATOR
+              </span>
+              <span className="badge bg-success bg-opacity-25 text-success fw-semibold">
+                BUY & SHORT SELL (2-WAY)
               </span>
             </div>
-            <p className="text-light opacity-80 small mb-0 mt-1">
-              Practice exact institutional entry timing, profit booking (+2.5% Target 1), and loss defense (Never-Red Stop Loss) with zero risk to your real wallet!
+            <h3 className="fw-bold mb-0">Practice Stock Market with Real NSE Feed</h3>
+            <p className="text-light opacity-75 small mb-0 mt-1">
+              Practice Long entries, Short Selling, Overbought safe exits, and Never-Red trailing stop discipline without risking real money.
             </p>
           </div>
 
-          <div className="d-flex flex-wrap align-items-center gap-2 w-100 w-lg-auto">
+          {/* Quick Capital Preset Buttons & Sound Toggle */}
+          <div className="d-flex flex-wrap align-items-center gap-2">
             <button
               type="button"
-              className="btn btn-sm btn-outline-info text-white rounded-pill px-3 py-1.5 fw-bold shadow-sm"
-              onClick={() => setShowLearningGuide(!showLearningGuide)}
-            >
-              {showLearningGuide ? '✕ Hide Rules' : '🧠 Learning Rules'}
-            </button>
-            <button
-              type="button"
-              className={`btn btn-sm ${soundEnabled ? 'btn-outline-warning text-white' : 'btn-outline-secondary text-muted'} rounded-pill px-3 py-1.5 fw-bold shadow-sm`}
+              className={`btn btn-sm ${soundEnabled ? 'btn-outline-warning' : 'btn-outline-secondary'}`}
               onClick={() => setSoundEnabled(!soundEnabled)}
+              title="Toggle Audio Notifications"
             >
-              {soundEnabled ? '🔊 Sound: ON' : '🔇 Sound: OFF'}
+              {soundEnabled ? '🔊 Sound ON' : '🔇 Sound OFF'}
             </button>
-            <button
-              type="button"
-              className="btn btn-sm btn-outline-danger text-light rounded-pill px-3 py-1.5 fw-bold shadow-sm"
-              onClick={handleResetAll}
-            >
-              🔄 Reset Simulator
+            <div className="btn-group btn-group-sm">
+              <button type="button" className="btn btn-outline-light" onClick={() => handleSetCapital(50000)}>
+                ₹50k
+              </button>
+              <button type="button" className="btn btn-outline-light active" onClick={() => handleSetCapital(100000)}>
+                ₹1 Lakh
+              </button>
+              <button type="button" className="btn btn-outline-light" onClick={() => handleSetCapital(500000)}>
+                ₹5 Lakh
+              </button>
+            </div>
+            <button type="button" className="btn btn-sm btn-danger fw-bold" onClick={handleResetAll}>
+              🔄 Reset All
             </button>
           </div>
         </div>
 
-        {/* ── WALLET & STATS CARDS ── */}
-        <div className="row g-2.5 g-md-3 mt-1">
+        {/* 4 Key Stat Cards */}
+        <div className="row g-3 mt-1">
           <div className="col-6 col-md-3">
-            <div className="p-3 rounded-3 border border-light border-opacity-10 h-100" style={{ background: 'rgba(255, 255, 255, 0.06)' }}>
-              <span className="text-light opacity-75 small d-block" style={{ fontSize: 11 }}>AVAILABLE DUMMY CASH</span>
-              <h4 className="fw-bold text-white mb-0 mt-1">₹{wallet.balance.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</h4>
-              <small className="text-light opacity-60" style={{ fontSize: 10.5 }}>Zero Real Money at Risk</small>
+            <div className="p-3 rounded-3 bg-white bg-opacity-10 border border-light border-opacity-10">
+              <span className="text-light opacity-75 small d-block">Available Virtual Cash</span>
+              <h4 className="fw-bold mb-0 mt-1 text-white">₹{wallet.balance.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</h4>
             </div>
           </div>
-
           <div className="col-6 col-md-3">
-            <div className="p-3 rounded-3 border border-light border-opacity-10 h-100" style={{ background: 'rgba(255, 255, 255, 0.06)' }}>
-              <span className="text-light opacity-75 small d-block" style={{ fontSize: 11 }}>INVESTED MARGIN</span>
-              <h4 className="fw-bold text-info mb-0 mt-1">₹{totalInvestedMargin.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</h4>
-              <small className="text-light opacity-60" style={{ fontSize: 10.5 }}>Across {openPositions.length} Active Positions</small>
-            </div>
-          </div>
-
-          <div className="col-6 col-md-3">
-            <div className="p-3 rounded-3 border border-light border-opacity-10 h-100" style={{ background: 'rgba(255, 255, 255, 0.06)' }}>
-              <span className="text-light opacity-75 small d-block" style={{ fontSize: 11 }}>UNREALIZED LIVE P&L</span>
+            <div className="p-3 rounded-3 bg-white bg-opacity-10 border border-light border-opacity-10">
+              <span className="text-light opacity-75 small d-block">Open Positions P&L</span>
               <h4 className={`fw-bold mb-0 mt-1 ${totalUnrealizedPnl >= 0 ? 'text-success' : 'text-danger'}`}>
-                {totalUnrealizedPnl >= 0 ? '+₹' : '-₹'}{Math.abs(totalUnrealizedPnl).toFixed(2)}
+                {totalUnrealizedPnl >= 0 ? '+₹' : '-₹'}{Math.abs(totalUnrealizedPnl).toLocaleString('en-IN', { maximumFractionDigits: 2 })}
               </h4>
-              <small className={totalUnrealizedPnl >= 0 ? 'text-success' : 'text-danger'} style={{ fontSize: 10.5 }}>
-                {totalInvestedMargin > 0 ? ((totalUnrealizedPnl / totalInvestedMargin) * 100).toFixed(2) : '0.00'}% Active Return
-              </small>
             </div>
           </div>
-
           <div className="col-6 col-md-3">
-            <div className="p-3 rounded-3 border border-light border-opacity-10 h-100" style={{ background: 'rgba(255, 255, 255, 0.06)' }}>
-              <span className="text-light opacity-75 small d-block" style={{ fontSize: 11 }}>TOTAL VIRTUAL NET WORTH</span>
-              <h4 className={`fw-bold mb-0 mt-1 ${overallReturnPct >= 0 ? 'text-warning' : 'text-danger'}`}>
-                ₹{totalNetWorth.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+            <div className="p-3 rounded-3 bg-white bg-opacity-10 border border-light border-opacity-10">
+              <span className="text-light opacity-75 small d-block">Total Realized P&L</span>
+              <h4 className={`fw-bold mb-0 mt-1 ${totalRealizedPnl >= 0 ? 'text-success' : 'text-danger'}`}>
+                {totalRealizedPnl >= 0 ? '+₹' : '-₹'}{Math.abs(totalRealizedPnl).toLocaleString('en-IN', { maximumFractionDigits: 2 })}
               </h4>
-              <small className={overallReturnPct >= 0 ? 'text-success' : 'text-danger'} style={{ fontSize: 10.5 }}>
-                {overallReturnPct >= 0 ? '▲ +' : '▼ '}{overallReturnPct}% Overall ROI
-              </small>
             </div>
           </div>
-        </div>
-
-        {/* Budget Preset Quick Switch Strip */}
-        <div className="d-flex flex-wrap align-items-center gap-2 mt-3 pt-3 border-top border-light border-opacity-10 small">
-          <span className="text-light opacity-75">Quick Budget Presets:</span>
-          <button type="button" className="btn btn-xs btn-outline-light rounded-pill px-2.5 py-1" onClick={() => handleSetCapital(25000)}>
-            ₹25,000
-          </button>
-          <button type="button" className="btn btn-xs btn-outline-light rounded-pill px-2.5 py-1" onClick={() => handleSetCapital(50000)}>
-            ₹50,000
-          </button>
-          <button type="button" className="btn btn-xs btn-outline-warning text-warning rounded-pill px-2.5 py-1 fw-bold" onClick={() => handleSetCapital(100000)}>
-            ₹1,00,000 (Recommended)
-          </button>
-          <button type="button" className="btn btn-xs btn-outline-light rounded-pill px-2.5 py-1" onClick={() => handleSetCapital(500000)}>
-            ₹5,00,000
-          </button>
-          <span className="ms-auto text-light opacity-75">
-            Win Rate: <strong className="text-success">{winRatePct}%</strong> ({winTrades.length}/{tradeHistory.length} trades) • Realized P&L: <strong className={totalRealizedPnl >= 0 ? 'text-success' : 'text-danger'}>₹{totalRealizedPnl.toFixed(2)}</strong>
-          </span>
+          <div className="col-6 col-md-3">
+            <div className="p-3 rounded-3 bg-white bg-opacity-10 border border-light border-opacity-10">
+              <span className="text-light opacity-75 small d-block">Practice Win Rate</span>
+              <h4 className="fw-bold mb-0 mt-1 text-warning">
+                {winRate}% ({winCount}W / {lossCount}L)
+              </h4>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* ── 2. THE 3 GOLDEN LEARNING CARDS (Collapsible) ── */}
-      {showLearningGuide && (
-        <div className="card border-0 shadow-sm rounded-4 p-3 mb-4" style={{ background: '#0b1622', border: '1px solid #1a324b' }}>
-          <div className="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom border-secondary border-opacity-30">
-            <span className="fs-4">🛡️</span>
-            <h5 className="text-warning fw-bold mb-0 fs-6">
-              The 3 Golden Rules: When to Enter, How to Get Profits, How to Save From Loss
-            </h5>
-          </div>
-
-          <div className="row g-3 small">
-            {/* Card 1: When to Enter */}
-            <div className="col-12 col-md-4">
-              <div className="p-3 rounded-3 h-100 border border-success border-opacity-50" style={{ background: '#092015' }}>
-                <strong className="text-success d-block fs-6 mb-2">🟢 1. When to Enter (Safe Timing):</strong>
-                <ul className="text-white ps-3 mb-0" style={{ lineHeight: '1.6' }}>
-                  <li><strong>Above VWAP Only</strong>: Never buy when price is below VWAP. VWAP is the institutional cost line.</li>
-                  <li><strong>Wait for 5-Min Candle Close</strong>: A 10-second spike above VWAP is often a trap (like Meesho at 12:45 PM). Wait for the candle to CLOSE above VWAP!</li>
-                  <li><strong>Avoid 09:15–09:45 AM</strong>: Let the morning dump settle. Best entries happen between 10:15 AM and 11:30 AM!</li>
-                </ul>
-              </div>
-            </div>
-
-            {/* Card 2: How to Get Profits */}
-            <div className="col-12 col-md-4">
-              <div className="p-3 rounded-3 h-100 border border-warning border-opacity-50" style={{ background: '#251b0a' }}>
-                <strong className="text-warning d-block fs-6 mb-2">🎯 2. How to Get Profits (Never Give Back):</strong>
-                <ul className="text-white ps-3 mb-0" style={{ lineHeight: '1.6' }}>
-                  <li><strong>Target 1 (+2.0% to +2.5%)</strong>: Intraday moves rarely go straight to 10%. Book 50% cash at Target 1!</li>
-                  <li><strong>Lock Profit Habit</strong>: When you take 50% off the table, you mathematically eliminate the fear of giving back gains.</li>
-                  <li><strong>Trail the Remaining 50%</strong>: Let the second half run towards Target 2 (+5.0%) with zero stress!</li>
-                </ul>
-              </div>
-            </div>
-
-            {/* Card 3: How to Save From Loss */}
-            <div className="col-12 col-md-4">
-              <div className="p-3 rounded-3 h-100 border border-info border-opacity-50" style={{ background: '#0b1d2e' }}>
-                <strong className="text-info d-block fs-6 mb-2">🛑 3. How to Save From Loss (The Shield):</strong>
-                <ul className="text-white ps-3 mb-0" style={{ lineHeight: '1.6' }}>
-                  <li><strong>Hard Stop Loss (-1.5%)</strong>: Set SL the moment you enter. Never risk more than 1.5% to 2% of position.</li>
-                  <li><strong>Never-Red Rule (Breakeven)</strong>: The moment your trade is up +1.5%, slide Stop Loss to your Entry Buy Price. You can NEVER lose money!</li>
-                  <li><strong>Never Average Down</strong>: If a stock dumps, do not buy more shares. Cut it cleanly and move to the next setup.</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── TOAST NOTIFICATION ── */}
+      {/* ── 2. REAL-TIME NOTIFICATION BANNER ── */}
       {orderFeedback && (
-        <div className="alert alert-success border-0 shadow-sm rounded-3 py-2 px-3 mb-3 d-flex align-items-center justify-content-between">
-          <span className="fw-bold">{orderFeedback}</span>
-          <button type="button" className="btn-close btn-sm" onClick={() => setOrderFeedback(null)} />
+        <div className="alert alert-info border-2 border-info shadow-sm rounded-4 p-3 mb-4 fw-bold animate-pulse text-dark">
+          {orderFeedback}
         </div>
       )}
 
-      {/* ── 3. INTERACTIVE STOCK PICKER & LIVE ENTRY ANALYZER ── */}
-      <div className="card border-0 shadow-sm rounded-4 p-3 p-md-4 mb-4" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
-        <div className="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3 mb-3">
+      {/* ── 3. STOCK SEARCH & 2-WAY ORDER ENTRY TERMINAL ── */}
+      <div className="card border-0 shadow-sm rounded-4 p-3 p-md-4 mb-4 bg-light">
+        <div className="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
           <div>
-            <h5 className="fw-bold mb-1 text-dark">
-              🔍 Live Stock Practice Analyzer & Order Sizing
-            </h5>
-            <p className="text-muted small mb-0">
-              Select any live NSE stock to inspect its real-time VWAP defense, safe entry score, and calculated profit targets.
-            </p>
+            <h5 className="fw-bold mb-0 text-dark">🎯 Virtual Order Placement Terminal</h5>
+            <small className="text-muted">Select 🟢 BUY (Go Long) or 🔴 SHORT SELL (Profit on Fall) to practice 2-way intraday setups.</small>
           </div>
 
           {/* Search Any NSE Symbol */}
@@ -813,7 +867,7 @@ export default function PracticeStockMarket() {
             <input
               type="text"
               className="form-control form-control-sm rounded-pill px-3 shadow-sm"
-              placeholder="Search any NSE symbol (e.g. INFY)..."
+              placeholder="Search any NSE symbol (e.g. SWIGGY)..."
               value={searchSymbolInput}
               onChange={(e) => setSearchSymbolInput(e.target.value)}
               style={{ maxWidth: 260 }}
@@ -826,7 +880,7 @@ export default function PracticeStockMarket() {
 
         {/* Quick Stock Chips */}
         <div className="d-flex flex-wrap gap-2 mb-3">
-          <span className="text-muted small align-self-center">Today's Hot Picks:</span>
+          <span className="text-muted small align-self-center">Practice Picks:</span>
           {QUICK_STOCK_PICKS.map((stock) => (
             <button
               key={stock.symbol}
@@ -875,11 +929,11 @@ export default function PracticeStockMarket() {
 
               {/* Traffic Light Entry Guidance Card */}
               <div className="col-12 col-md-7">
-                <div className={`p-3 rounded-3 ${entryAnalysis.status === 'SAFE_ENTRY' ? 'border border-success bg-success bg-opacity-10' : entryAnalysis.status === 'DUMP_TRAP' ? 'border border-danger bg-danger bg-opacity-10' : 'border border-warning bg-warning bg-opacity-10'}`}>
+                <div className={`p-3 rounded-3 ${entryAnalysis.status === 'SAFE_ENTRY' ? 'border border-success bg-success bg-opacity-10' : entryAnalysis.status === 'SAFE_SHORT' || entryAnalysis.status === 'DUMP_TRAP' || entryAnalysis.status === 'OVERBOUGHT_WARN' ? 'border border-danger bg-danger bg-opacity-10' : 'border border-warning bg-warning bg-opacity-10'}`}>
                   <div className="d-flex align-items-center justify-content-between mb-1">
                     <strong className="fs-6 d-flex align-items-center gap-2">
                       <span className={`badge ${entryAnalysis.badgeClass} rounded-pill px-2.5 py-1`}>
-                        {entryAnalysis.status === 'SAFE_ENTRY' ? '🟢 SAFE ENTRY' : entryAnalysis.status === 'DUMP_TRAP' ? '🔴 DUMP TRAP' : '🟡 WATCHING'}
+                        {entryAnalysis.status === 'SAFE_ENTRY' ? '🟢 SAFE LONG' : entryAnalysis.status === 'SAFE_SHORT' ? '🔴 SAFE SHORT' : entryAnalysis.status === 'OVERBOUGHT_WARN' ? '🚨 OVERBOUGHT' : '🟡 WATCHING'}
                       </span>
                       <span>{entryAnalysis.title}</span>
                     </strong>
@@ -895,10 +949,31 @@ export default function PracticeStockMarket() {
             {/* Sizing & Order Placement Bar */}
             <hr className="my-3 text-muted opacity-25" />
             <div className="row g-3 align-items-center">
-              <div className="col-12 col-lg-7">
+              {/* Order Direction Switcher (BUY vs SHORT SELL) */}
+              <div className="col-12 col-lg-3">
+                <label className="form-label small text-muted mb-1 d-block fw-semibold">Order Direction</label>
+                <div className="btn-group w-100 shadow-sm" role="group">
+                  <button
+                    type="button"
+                    className={`btn btn-sm fw-bold ${orderSide === 'BUY' ? 'btn-success text-white' : 'btn-outline-success'}`}
+                    onClick={() => setOrderSide('BUY')}
+                  >
+                    🟢 BUY (Long)
+                  </button>
+                  <button
+                    type="button"
+                    className={`btn btn-sm fw-bold ${orderSide === 'SELL' ? 'btn-danger text-white' : 'btn-outline-danger'}`}
+                    onClick={() => setOrderSide('SELL')}
+                  >
+                    🔴 SHORT (Sell)
+                  </button>
+                </div>
+              </div>
+
+              <div className="col-12 col-lg-5">
                 <div className="row g-2">
                   <div className="col-4">
-                    <label className="form-label small text-muted mb-1">Virtual Quantity</label>
+                    <label className="form-label small text-muted mb-1">Virtual Qty</label>
                     <input
                       type="number"
                       className="form-control form-control-sm fw-bold text-center"
@@ -908,50 +983,24 @@ export default function PracticeStockMarket() {
                     />
                   </div>
                   <div className="col-4">
-                    <label className="form-label small text-muted mb-1">Stop Loss (-{customSlPct}%)</label>
+                    <label className="form-label small text-muted mb-1">Stop Loss</label>
                     <div className="form-control form-control-sm bg-light text-danger fw-bold text-center">
                       ₹{entryAnalysis.calculatedSl}
                     </div>
                   </div>
                   <div className="col-4">
-                    <label className="form-label small text-muted mb-1">Target 1 (+{customTgtPct}%)</label>
+                    <label className="form-label small text-muted mb-1">Target 1</label>
                     <div className="form-control form-control-sm bg-light text-success fw-bold text-center">
                       ₹{entryAnalysis.calculatedTgt1}
                     </div>
                   </div>
                 </div>
-
-                {/* Sizing helpers */}
-                <div className="d-flex gap-2 mt-2">
-                  <span className="text-muted small">Quick Sizing:</span>
-                  <button
-                    type="button"
-                    className="btn btn-xs btn-outline-secondary rounded-pill px-2"
-                    onClick={() => setOrderQty(Math.max(1, Math.floor(10000 / quoteData.price)))}
-                  >
-                    ₹10,000 (10% Budget)
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-xs btn-outline-secondary rounded-pill px-2"
-                    onClick={() => setOrderQty(Math.max(1, Math.floor(25000 / quoteData.price)))}
-                  >
-                    ₹25,000 (25% Budget)
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-xs btn-outline-secondary rounded-pill px-2"
-                    onClick={() => setOrderQty(Math.max(1, Math.floor(50000 / quoteData.price)))}
-                  >
-                    ₹50,000 (50% Budget)
-                  </button>
-                </div>
               </div>
 
               {/* Order Execution Actions */}
-              <div className="col-12 col-lg-5 text-lg-end">
+              <div className="col-12 col-lg-4 text-lg-end">
                 <div className="small text-muted mb-2">
-                  Margin: <strong>₹{entryAnalysis.marginRequired.toLocaleString('en-IN')}</strong> • Max Risk: <strong className="text-danger">-₹{entryAnalysis.maxRiskRupees}</strong> • Reward: <strong className="text-success">+₹{entryAnalysis.expectedGainRupees}</strong> (R:R {entryAnalysis.riskRewardRatio})
+                  Margin: <strong>₹{entryAnalysis.marginRequired.toLocaleString('en-IN')}</strong> • Max Risk: <strong className="text-danger">-₹{entryAnalysis.maxRiskRupees}</strong> • Reward: <strong className="text-success">+₹{entryAnalysis.expectedGainRupees}</strong>
                 </div>
                 <div className="d-flex justify-content-lg-end gap-2">
                   <button
@@ -963,10 +1012,10 @@ export default function PracticeStockMarket() {
                   </button>
                   <button
                     type="button"
-                    className="btn btn-success btn-sm rounded-pill px-4 fw-bold shadow-sm"
+                    className={`btn btn-sm rounded-pill px-4 fw-bold shadow-sm ${orderSide === 'BUY' ? 'btn-success text-white' : 'btn-danger text-white'}`}
                     onClick={handlePlaceVirtualOrder}
                   >
-                    🟢 Buy {orderQty} Shares (Virtual)
+                    {orderSide === 'BUY' ? `🟢 Buy ${orderQty} Shares` : `🔴 Short Sell ${orderQty} Shares`}
                   </button>
                 </div>
               </div>
@@ -983,7 +1032,7 @@ export default function PracticeStockMarket() {
               💼 Active Practice Positions ({openPositions.length})
             </h5>
             <small className="text-muted">
-              Auto-syncing tick-by-tick from live NSE exchange feed • Never-Red Trailing SL & Targets active
+              Auto-syncing tick-by-tick from live NSE feed • Overbought safe exit alerts & Never-Red trailing stops active
             </small>
           </div>
           <span className="badge bg-success bg-opacity-15 text-success fw-bold px-3 py-1.5 rounded-pill">
@@ -1016,236 +1065,143 @@ export default function PracticeStockMarket() {
           </div>
         )}
 
-        {/* 🎯 Intraday Profit Expectation Ladder Guide */}
-        {openPositions.length > 0 && (
-          <div className="card border-0 rounded-3 p-3 mb-3" style={{ background: '#f1f5f9', border: '1px solid #cbd5e1' }}>
-            <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
-              <span className="fw-bold text-dark small">
-                🎯 Institutional Intraday Profit Expectation Rules (Never Turn a Green Trade Red):
-              </span>
-              <span className="badge bg-primary px-2.5 py-1">REALISTIC EXPECTATIONS</span>
-            </div>
-            <div className="row g-2 text-center small">
-              <div className="col-12 col-md-3">
-                <div className="p-2 rounded bg-white border border-success border-opacity-50">
-                  <strong className="text-success d-block">🥉 Level 1 (+1.0% Gain)</strong>
-                  <span className="text-muted" style={{ fontSize: 11 }}>Good Profit: <strong>Click [ 🎯 Book 50% ]</strong></span>
-                  <div className="text-success fw-semibold" style={{ fontSize: 10 }}>Locks cash & moves SL to Cost!</div>
-                </div>
-              </div>
-              <div className="col-12 col-md-3">
-                <div className="p-2 rounded bg-white border border-warning border-opacity-50">
-                  <strong className="text-warning-emphasis d-block">🥈 Level 2 (+1.8% Gain)</strong>
-                  <span className="text-muted" style={{ fontSize: 11 }}>Great Profit: <strong>Book remaining 50%</strong></span>
-                  <div className="text-secondary fw-semibold" style={{ fontSize: 10 }}>Bank full profits cleanly.</div>
-                </div>
-              </div>
-              <div className="col-12 col-md-3">
-                <div className="p-2 rounded bg-white border border-danger border-opacity-50">
-                  <strong className="text-danger d-block">🛡️ 25% Giveback Rule</strong>
-                  <span className="text-muted" style={{ fontSize: 11 }}>If peak profit drops 25%:</span>
-                  <div className="text-danger fw-semibold" style={{ fontSize: 10 }}>Exit immediately! Never let gains die.</div>
-                </div>
-              </div>
-              <div className="col-12 col-md-3">
-                <div className="p-2 rounded bg-white border border-info border-opacity-50">
-                  <strong className="text-info d-block">⏰ 03:15 PM Hard Stop</strong>
-                  <span className="text-muted" style={{ fontSize: 11 }}>Intraday closes at 3:15 PM:</span>
-                  <div className="text-info fw-semibold" style={{ fontSize: 10 }}>Take whatever profit is on screen!</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
+        {/* Positions List */}
         {openPositions.length === 0 ? (
-          <div className="text-center py-5 bg-light rounded-3">
-            <span className="fs-1 d-block mb-2">🎯</span>
-            <strong className="text-dark d-block">No Active Practice Trades</strong>
-            <small className="text-muted d-block mt-1">
-              Select a stock above (like MEESHO, GOCLCORP, or IFCI) and click <strong>"Buy (Virtual)"</strong> to start practicing!
-            </small>
+          <div className="text-center py-5 text-muted bg-light rounded-4 border border-dashed">
+            <span className="fs-1 d-block mb-2">🎓</span>
+            <h6 className="fw-bold text-dark">No Active Practice Positions</h6>
+            <p className="small mb-3">
+              Search any NSE stock above and place a virtual <strong>🟢 BUY (Long)</strong> or <strong>🔴 SHORT (Sell)</strong> order to practice!
+            </p>
           </div>
         ) : (
-          <div className="table-responsive">
-            <table className="table table-hover align-middle mb-0">
-              <thead className="table-light small">
-                <tr>
-                  <th>Stock Symbol</th>
-                  <th>Qty</th>
-                  <th>Buy Price</th>
-                  <th>Live NSE Price</th>
-                  <th>Unrealized P&L</th>
-                  <th>Trailing Stop</th>
-                  <th>Target 1 (+2.5%)</th>
-                  <th>Capital Defense Status</th>
-                  <th className="text-end">Practice Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {openPositions.map((pos) => {
-                  const isGreen = (pos.pnl || 0) >= 0;
-                  const isHoldingVwap = (pos.currentPrice || 0) >= (pos.vwap || 0);
+          <div className="row g-3">
+            {openPositions.map((pos) => {
+              const isProfit = (pos.pnl || 0) >= 0;
+              const isShort = pos.side === 'SELL';
+              const canBook50 = !pos.halfBooked && pos.qty > 1 && (pos.pnlPct || 0) >= 1.0;
 
-                  return (
-                    <tr key={pos.id}>
-                      <td>
-                        <strong className="text-dark d-block">{pos.symbol}</strong>
-                        <small className="text-muted" style={{ fontSize: 11 }}>{pos.entryTime}</small>
-                      </td>
-                      <td>
-                        <span className="badge bg-secondary fw-bold">{pos.qty} shares</span>
-                        {pos.halfBooked && (
-                          <span className="badge bg-warning text-dark d-block mt-0.5" style={{ fontSize: 9 }}>
-                            50% Booked
-                          </span>
-                        )}
-                      </td>
-                      <td>₹{Number(pos.entryPrice).toFixed(2)}</td>
-                      <td>
-                        <strong className="text-dark">₹{Number(pos.currentPrice).toFixed(2)}</strong>
-                      </td>
-                      <td>
-                        <span className={`badge ${isGreen ? 'bg-success' : 'bg-danger'} fw-bold px-2.5 py-1 fs-6`}>
-                          {isGreen ? '+₹' : '-₹'}{Math.abs(pos.pnl).toFixed(2)} ({pos.pnlPct}%)
+              return (
+                <div className="col-12 col-lg-6" key={pos.id}>
+                  <div className={`card border-2 shadow-sm rounded-4 p-3 h-100 ${isProfit ? 'border-success' : 'border-danger'}`}>
+                    <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                      <div className="d-flex align-items-center gap-2">
+                        <span className={`badge ${isShort ? 'bg-danger text-white' : 'bg-success text-white'} fw-bold`}>
+                          {isShort ? '🔴 SHORT (SELL)' : '🟢 LONG (BUY)'}
                         </span>
-                        {pos.peakPnl >= 300 && pos.pnl > 0 && pos.pnl <= pos.peakPnl * 0.75 && (
-                          <span className="badge bg-danger text-white d-block mt-1 py-1" style={{ fontSize: 9.5 }}>
-                            ⚠️ Gave back 25%+ (Peak: +₹{pos.peakPnl.toFixed(0)}) • Exit Now!
-                          </span>
-                        )}
-                        {pos.peakPnl >= 300 && pos.pnl > pos.peakPnl * 0.75 && (
-                          <span className="text-muted d-block mt-0.5" style={{ fontSize: 9.5 }}>
-                            Peak: +₹{pos.peakPnl.toFixed(0)}
-                          </span>
-                        )}
-                      </td>
-                      <td>
-                        <span className="text-danger fw-bold">₹{Number(pos.trailingStop).toFixed(2)}</span>
-                        {pos.trailingStop >= pos.entryPrice && (
-                          <span className="badge bg-success bg-opacity-20 text-success d-block small" style={{ fontSize: 9.5 }}>
-                            ✓ Cost Protected
-                          </span>
-                        )}
-                      </td>
-                      <td>
-                        <span className="text-success fw-bold">₹{Number(pos.target1).toFixed(2)}</span>
-                      </td>
-                      <td>
-                        {isHoldingVwap ? (
-                          <span className="badge bg-success bg-opacity-10 text-success small">
-                            ✓ Above VWAP
-                          </span>
-                        ) : (
-                          <span className="badge bg-warning text-dark small">
-                            ⚠️ Below VWAP
-                          </span>
-                        )}
-                      </td>
-                      <td className="text-end">
-                        <div className="d-flex align-items-center justify-content-end gap-1.5">
-                          {/* 50% Profit Button */}
-                          {!pos.halfBooked && pos.qty >= 2 && (
-                            <button
-                              type="button"
-                              className="btn btn-xs btn-outline-success fw-bold rounded-pill px-2.5 py-1"
-                              onClick={() => handleTakePartialProfit(pos.id)}
-                              title="Book 50% Profit & Slide Stop Loss to Entry Cost!"
-                            >
-                              🎯 Book 50%
-                            </button>
-                          )}
-                          {/* Close Position */}
-                          <button
-                            type="button"
-                            className="btn btn-xs btn-outline-danger fw-bold rounded-pill px-2.5 py-1"
-                            onClick={() => handleManualClosePosition(pos.id)}
-                          >
-                            🛑 Exit
-                          </button>
-                          {/* View Chart */}
-                          <button
-                            type="button"
-                            className="btn btn-xs btn-outline-secondary rounded-pill px-2 py-1"
-                            onClick={() => setChartModalStock(pos)}
-                          >
-                            📈
-                          </button>
+                        <h5 className="fw-bold mb-0 text-dark">{pos.symbol}</h5>
+                        <span className="badge bg-light text-dark border small">{pos.qty} Shares</span>
+                      </div>
+                      <div className="text-end">
+                        <h5 className={`fw-bold mb-0 ${isProfit ? 'text-success' : 'text-danger'}`}>
+                          {isProfit ? '+₹' : '-₹'}{Math.abs(pos.pnl || 0).toFixed(2)} ({isProfit ? '+' : ''}{pos.pnlPct}%)
+                        </h5>
+                      </div>
+                    </div>
+
+                    {/* Price and Levels Details */}
+                    <div className="row g-2 small mb-3">
+                      <div className="col-6 col-md-3">
+                        <div className="p-2 rounded bg-light border">
+                          <span className="text-muted d-block" style={{ fontSize: 11 }}>Entry Price:</span>
+                          <strong className="text-dark">₹{pos.entryPrice.toFixed(2)}</strong>
                         </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                      </div>
+                      <div className="col-6 col-md-3">
+                        <div className="p-2 rounded bg-light border">
+                          <span className="text-muted d-block" style={{ fontSize: 11 }}>Current Price:</span>
+                          <strong className="text-dark">₹{pos.currentPrice.toFixed(2)}</strong>
+                        </div>
+                      </div>
+                      <div className="col-6 col-md-3">
+                        <div className="p-2 rounded bg-light border">
+                          <span className="text-muted d-block" style={{ fontSize: 11 }}>Trailing SL:</span>
+                          <strong className="text-danger">₹{pos.trailingStop?.toFixed(2) || pos.stopLoss?.toFixed(2)}</strong>
+                        </div>
+                      </div>
+                      <div className="col-6 col-md-3">
+                        <div className="p-2 rounded bg-light border">
+                          <span className="text-muted d-block" style={{ fontSize: 11 }}>Target 1:</span>
+                          <strong className="text-success">₹{pos.target1?.toFixed(2)}</strong>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Position Actions */}
+                    <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-auto pt-2 border-top">
+                      <button
+                        type="button"
+                        className="btn btn-outline-secondary btn-xs rounded-pill px-3 fw-semibold"
+                        onClick={() => setChartModalStock({ symbol: pos.symbol, companyName: pos.companyName, price: pos.currentPrice, vwap: pos.vwap })}
+                      >
+                        📈 Chart
+                      </button>
+
+                      <div className="d-flex align-items-center gap-2">
+                        {canBook50 && (
+                          <button
+                            type="button"
+                            className="btn btn-warning btn-xs rounded-pill px-3 fw-bold text-dark shadow-sm"
+                            onClick={() => handlePartialBook50Pct(pos.id)}
+                          >
+                            🎯 Book 50% Profit
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          className="btn btn-danger btn-xs rounded-pill px-3 fw-bold shadow-sm"
+                          onClick={() => handleManualClosePosition(pos.id)}
+                        >
+                          ⚡ {isShort ? 'Cover Short & Close' : 'Exit & Close Position'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
 
-      {/* ── 5. COMPLETED LEARNING TRADES & PRACTICE LOG ── */}
-      <div className="card border-0 shadow-sm rounded-4 p-3 p-md-4">
-        <div className="d-flex align-items-center justify-content-between mb-3">
-          <div>
-            <h5 className="fw-bold mb-0 text-dark">
-              📜 Practice Journal & Lessons Learned ({tradeHistory.length})
-            </h5>
-            <small className="text-muted">
-              Review every trade outcome to learn institutional discipline and build winning trading habits.
-            </small>
-          </div>
-          {tradeHistory.length > 0 && (
-            <button
-              type="button"
-              className="btn btn-xs btn-outline-secondary rounded-pill px-3 py-1"
-              onClick={() => {
-                if (window.confirm('Clear trade history?')) updateHistory([]);
-              }}
-            >
-              Clear Log
-            </button>
-          )}
-        </div>
-
-        {tradeHistory.length === 0 ? (
-          <div className="text-center py-4 bg-light rounded-3 text-muted small">
-            No completed practice trades yet. When you book profits or hit stop losses, each trade will be logged here with its educational lesson!
-          </div>
-        ) : (
+      {/* ── 5. CLOSED PRACTICE TRADE HISTORY ── */}
+      {tradeHistory.length > 0 && (
+        <div className="card border-0 shadow-sm rounded-4 p-3 p-md-4">
+          <h5 className="fw-bold mb-3 text-dark">📋 Closed Practice Trade History ({tradeHistory.length})</h5>
           <div className="table-responsive">
-            <table className="table table-hover align-middle mb-0 small">
+            <table className="table table-hover align-middle small mb-0">
               <thead className="table-light">
                 <tr>
-                  <th>Stock</th>
-                  <th>Quantity</th>
-                  <th>Buy ➔ Exit</th>
-                  <th>Realized P&L</th>
-                  <th>Exit Reason</th>
-                  <th>Educational Lesson</th>
-                  <th>Exit Time</th>
+                  <th>Symbol</th>
+                  <th>Side</th>
+                  <th>Qty</th>
+                  <th>Entry</th>
+                  <th>Exit</th>
+                  <th>P&L (₹)</th>
+                  <th>Exit Reason & Lesson</th>
+                  <th>Time</th>
                 </tr>
               </thead>
               <tbody>
                 {tradeHistory.map((trade, idx) => {
-                  const isWin = trade.pnl > 0;
+                  const isGain = (trade.pnl || 0) >= 0;
                   return (
                     <tr key={`${trade.id}-${idx}`}>
+                      <td className="fw-bold">{trade.symbol}</td>
                       <td>
-                        <strong className="text-dark">{trade.symbol}</strong>
-                      </td>
-                      <td>{trade.qty}</td>
-                      <td>
-                        ₹{Number(trade.entryPrice).toFixed(2)} ➔ <strong>₹{Number(trade.exitPrice).toFixed(2)}</strong>
-                      </td>
-                      <td>
-                        <span className={`badge ${isWin ? 'bg-success' : 'bg-danger'} fw-bold px-2 py-1`}>
-                          {isWin ? '+₹' : '-₹'}{Math.abs(trade.pnl).toFixed(2)} ({trade.pnlPct}%)
+                        <span className={`badge ${trade.side === 'SELL' ? 'bg-danger' : 'bg-success'}`}>
+                          {trade.side || 'BUY'}
                         </span>
                       </td>
-                      <td>
-                        <span className="fw-semibold text-dark">{trade.exitReason}</span>
+                      <td>{trade.qty}</td>
+                      <td>₹{trade.entryPrice?.toFixed(2)}</td>
+                      <td>₹{trade.exitPrice?.toFixed(2)}</td>
+                      <td className={`fw-bold ${isGain ? 'text-success' : 'text-danger'}`}>
+                        {isGain ? '+₹' : '-₹'}{Math.abs(trade.pnl || 0).toFixed(2)} ({isGain ? '+' : ''}{trade.pnlPct}%)
                       </td>
-                      <td style={{ maxWidth: 320 }}>
-                        <span className="text-muted">{trade.lesson}</span>
+                      <td>
+                        <div className="fw-bold text-dark">{trade.exitReason}</div>
+                        <small className="text-muted">{trade.lesson}</small>
                       </td>
                       <td className="text-muted">{trade.exitTime}</td>
                     </tr>
@@ -1254,25 +1210,16 @@ export default function PracticeStockMarket() {
               </tbody>
             </table>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
-      {/* ── 6. CANDLESTICK CHART MODAL ── */}
+      {/* Interactive Candlestick Modal */}
       {chartModalStock && (
         <StockDetailModal
-          stock={{
-            symbol: chartModalStock.symbol,
-            companyName: chartModalStock.companyName,
-            price: chartModalStock.price || chartModalStock.currentPrice,
-            ltp: chartModalStock.price || chartModalStock.currentPrice,
-            vwap: chartModalStock.vwap,
-            changePercent: chartModalStock.pChange || chartModalStock.pnlPct,
-            previousClose: chartModalStock.previousClose || chartModalStock.entryPrice,
-          }}
+          stock={chartModalStock}
           onClose={() => setChartModalStock(null)}
         />
       )}
     </div>
   );
 }
-
