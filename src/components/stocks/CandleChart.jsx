@@ -2,6 +2,11 @@
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { detectAllCandlePatterns } from '../../services/candlestickPatterns';
+import {
+  calcRSIseries,
+  evaluateOverboughtStatus,
+  calculateDynamicExitStopLoss,
+} from '../../services/risk/overboughtEngine';
 
 export default function CandleChart({
   candles = [],
@@ -11,12 +16,15 @@ export default function CandleChart({
   currentPrice = null,
   height = 440,
   onCandleSelect = null,
+  initialEntryPrice = '',
 }) {
   const [timeframe, setTimeframe] = useState('5m');
   const [hoverIndex, setHoverIndex] = useState(null);
   const [showEMA, setShowEMA] = useState(true);
   const [showVWAP, setShowVWAP] = useState(true);
   const [showSignals, setShowSignals] = useState(true);
+  const [showOverboughtGuard, setShowOverboughtGuard] = useState(true);
+  const [userEntryPrice, setUserEntryPrice] = useState(initialEntryPrice ? String(initialEntryPrice) : '');
   const [zoomLevel, setZoomLevel] = useState(40); // number of visible candles
   const [isFullscreen, setIsFullscreen] = useState(false);
   const svgRef = useRef(null);
@@ -29,6 +37,8 @@ export default function CandleChart({
   const getSymbolBasePrice = (sym) => {
     if (effectivePrice > 0) return effectivePrice;
     switch (sym) {
+      case 'SWIGGY':
+        return 276.1;
       case 'RAMBHAJO':
         return 215.91;
       case 'NITCO':
@@ -118,54 +128,71 @@ export default function CandleChart({
     }
     // Generate deterministic intraday tick candles anchored at effectivePrice
     const basePrice = getSymbolBasePrice(cleanSymbol);
+    const count = 50;
     const generated = [];
-    let currentPrice = basePrice;
-    const baseTime = Date.now();
-    const count = 40;
+    let p = basePrice * 0.985;
+    const now = new Date();
 
-    let seed = 0;
-    for (let c = 0; c < cleanSymbol.length; c++) {
-      seed += cleanSymbol.charCodeAt(c) * (c + 1);
-    }
+    for (let i = 0; i < count; i++) {
+      const time = new Date(now.getTime() - (count - i) * 5 * 60000);
+      const isUp = Math.sin(i * 0.45) > -0.15;
+      const vol = Math.floor(25000 + Math.abs(Math.sin(i * 0.7)) * 75000 + (i > 35 ? 120000 : 0));
+      const delta = (Math.random() * 0.006 + 0.001) * basePrice * (isUp ? 1 : -0.75);
+      const open = p;
+      let close = open + delta;
+      let high = Math.max(open, close) + Math.random() * 0.003 * basePrice;
+      let low = Math.min(open, close) - Math.random() * 0.003 * basePrice;
 
-    for (let i = count; i >= 0; i--) {
-      const time = new Date(baseTime - i * 5 * 60 * 1000);
-      const pseudoRand1 = Math.abs(Math.sin(seed + i * 13.37));
-      const pseudoRand2 = Math.abs(Math.cos(seed + i * 17.73));
-      const pseudoRand3 = Math.abs(Math.sin(seed + i * 29.19));
-
-      const volatility = currentPrice * 0.004;
-      const change = (pseudoRand1 - 0.48) * volatility;
-      const open = currentPrice;
-      const close = Number((open + change).toFixed(2));
-      const high = Number((Math.max(open, close) + pseudoRand2 * volatility * 0.5).toFixed(2));
-      const low = Number((Math.min(open, close) - pseudoRand3 * volatility * 0.5).toFixed(2));
-      const volume = Math.floor(25000 + pseudoRand1 * 95000);
+      // Ensure last candle matches real current price
+      if (i === count - 1 && effectivePrice > 0) {
+        close = effectivePrice;
+        high = Math.max(high, close);
+        low = Math.min(low, close);
+      }
 
       generated.push({
-        timestamp: time.toISOString(),
-        timeStr: `${String(9 + Math.floor((count - i) / 12)).padStart(2, '0')}:${String(((count - i) * 5) % 60).padStart(2, '0')}`,
-        open,
-        high,
-        low,
-        close,
-        volume,
+        time: time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        open: Number(open.toFixed(2)),
+        high: Number(high.toFixed(2)),
+        low: Number(low.toFixed(2)),
+        close: Number(close.toFixed(2)),
+        volume: vol,
       });
-      currentPrice = close;
+      p = close;
     }
     return generated;
-  }, [candles, liveCandles, cleanSymbol, effectivePrice]);
+  }, [candles, liveCandles, effectivePrice, cleanSymbol]);
 
-  // Sliced candles based on zoomLevel
+  // Sliced candles based on zoom level
   const visibleCandles = useMemo(() => {
-    const sliceCount = Math.min(zoomLevel, rawCandles.length);
-    return rawCandles.slice(-sliceCount);
+    if (!rawCandles.length) return [];
+    return rawCandles.slice(-zoomLevel);
   }, [rawCandles, zoomLevel]);
 
-  // Compute Price Extents & Indicator Series
-  const { minPrice, maxPrice, maxVolume, vwapSeries, ema9Series, ema21Series, candleSignals } = useMemo(() => {
+  // Derived indicator calculations: VWAP, EMA9, EMA21, RSI(14), and Buy/Sell/Overbought Signals
+  const {
+    minPrice,
+    maxPrice,
+    maxVolume,
+    vwapSeries,
+    ema9Series,
+    ema21Series,
+    rsiSeries,
+    candleSignals,
+    overboughtEvaluations,
+  } = useMemo(() => {
     if (!visibleCandles.length) {
-      return { minPrice: 0, maxPrice: 100, maxVolume: 100, vwapSeries: [], ema9Series: [], ema21Series: [], candleSignals: [] };
+      return {
+        minPrice: 0,
+        maxPrice: 100,
+        maxVolume: 1,
+        vwapSeries: [],
+        ema9Series: [],
+        ema21Series: [],
+        rsiSeries: [],
+        candleSignals: [],
+        overboughtEvaluations: [],
+      };
     }
 
     let min = Infinity;
@@ -178,7 +205,8 @@ export default function CandleChart({
       if (c.volume > maxVol) maxVol = c.volume;
     });
 
-    const padding = (max - min) * 0.08 || 1;
+    // Expand price bounds slightly for breathing room
+    const padding = (max - min) * 0.08 || 2;
     min = Math.max(0, min - padding);
     max = max + padding;
 
@@ -206,10 +234,53 @@ export default function CandleChart({
     const ema9 = calcEMA(9);
     const ema21 = calcEMA(21);
 
-    // Compute Buy / Sell signals on individual candles
+    // Wilder's RSI(14) series
+    const closes = visibleCandles.map((c) => c.close);
+    const rsi = calcRSIseries(closes, 14);
+
+    // Overbought Evaluations
+    const parsedEntry = parseFloat(userEntryPrice);
+    const validEntry = !isNaN(parsedEntry) && parsedEntry > 0 ? parsedEntry : null;
+
+    const obEvals = visibleCandles.map((c, i) => {
+      return evaluateOverboughtStatus({
+        currentPrice: c.close,
+        entryPrice: validEntry,
+        peakPrice: max,
+        vwap: vwap[i],
+        rsi: rsi[i] !== null ? rsi[i] : 50,
+        candle: c,
+        timeStr: c.time,
+      });
+    });
+
+    // Compute Buy / Sell / Overbought signals on individual candles
     const signals = visibleCandles.map((c, i) => {
       if (i < 2) return null;
       const patterns = detectAllCandlePatterns(visibleCandles.slice(0, i + 1));
+      const obEval = obEvals[i];
+
+      // 1. OVERBOUGHT / SAFE EXIT PIN (Highest Priority Alert)
+      if (showOverboughtGuard && obEval && obEval.isOverbought) {
+        if (obEval.level === 'BEARISH_REVERSAL_EXIT' || obEval.level === 'OVERBOUGHT_CRITICAL') {
+          return {
+            type: 'OVERBOUGHT_EXIT',
+            label: '🚨 EXIT',
+            title: `🚨 SAFE EXIT ALERT: ${obEval.actionAdvice}`,
+            color: '#dc2626',
+          };
+        }
+        if (obEval.level === 'OVERBOUGHT_WARN') {
+          return {
+            type: 'OVERBOUGHT_WARN',
+            label: '⚠️ OB',
+            title: `⚠️ Overbought Zone: ${obEval.actionAdvice}`,
+            color: '#f59e0b',
+          };
+        }
+      }
+
+      // 2. STANDARD BUY / SELL PATTERNS
       const hasBullishPattern = patterns.some((p) =>
         ['Bullish Engulfing', 'Hammer', 'Morning Star', 'Three White Soldiers', 'Piercing Pattern'].includes(p.name)
       );
@@ -233,13 +304,15 @@ export default function CandleChart({
       vwapSeries: vwap,
       ema9Series: ema9,
       ema21Series: ema21,
+      rsiSeries: rsi,
       candleSignals: signals,
+      overboughtEvaluations: obEvals,
     };
-  }, [visibleCandles]);
+  }, [visibleCandles, userEntryPrice, showOverboughtGuard]);
 
   // Dynamic Layout Dimensions: Fullwidth HD SVG
   const paddingLeft = 20;
-  const paddingRight = 75;
+  const paddingRight = 85;
   const paddingTop = 25;
   const paddingBottom = 45;
   const chartWidth = isFullscreen ? 1600 : 1200;
@@ -268,28 +341,22 @@ export default function CandleChart({
     return paddingLeft + index * candleSpacing + candleSpacing / 2;
   };
 
-  // Hovered candle info
+  // Active / Hovered candle
   const activeCandleIndex = hoverIndex !== null && hoverIndex >= 0 && hoverIndex < n ? hoverIndex : n - 1;
   const activeCandle = visibleCandles[activeCandleIndex];
+  const activeEval = overboughtEvaluations[activeCandleIndex] || null;
+  const activeRSI = rsiSeries[activeCandleIndex];
+  const activeVWAP = vwapSeries[activeCandleIndex] || (activeCandle ? activeCandle.close : 0);
+
+  const parsedEntry = parseFloat(userEntryPrice);
+  const hasUserEntry = !isNaN(parsedEntry) && parsedEntry > 0;
+  const entryY = hasUserEntry ? getY(parsedEntry) : null;
+  const trailingStopY = activeEval?.trailingStopPrice ? getY(activeEval.trailingStopPrice) : null;
+
   const activePatterns = useMemo(() => {
     if (!activeCandle) return [];
     return detectAllCandlePatterns(visibleCandles.slice(0, activeCandleIndex + 1));
   }, [visibleCandles, activeCandleIndex]);
-
-  // Overall Market Advice for this stock
-  const currentAdvice = useMemo(() => {
-    if (!activeCandle) return { status: 'HOLD', color: 'warning', text: 'Wait for setup' };
-    const latestVwap = vwapSeries.at(-1) || activeCandle.close;
-    const isAboveVwap = activeCandle.close >= latestVwap;
-
-    if (isAboveVwap && activePatterns.length > 0 && activePatterns[0].strength === 'Very High') {
-      return { status: 'STRONG BUY 🟢', color: 'success', text: `Confirmed ${activePatterns[0].name} above VWAP. Bullish momentum active.` };
-    }
-    if (isAboveVwap) {
-      return { status: 'HOLD / ACCUMULATE 🟢', color: 'success', text: `Trading above VWAP (₹${latestVwap.toFixed(2)}). Hold longs with trailing SL.` };
-    }
-    return { status: 'WAIT / NEUTRAL 🟡', color: 'warning', text: `Consolidating near support. Wait for breakout above VWAP (₹${latestVwap.toFixed(2)}).` };
-  }, [activeCandle, vwapSeries, activePatterns]);
 
   const handleMouseMove = (e) => {
     if (!svgRef.current) return;
@@ -312,31 +379,19 @@ export default function CandleChart({
   return (
     <div
       ref={containerRef}
-      className={`card border-0 shadow-sm overflow-hidden mb-3 w-100 ${
-        isFullscreen
-          ? 'position-fixed top-0 start-0 w-100 h-100 rounded-0'
-          : 'rounded-4 bg-white'
+      className={`card shadow-sm border-0 rounded-4 overflow-hidden mb-3 ${
+        isFullscreen ? 'position-fixed top-0 start-0 w-100 h-100 z-3 bg-dark text-white rounded-0' : 'bg-white'
       }`}
-      style={
-        isFullscreen
-          ? {
-              zIndex: 99999,
-              backgroundColor: '#0b0f19',
-              color: '#f8fafc',
-              overflowY: 'auto',
-            }
-          : { width: '100%' }
-      }
+      style={isFullscreen ? { zIndex: 1070, overflowY: 'auto' } : {}}
     >
-      {/* Top Controls Bar */}
+      {/* ── TOP CONTROLS & TIMEFRAME BAR ── */}
       <div
-        className={`d-flex flex-wrap align-items-center justify-content-between px-3 py-2.5 border-bottom gap-2 ${
-          isFullscreen ? 'bg-dark bg-opacity-75 text-white border-secondary' : 'bg-light bg-opacity-50'
+        className={`card-header d-flex flex-wrap align-items-center justify-content-between px-3 py-2 border-bottom gap-2 ${
+          isFullscreen ? 'bg-dark bg-opacity-75 border-secondary text-white' : 'bg-light bg-opacity-75'
         }`}
       >
-        {/* Symbol & Price Badge */}
-        <div className="d-flex align-items-center gap-2">
-          <span className={`badge ${isFullscreen ? 'bg-primary' : 'bg-dark'} px-3 py-1.5 fw-bold fs-6 shadow-sm`}>
+        <div className="d-flex align-items-center gap-2 flex-wrap">
+          <span className="badge bg-primary px-2.5 py-1.5 fw-bold fs-6 shadow-sm">
             {cleanSymbol}
           </span>
           {companyName && (
@@ -357,6 +412,24 @@ export default function CandleChart({
 
         {/* Timeframe, Overlays & Fullscreen Button */}
         <div className="d-flex flex-wrap align-items-center gap-2">
+          {/* Overbought Guard Toggle */}
+          <button
+            type="button"
+            className={`btn btn-sm fw-bold shadow-sm d-flex align-items-center gap-1 ${
+              showOverboughtGuard
+                ? activeEval?.isOverbought
+                  ? 'btn-danger text-white animate-pulse'
+                  : 'btn-warning text-dark'
+                : isFullscreen
+                ? 'btn-outline-light'
+                : 'btn-outline-secondary'
+            }`}
+            onClick={() => setShowOverboughtGuard(!showOverboughtGuard)}
+            title="Toggle Real-Time Overbought Safe Exit Alerts"
+          >
+            🛡️ Overbought Guard
+          </button>
+
           {/* Signal overlay toggle */}
           <button
             type="button"
@@ -366,7 +439,7 @@ export default function CandleChart({
             onClick={() => setShowSignals(!showSignals)}
             title="Toggle Live Buy/Sell Signals"
           >
-            🎯 Buy/Sell Signals
+            🎯 Signals
           </button>
 
           {/* Timeframe selector */}
@@ -449,157 +522,204 @@ export default function CandleChart({
             onClick={() => setIsFullscreen(!isFullscreen)}
             title={isFullscreen ? 'Exit Fullscreen (ESC)' : 'Open Chart in Fullscreen and Full Width'}
           >
-            {isFullscreen ? '✕ Exit Fullscreen' : '⛶ Fullscreen'}
+            {isFullscreen ? '✕ Exit' : '⛶ Fullscreen'}
           </button>
         </div>
       </div>
 
-      {/* Live Action Advice Banner & OHLC Ticker */}
+      {/* ── INTERACTIVE INTRADAY SAFE EXIT & OVERBOUGHT MONITOR BAR ── */}
       <div
-        className={`d-flex flex-wrap align-items-center justify-content-between px-3 py-2 border-bottom gap-2 ${
-          isFullscreen ? 'bg-dark bg-opacity-50 text-white border-secondary' : 'bg-light'
+        className={`px-3 py-2 border-bottom ${
+          activeEval?.isOverbought
+            ? activeEval.level === 'BEARISH_REVERSAL_EXIT' || activeEval.level === 'OVERBOUGHT_CRITICAL'
+              ? 'bg-danger bg-opacity-10 border-danger'
+              : 'bg-warning bg-opacity-10 border-warning'
+            : isFullscreen
+            ? 'bg-dark bg-opacity-50 text-white border-secondary'
+            : 'bg-light'
         }`}
       >
-        <div className="d-flex align-items-center gap-2">
-          <span className={`badge bg-${currentAdvice.color} fs-6 px-3 py-1`}>
-            {currentAdvice.status}
-          </span>
-          <span className={`small fw-semibold ${isFullscreen ? 'text-light opacity-90' : 'text-secondary'}`}>
-            {currentAdvice.text}
-          </span>
+        <div className="d-flex flex-wrap align-items-center justify-content-between gap-2.5">
+          {/* Realtime Technical Gauges */}
+          <div className="d-flex flex-wrap align-items-center gap-2">
+            <span className="badge bg-secondary bg-opacity-25 text-dark border small">
+              RSI(14):{' '}
+              <strong className={activeRSI >= 70 ? 'text-danger' : activeRSI <= 30 ? 'text-success' : 'text-primary'}>
+                {activeRSI !== null ? activeRSI.toFixed(1) : 'N/A'}
+              </strong>
+            </span>
+            <span className="badge bg-secondary bg-opacity-25 text-dark border small">
+              VWAP:{' '}
+              <strong>₹{activeVWAP.toFixed(2)}</strong> ({activeEval?.vwapDeviationPct >= 0 ? '+' : ''}
+              {activeEval?.vwapDeviationPct ?? 0}%)
+            </span>
+            {activeEval?.hasUpperWickRejection && (
+              <span className="badge bg-danger text-white fw-bold shadow-sm">
+                🪤 Upper Wick Rejection (Shooting Star)
+              </span>
+            )}
+            <span className={`badge bg-${activeEval?.badgeColor || 'secondary'} text-white fw-bold shadow-sm`}>
+              {activeEval?.badgeText || 'NORMAL'}
+            </span>
+          </div>
+
+          {/* User Entry Price Input & Live Profit Tracker */}
+          <div className="d-flex flex-wrap align-items-center gap-2">
+            <div className="input-group input-group-sm" style={{ width: 220 }}>
+              <span className="input-group-text bg-white fw-semibold small">My Entry ₹</span>
+              <input
+                type="number"
+                step="0.05"
+                className="form-control form-control-sm text-end fw-bold"
+                placeholder="e.g. 278.00"
+                value={userEntryPrice}
+                onChange={(e) => setUserEntryPrice(e.target.value)}
+              />
+              {userEntryPrice && (
+                <button
+                  type="button"
+                  className="btn btn-outline-secondary btn-sm"
+                  title="Clear Entry Price"
+                  onClick={() => setUserEntryPrice('')}
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
+            {hasUserEntry && activeEval?.pnlAmount !== null && (
+              <div className="d-flex align-items-center gap-2">
+                <span
+                  className={`badge fs-7 px-2.5 py-1.5 fw-bold ${
+                    activeEval.pnlAmount >= 0 ? 'bg-success text-white' : 'bg-danger text-white'
+                  }`}
+                >
+                  {activeEval.pnlAmount >= 0 ? '▲ +' : '▼ '}
+                  ₹{Math.abs(activeEval.pnlAmount).toFixed(2)} ({activeEval.pnlPct}%)
+                </span>
+                <span className="badge bg-warning text-dark border border-dark fw-bold">
+                  🛡️ Trailing SL: ₹{activeEval.trailingStopPrice.toFixed(2)}
+                </span>
+              </div>
+            )}
+          </div>
         </div>
 
-        {activeCandle && (
-          <div className="d-flex flex-wrap align-items-center gap-2.5 small font-monospace">
-            <span>Time: <strong>{activeCandle.timeStr || activeCandle.timestamp?.slice(11, 16)}</strong></span>
-            <span>O: <strong>₹{activeCandle.open.toFixed(2)}</strong></span>
-            <span>H: <strong className="text-success">₹{activeCandle.high.toFixed(2)}</strong></span>
-            <span>L: <strong className="text-danger">₹{activeCandle.low.toFixed(2)}</strong></span>
-            <span>C: <strong className={activeCandle.close >= activeCandle.open ? 'text-success' : 'text-danger'}>₹{activeCandle.close.toFixed(2)}</strong></span>
-            <span>Vol: <strong>{activeCandle.volume.toLocaleString('en-IN')}</strong></span>
+        {/* Dynamic Action Advice Box */}
+        <div className="mt-2 pt-1 border-top border-secondary border-opacity-10 d-flex flex-wrap align-items-center justify-content-between gap-2">
+          <div className="d-flex align-items-center gap-2">
+            <span className="fw-bold small text-uppercase">
+              {activeEval?.isOverbought ? '🚨 Action Alert:' : '💡 Safe Guide:'}
+            </span>
+            <span className={`small fw-semibold ${activeEval?.isOverbought ? 'text-danger' : 'text-muted'}`}>
+              {activeEval?.actionAdvice}
+            </span>
           </div>
-        )}
+          {activeEval?.isOverbought && hasUserEntry && (
+            <span className="badge bg-danger text-white fw-bold px-3 py-1 shadow-sm">
+              ⚡ SAFE EXIT TRIGGERED — PROTECT YOUR CAPITAL
+            </span>
+          )}
+        </div>
       </div>
 
-      {/* Candlestick SVG Rendering Area (Full Width & Fullscreen HD) */}
+      {/* ── MAIN SVG CHART CANVAS ── */}
       <div
-        className="position-relative p-2 w-100"
+        className="position-relative w-100"
         style={{
-          touchAction: 'none',
-          backgroundColor: isFullscreen ? '#0b0f19' : '#ffffff',
-          minHeight: isFullscreen ? 'calc(100vh - 170px)' : `${height}px`,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
+          height: isFullscreen ? 'calc(100vh - 160px)' : height,
+          minHeight: 340,
+          cursor: 'crosshair',
+          userSelect: 'none',
+          backgroundColor: isFullscreen ? '#0f172a' : '#ffffff',
         }}
       >
         {loadingCandles && (
           <div
-            className="position-absolute top-0 end-0 m-2 px-2.5 py-1 rounded-pill bg-white bg-opacity-90 shadow-sm border small d-flex align-items-center gap-1.5"
-            style={{ zIndex: 10 }}
+            className="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-white bg-opacity-75 z-2"
           >
-            <span className="spinner-border spinner-border-sm text-primary" role="status" style={{ width: '0.85rem', height: '0.85rem' }} />
-            <span className="text-secondary fw-semibold" style={{ fontSize: 10.5 }}>Live Feed Syncing...</span>
+            <div className="spinner-border text-primary" role="status">
+              <span className="visually-hidden">Loading Candles...</span>
+            </div>
           </div>
         )}
 
         <svg
           ref={svgRef}
+          className="w-100 h-100"
           viewBox={`0 0 ${chartWidth} ${chartHeight}`}
-          className="w-100 h-auto"
-          style={{
-            maxHeight: isFullscreen ? 'calc(100vh - 180px)' : height,
-            userSelect: 'none',
-            cursor: 'crosshair',
-          }}
           preserveAspectRatio="none"
           onMouseMove={handleMouseMove}
           onMouseLeave={handleMouseLeave}
         >
-          {/* Background Grid Pattern */}
-          {[0, 0.25, 0.5, 0.75, 1].map((frac, idx) => {
-            const p = minPrice + (maxPrice - minPrice) * frac;
-            const y = getY(p);
+          {/* Background Grid Lines */}
+          {[0, 0.25, 0.5, 0.75, 1].map((pct, i) => {
+            const priceVal = minPrice + (maxPrice - minPrice) * (1 - pct);
+            const y = paddingTop + pct * pricePlotHeight;
             return (
-              <g key={idx}>
+              <g key={`grid-${i}`}>
                 <line
                   x1={paddingLeft}
                   y1={y}
                   x2={chartWidth - paddingRight}
                   y2={y}
-                  stroke={isFullscreen ? '#1e293b' : '#e2e8f0'}
-                  strokeDasharray="4 4"
+                  stroke={isFullscreen ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'}
+                  strokeWidth="1"
+                  strokeDasharray="3 3"
                 />
                 <text
-                  x={chartWidth - paddingRight + 8}
-                  y={y + 3}
+                  x={chartWidth - paddingRight + 6}
+                  y={y + 4}
                   fill={isFullscreen ? '#94a3b8' : '#64748b'}
-                  fontSize={isFullscreen ? '12' : '11'}
-                  fontFamily="sans-serif"
+                  fontSize="10"
+                  fontFamily="monospace"
                   fontWeight="600"
                 >
-                  ₹{p.toFixed(1)}
+                  ₹{priceVal.toFixed(2)}
                 </text>
               </g>
             );
           })}
 
-          {/* Volume divider line */}
+          {/* Volume Separator Line */}
           <line
             x1={paddingLeft}
-            y1={volumeTop - 6}
+            y1={volumeTop - 4}
             x2={chartWidth - paddingRight}
-            y2={volumeTop - 6}
-            stroke={isFullscreen ? '#334155' : '#cbd5e1'}
+            y2={volumeTop - 4}
+            stroke={isFullscreen ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)'}
             strokeWidth="1"
           />
-          <text
-            x={paddingLeft + 4}
-            y={volumeTop - 8}
-            fill={isFullscreen ? '#64748b' : '#94a3b8'}
-            fontSize="10"
-            fontWeight="bold"
-          >
-            VOLUME
-          </text>
 
-          {/* Volume Bars */}
+          {/* Candlesticks & Volume Bars */}
           {visibleCandles.map((c, i) => {
             const x = getX(i);
-            const y = getVolY(c.volume);
-            const barH = Math.max(1, volumeTop + volumePlotHeight - y);
-            const isGreen = c.close >= c.open;
-            return (
-              <rect
-                key={`vol-${i}`}
-                x={x - candleWidth / 2}
-                y={y}
-                width={candleWidth}
-                height={barH}
-                fill={isGreen ? '#22c55e' : '#ef4444'}
-                opacity={activeCandleIndex === i ? 0.9 : 0.35}
-              />
-            );
-          })}
-
-          {/* Candlesticks (Wicks + Real Bodies) */}
-          {visibleCandles.map((c, i) => {
-            const x = getX(i);
-            const isGreen = c.close >= c.open;
-            const color = isGreen ? '#16a34a' : '#dc2626';
-            const bodyFill = isGreen ? '#22c55e' : '#ef4444';
-
-            const highY = getY(c.high);
-            const lowY = getY(c.low);
             const openY = getY(c.open);
             const closeY = getY(c.close);
-
+            const highY = getY(c.high);
+            const lowY = getY(c.low);
+            const isBullish = c.close >= c.open;
+            const color = isBullish ? '#16a34a' : '#dc2626';
+            const bodyFill = isBullish ? '#22c55e' : '#ef4444';
             const bodyTop = Math.min(openY, closeY);
             const bodyHeight = Math.max(2, Math.abs(closeY - openY));
+
+            const volY = getVolY(c.volume);
+            const volH = volumeTop + volumePlotHeight - volY;
             const sig = candleSignals[i];
 
             return (
               <g key={`candle-${i}`}>
+                {/* Volume bar */}
+                <rect
+                  x={x - candleWidth / 2}
+                  y={volY}
+                  width={candleWidth}
+                  height={volH}
+                  fill={isBullish ? 'rgba(34, 197, 94, 0.35)' : 'rgba(239, 68, 68, 0.35)'}
+                  rx="1"
+                />
+
                 {/* Upper Wick */}
                 <line
                   x1={x}
@@ -632,23 +752,45 @@ export default function CandleChart({
                   rx="1.5"
                 />
 
-                {/* Buy / Sell Signal Marker Pin directly on Candle */}
-                {showSignals && sig && (
+                {/* Buy / Sell / Overbought Signal Marker Pin directly on Candle */}
+                {sig && (
                   <g>
-                    {sig.type === 'BUY' ? (
-                      <g transform={`translate(${x}, ${lowY + 12})`}>
+                    {sig.type === 'BUY' && showSignals && (
+                      <g transform={`translate(${x}, ${lowY + 14})`}>
                         <polygon points="0,-6 -6,4 6,4" fill="#16a34a" />
                         <rect x="-18" y="5" width="36" height="14" rx="3" fill="#16a34a" />
                         <text x="0" y="15" fill="#ffffff" fontSize="8" fontWeight="bold" textAnchor="middle">
                           BUY
                         </text>
                       </g>
-                    ) : (
+                    )}
+
+                    {sig.type === 'SELL' && showSignals && (
                       <g transform={`translate(${x}, ${highY - 14})`}>
                         <polygon points="0,6 -6,-4 6,-4" fill="#dc2626" />
                         <rect x="-18" y="-18" width="36" height="14" rx="3" fill="#dc2626" />
                         <text x="0" y="-8" fill="#ffffff" fontSize="8" fontWeight="bold" textAnchor="middle">
                           SELL
+                        </text>
+                      </g>
+                    )}
+
+                    {sig.type === 'OVERBOUGHT_EXIT' && showOverboughtGuard && (
+                      <g transform={`translate(${x}, ${highY - 16})`}>
+                        <polygon points="0,6 -6,-4 6,-4" fill="#dc2626" />
+                        <rect x="-24" y="-20" width="48" height="16" rx="4" fill="#dc2626" filter="drop-shadow(0px 2px 4px rgba(220,38,38,0.5))" />
+                        <text x="0" y="-8" fill="#ffffff" fontSize="8.5" fontWeight="900" textAnchor="middle">
+                          🚨 EXIT
+                        </text>
+                      </g>
+                    )}
+
+                    {sig.type === 'OVERBOUGHT_WARN' && showOverboughtGuard && (
+                      <g transform={`translate(${x}, ${highY - 16})`}>
+                        <polygon points="0,6 -6,-4 6,-4" fill="#f59e0b" />
+                        <rect x="-20" y="-20" width="40" height="16" rx="4" fill="#f59e0b" />
+                        <text x="0" y="-8" fill="#1e293b" fontSize="8.5" fontWeight="900" textAnchor="middle">
+                          ⚠️ OB
                         </text>
                       </g>
                     )}
@@ -691,6 +833,70 @@ export default function CandleChart({
             />
           )}
 
+          {/* User Entry Price Horizontal Line */}
+          {hasUserEntry && entryY !== null && (
+            <g>
+              <line
+                x1={paddingLeft}
+                y1={entryY}
+                x2={chartWidth - paddingRight}
+                y2={entryY}
+                stroke="#16a34a"
+                strokeWidth="2"
+                strokeDasharray="6 4"
+              />
+              <rect
+                x={chartWidth - paddingRight + 4}
+                y={entryY - 10}
+                width={78}
+                height={20}
+                fill="#16a34a"
+                rx="4"
+              />
+              <text
+                x={chartWidth - paddingRight + 8}
+                y={entryY + 4}
+                fill="#ffffff"
+                fontSize="10"
+                fontWeight="bold"
+              >
+                📍 Entry: ₹{parsedEntry.toFixed(2)}
+              </text>
+            </g>
+          )}
+
+          {/* Trailing Stop Loss Horizontal Line */}
+          {hasUserEntry && trailingStopY !== null && activeEval?.trailingStopPrice && (
+            <g>
+              <line
+                x1={paddingLeft}
+                y1={trailingStopY}
+                x2={chartWidth - paddingRight}
+                y2={trailingStopY}
+                stroke="#f97316"
+                strokeWidth="2"
+                strokeDasharray="4 3"
+              />
+              <rect
+                x={chartWidth - paddingRight + 4}
+                y={trailingStopY - 10}
+                width={78}
+                height={20}
+                fill="#f97316"
+                rx="4"
+              />
+              <text
+                x={chartWidth - paddingRight + 8}
+                y={trailingStopY + 4}
+                fill="#ffffff"
+                fontSize="10"
+                fontWeight="bold"
+              >
+                🛡️ SL: ₹{activeEval.trailingStopPrice.toFixed(2)}
+              </text>
+            </g>
+          )}
+
           {/* Crosshair on active/hovered candle */}
           {activeCandle && (
             <g>
@@ -717,7 +923,7 @@ export default function CandleChart({
               <rect
                 x={chartWidth - paddingRight + 4}
                 y={getY(activeCandle.close) - 10}
-                width={66}
+                width={72}
                 height={20}
                 fill={activeCandle.close >= activeCandle.open ? '#16a34a' : '#dc2626'}
                 rx="4"
@@ -745,23 +951,23 @@ export default function CandleChart({
         <div className="d-flex flex-wrap align-items-center gap-3">
           <span className="d-flex align-items-center gap-1">
             <span className="d-inline-block rounded-1" style={{ width: 10, height: 10, backgroundColor: '#22c55e' }} />
-            Bullish Candle 🟢
+            Bullish 🟢
           </span>
           <span className="d-flex align-items-center gap-1">
             <span className="d-inline-block rounded-1" style={{ width: 10, height: 10, backgroundColor: '#ef4444' }} />
-            Bearish Candle 🔴
+            Bearish 🔴
           </span>
-          {showSignals && (
+          {showOverboughtGuard && (
             <span className="d-flex align-items-center gap-1">
-              <span className="badge bg-success text-white" style={{ fontSize: 9 }}>BUY</span>
-              <span className="badge bg-danger text-white" style={{ fontSize: 9 }}>SELL</span>
-              Signal Pins
+              <span className="badge bg-danger text-white" style={{ fontSize: 9 }}>🚨 EXIT</span>
+              <span className="badge bg-warning text-dark" style={{ fontSize: 9 }}>⚠️ OB</span>
+              Overbought Safe Exit
             </span>
           )}
           {showVWAP && (
             <span className="d-flex align-items-center gap-1">
               <span className="d-inline-block" style={{ width: 12, height: 2.5, backgroundColor: '#a855f7' }} />
-              VWAP Line
+              VWAP
             </span>
           )}
           {showEMA && (
@@ -778,7 +984,7 @@ export default function CandleChart({
           )}
         </div>
         <div className="small opacity-75">
-          {isFullscreen ? 'Press ESC or click Exit Fullscreen to return' : 'Full Width & Fullscreen Real-Time Chart'}
+          {isFullscreen ? 'Press ESC to return' : 'Real-Time Intraday Risk & Safe Exit Guard'}
         </div>
       </div>
     </div>
