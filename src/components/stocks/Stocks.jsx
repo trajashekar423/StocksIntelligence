@@ -3052,20 +3052,78 @@ export default function Stocks() {
 
       {/* TOMORROW */}
 
-      {activeTab ===
-        'tomorrow' && (
-        <>
-          <h3>
-            TOP 10 NSE STOCKS
-            FOR TOMORROW
-            INTRADAY
-          </h3>
+      {/* TOMORROW */}
 
-          <div className="small text-muted mb-3">
-            Data Time:{' '}
-            {lastUpdated
-              ? lastUpdated.toLocaleString()
-              : 'N/A'}
+      {activeTab === 'tomorrow' && (
+        <>
+          <div className="d-flex flex-wrap justify-content-between align-items-center mb-3">
+            <div>
+              <h3 className="mb-1 text-white fw-bold">
+                🎯 TOP 10 NSE STOCKS FOR TOMORROW INTRADAY
+              </h3>
+              <div className="small text-light text-opacity-75">
+                Calculated on Market Close & EOD Volume Profile · Data Date: <strong>{tomorrowScanner.dataDate}</strong> · Time: <strong>{tomorrowScanner.dataTime}</strong>
+              </div>
+            </div>
+            <div className="d-flex align-items-center gap-2 mt-2 mt-md-0">
+              <span className="badge bg-primary px-3 py-2 fw-semibold">
+                Market Bias: {tomorrowScanner.marketSummary}
+              </span>
+              <span className={`badge ${tomorrowScanner.dataStatus === 'LIVE' ? 'bg-success' : 'bg-secondary'} px-3 py-2 fw-semibold`}>
+                {tomorrowScanner.dataStatus}
+              </span>
+            </div>
+          </div>
+
+          {/* 🛡️ Safe Logic Decision Protocol Banner */}
+          <div
+            className="card p-3 mb-4 rounded-3 border border-primary border-opacity-50"
+            style={{ background: 'rgba(15, 23, 42, 0.85)', color: '#f8fafc' }}
+          >
+            <div className="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2 pb-2 border-bottom border-secondary border-opacity-50">
+              <div className="d-flex align-items-center gap-2">
+                <span className="badge bg-primary text-white fw-bold px-2 py-1">🛡️ SAFE LOGIC DECISION ENGINE</span>
+                <span className="fw-semibold text-light small">Intraday Capital Protection & Anti-Chase Protocol</span>
+              </div>
+              <span className="badge bg-dark border border-secondary text-warning small px-2 py-1">
+                Strict Discipline Enabled
+              </span>
+            </div>
+
+            <div className="row g-2 text-start" style={{ fontSize: '0.85rem' }}>
+              <div className="col-12 col-md-3">
+                <div className="p-2 rounded border border-secondary border-opacity-25" style={{ background: 'rgba(2, 6, 23, 0.4)' }}>
+                  <div className="fw-bold text-danger mb-1">⛔ Anti-Chase Guard</div>
+                  <div className="text-light text-opacity-75" style={{ fontSize: '0.8rem' }}>
+                    Slippage &gt; <strong>0.35%</strong> triggers Do Not Chase. Wait for pullback to recommended entry.
+                  </div>
+                </div>
+              </div>
+              <div className="col-12 col-md-3">
+                <div className="p-2 rounded border border-secondary border-opacity-25" style={{ background: 'rgba(2, 6, 23, 0.4)' }}>
+                  <div className="fw-bold text-warning mb-1">⚖️ Risk / Reward Gate</div>
+                  <div className="text-light text-opacity-75" style={{ fontSize: '0.8rem' }}>
+                    Requires minimum <strong>1.5:1</strong> remaining R:R before entering any position.
+                  </div>
+                </div>
+              </div>
+              <div className="col-12 col-md-3">
+                <div className="p-2 rounded border border-secondary border-opacity-25" style={{ background: 'rgba(2, 6, 23, 0.4)' }}>
+                  <div className="fw-bold text-info mb-1">📈 VWAP Alignment</div>
+                  <div className="text-light text-opacity-75" style={{ fontSize: '0.8rem' }}>
+                    Price must trade strictly above VWAP to confirm buyers are defending the intraday baseline.
+                  </div>
+                </div>
+              </div>
+              <div className="col-12 col-md-3">
+                <div className="p-2 rounded border border-secondary border-opacity-25" style={{ background: 'rgba(2, 6, 23, 0.4)' }}>
+                  <div className="fw-bold text-success mb-1">🎯 Profit & Breakeven</div>
+                  <div className="text-light text-opacity-75" style={{ fontSize: '0.8rem' }}>
+                    Move SL to Cost at 1:1 risk, and automatically book <strong>50% Qty</strong> at Target 1.
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div className="table-responsive mb-4">
@@ -3089,210 +3147,176 @@ export default function Stocks() {
               </thead>
 
               <tbody>
-                {tomorrowScanner.top10.map(
-                  (row) => (
-                    <tr
-                      key={
-                        row.symbol
-                      }
-                    >
-                      <td>
-                        {row.rank}
-                      </td>
-
-                      <td>
-                        <strong>
-                          {
-                            row.symbol
-                          }
-                        </strong>
-                      </td>
-
-                      <td>
-                        {
-                          row.companyName
-                        }
-                      </td>
-
-                      <td>
-                        {formatMoney(
-                          row.price
-                        )}
-                      </td>
-
-                      <td>
-                        {row.changePercent
-                          ? `${row.changePercent.toFixed(
-                              2
-                            )}%`
-                          : 'N/A'}
-                      </td>
-
-                      <td>
-                        {row.relativeVolume
-                          ? `${row.relativeVolume.toFixed(
-                              2
-                            )}x`
-                          : 'N/A'}
-                      </td>
-
-                      <td>
-                        {
-                          row.trend
-                        }
-                      </td>
-
-                      <td>
-                        {row.supportLevel
-                          ? formatMoney(
-                              row.supportLevel
-                            )
-                          : 'N/A'}
-                      </td>
-
-                      <td>
-                        {row.resistanceLevel
-                          ? formatMoney(
-                              row.resistanceLevel
-                            )
-                          : 'N/A'}
-                      </td>
-
-                      <td>
-                        {
-                          row.breakoutLabel
-                        }
-                      </td>
-
-                      <td>
-                        {row.riskReward
-                          ? `${row.riskReward}:1`
-                          : 'N/A'}
-                      </td>
-
-                      <td>
-                        <strong>
-                          {row.score}
-                        </strong>
-                      </td>
-
-                      <td>
-                        {
-                          row.signal
-                        }
-                      </td>
-                    </tr>
-                  )
-                )}
+                {tomorrowScanner.top10.map((row) => (
+                  <tr key={row.symbol}>
+                    <td>{row.rank}</td>
+                    <td>
+                      <strong className="text-primary">{row.symbol}</strong>
+                    </td>
+                    <td>{row.companyName}</td>
+                    <td>{formatMoney(row.price)}</td>
+                    <td className={row.changePercent >= 0 ? 'text-success fw-bold' : 'text-danger fw-bold'}>
+                      {row.changePercent ? `${row.changePercent > 0 ? '+' : ''}${row.changePercent.toFixed(2)}%` : 'N/A'}
+                    </td>
+                    <td>{row.relativeVolume ? `${row.relativeVolume.toFixed(2)}x` : 'N/A'}</td>
+                    <td>{row.trend}</td>
+                    <td>{row.supportLevel ? formatMoney(row.supportLevel) : 'N/A'}</td>
+                    <td>{row.resistanceLevel ? formatMoney(row.resistanceLevel) : 'N/A'}</td>
+                    <td>
+                      <span className={`badge ${row.breakout ? 'bg-danger text-white' : 'bg-dark text-secondary'}`}>
+                        {row.breakoutLabel}
+                      </span>
+                    </td>
+                    <td>{row.riskReward ? `${row.riskReward}:1` : 'N/A'}</td>
+                    <td>
+                      <span className={`badge ${row.score >= 80 ? 'bg-success' : row.score >= 60 ? 'bg-warning text-dark' : 'bg-secondary'}`}>
+                        {row.score}/100
+                      </span>
+                    </td>
+                    <td>
+                      <span className="fw-bold">{row.signal}</span>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
 
-          {tomorrowScanner.top10.length >
-            0 && (
+          {tomorrowScanner.top10.length > 0 && (
             <>
-              <h5>
-                Trade Setup
-              </h5>
+              <div className="d-flex justify-content-between align-items-center mb-2">
+                <h4 className="mb-0 text-white fw-bold">
+                  🛡️ Tomorrow Intraday Trade Setups & Safe Entry Guard
+                </h4>
+                <span className="text-light text-opacity-75 small">
+                  Dynamic Anti-Chase & Profit Lock Levels
+                </span>
+              </div>
 
               <div className="table-responsive">
-                <table className="table table-bordered table-sm">
+                <table className="table table-bordered table-sm align-middle">
                   <thead>
-                    <tr>
-                      <th>
-                        Symbol
-                      </th>
-                      <th>
-                        Entry
-                      </th>
-                      <th>
-                        Stop Loss
-                      </th>
-                      <th>
-                        Target 1
-                      </th>
-                      <th>
-                        Target 2
-                      </th>
-                      <th>
-                        Target 3
-                      </th>
-                      <th>
-                        Risk/Reward
-                      </th>
-                      <th>
-                        Action
-                      </th>
+                    <tr className="table-dark text-nowrap">
+                      <th>Symbol</th>
+                      <th>LTP / VWAP</th>
+                      <th>Safe Entry Zone</th>
+                      <th>Stop Loss</th>
+                      <th>Target 1 (50% Qty)</th>
+                      <th>Target 2 & 3</th>
+                      <th>R/R</th>
+                      <th style={{ minWidth: 260 }}>🛡️ Safe Entry Guard</th>
+                      <th style={{ minWidth: 160 }}>Action</th>
                     </tr>
                   </thead>
 
                   <tbody>
-                    {tomorrowScanner.top10.map(
-                      (row) => {
-                        const setup =
-                          renderTomorrowSetup(
-                            row
-                          );
+                    {tomorrowScanner.top10.map((row) => {
+                      const setup = renderTomorrowSetup(row);
+                      const isSafe = setup.isSafe;
+                      const isChase = setup.safeStatus === '⛔ DO NOT CHASE';
 
-                        return (
-                          <tr
-                            key={
-                              row.symbol
-                            }
-                          >
-                            <td>
-                              <strong>
-                                {
-                                  row.symbol
-                                }
-                              </strong>
-                            </td>
+                      return (
+                        <tr key={row.symbol} className={isSafe ? 'table-success bg-opacity-10' : ''}>
+                          <td>
+                            <strong className="text-primary d-block">{row.symbol}</strong>
+                            <small className="text-light text-opacity-50" style={{ fontSize: '0.75rem' }}>
+                              {row.companyName}
+                            </small>
+                          </td>
 
-                            <td>
-                              {
-                                setup.entry
-                              }
-                            </td>
+                          <td>
+                            <div className="fw-bold">{formatMoney(row.price)}</div>
+                            <small className="text-light text-opacity-75" style={{ fontSize: '0.75rem' }}>
+                              VWAP: {formatMoney(row.vwap)}
+                            </small>
+                          </td>
 
-                            <td>
-                              {
-                                setup.stopLoss
-                              }
-                            </td>
+                          <td>
+                            <span className="badge bg-warning text-dark fw-bold px-2 py-1">
+                              {setup.entryRange}
+                            </span>
+                          </td>
 
-                            <td>
-                              {
-                                setup.target1
-                              }
-                            </td>
+                          <td>
+                            <span className="text-danger fw-bold">{setup.stopLoss}</span>
+                          </td>
 
-                            <td>
-                              {
-                                setup.target2
-                              }
-                            </td>
+                          <td>
+                            <span className="text-success fw-bold">{setup.bookHalfAt || setup.target1}</span>
+                          </td>
 
-                            <td>
-                              {
-                                setup.target3
-                              }
-                            </td>
+                          <td>
+                            <div className="text-light text-opacity-90 small">
+                              T2: <strong>{setup.target2}</strong>
+                            </div>
+                            <div className="text-light text-opacity-75 small">
+                              T3: <strong>{setup.target3}</strong>
+                            </div>
+                          </td>
 
-                            <td>
-                              {
-                                setup.riskReward
-                              }
-                            </td>
+                          <td>
+                            <span className="badge bg-dark text-light border border-secondary">
+                              {setup.riskReward}
+                            </span>
+                          </td>
 
-                            <td>
-                              {
-                                row.tradeSetup
-                              }
-                            </td>
-                          </tr>
-                        );
-                      }
-                    )}
+                          <td>
+                            <div className="d-flex flex-column gap-1">
+                              <span
+                                className={`badge ${
+                                  isSafe
+                                    ? 'bg-success text-white'
+                                    : isChase
+                                    ? 'bg-danger text-white'
+                                    : 'bg-warning text-dark'
+                                } fw-bold px-2 py-1 text-wrap`}
+                                style={{ fontSize: '0.78rem' }}
+                              >
+                                {setup.safeStatus}
+                              </span>
+
+                              {isSafe ? (
+                                <div className="small text-light" style={{ fontSize: '0.75rem' }}>
+                                  <div>🛡️ Move SL to Cost: <strong className="text-warning">₹{setup.breakevenTrigger}</strong></div>
+                                  <div>💰 Book 50% at: <strong className="text-success">₹{setup.bookHalfAt}</strong></div>
+                                </div>
+                              ) : (
+                                <div className="small text-warning" style={{ fontSize: '0.75rem' }}>
+                                  {setup.safeReason}
+                                </div>
+                              )}
+                            </div>
+                          </td>
+
+                          <td>
+                            <div className="d-flex flex-column gap-1">
+                              <button
+                                type="button"
+                                className="btn btn-outline-info btn-sm py-1 px-2 fw-semibold"
+                                style={{ fontSize: '0.75rem' }}
+                                onClick={() => {
+                                  setSelectedStock(row);
+                                  setActiveTab('practice-trading');
+                                }}
+                              >
+                                🎓 Practice Dummy
+                              </button>
+                              <button
+                                type="button"
+                                className="btn btn-primary btn-sm py-1 px-2 fw-semibold"
+                                style={{ fontSize: '0.75rem' }}
+                                onClick={() => {
+                                  setSelectedStock(row);
+                                  setActiveTab('trading');
+                                }}
+                              >
+                                ⚡ Trade
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

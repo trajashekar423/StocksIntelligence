@@ -1,4 +1,5 @@
 import { getNSEDateTime } from '../../utils/nseTime.js';
+import { evaluateSafeEntry } from '../../services/strategy/reversalScannerEngine.ts';
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 const toNumber = (value) => {
   if (value === null || value === undefined || value === '') return 0;
@@ -91,6 +92,15 @@ export function buildTomorrowScanner(rows = [], context = {}) {
       const target2 = price + Math.max((price - stopLoss) * 2.5, 0.8);
       const target3 = price + Math.max((price - stopLoss) * 3.5, 1.2);
 
+      // 🛡️ Safe Logic Decision Engine for Intraday Entries
+      const safeEntry = evaluateSafeEntry({
+        currentPrice: price,
+        recommendedEntry: entryZone,
+        stopLoss,
+        target1,
+        vwap: vwap || price * 0.998,
+      });
+
       return {
         symbol: row?.symbol || row?.Symbol || 'N/A',
         companyName: row?.companyName || row?.company || 'N/A',
@@ -117,6 +127,7 @@ export function buildTomorrowScanner(rows = [], context = {}) {
         target1,
         target2,
         target3,
+        safeEntry,
         tradeSetup: breakout ? 'BUY ON CONFIRMATION' : 'WAIT FOR ENTRY',
         marketBias: context?.marketSummary || 'N/A',
       };
@@ -149,6 +160,7 @@ export function buildTomorrowScanner(rows = [], context = {}) {
 }
 
 export function renderTomorrowSetup(row) {
+  const safe = row?.safeEntry;
   return {
     entry: formatMoney(row?.entryZone),
     stopLoss: formatMoney(row?.stopLoss),
@@ -156,5 +168,11 @@ export function renderTomorrowSetup(row) {
     target2: formatMoney(row?.target2),
     target3: formatMoney(row?.target3),
     riskReward: row?.riskReward ? `${row.riskReward}:1` : 'N/A',
+    safeStatus: safe?.status || 'N/A',
+    safeReason: safe?.reason || '',
+    isSafe: Boolean(safe?.safe),
+    breakevenTrigger: safe?.breakevenTrigger ? formatMoney(safe.breakevenTrigger) : 'N/A',
+    bookHalfAt: safe?.bookHalfAt ? formatMoney(safe.bookHalfAt) : 'N/A',
+    entryRange: safe?.entryZone || formatMoney(row?.entryZone),
   };
 }
