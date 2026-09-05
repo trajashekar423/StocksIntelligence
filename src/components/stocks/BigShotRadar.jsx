@@ -24,6 +24,8 @@ export default function BigShotRadar({
   const [feedbackMsg, setFeedbackMsg] = useState(null);
   const [showMistakeGuide, setShowMistakeGuide] = useState(false);
 
+  const [viewMode, setViewMode] = useState('AUTO'); // 'AUTO' | 'CARDS' | 'TABLE'
+
   // Load Pinned Watchlist from LocalStorage
   useEffect(() => {
     try {
@@ -596,8 +598,8 @@ export default function BigShotRadar({
         </div>
       )}
 
-      {/* ── 2. RESPONSIVE FILTER STRIP ── */}
-      <div className="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-2.5 mb-3">
+      {/* ── 2. RESPONSIVE FILTER & VIEW MODE STRIP ── */}
+      <div className="d-flex flex-column flex-lg-row align-items-start align-items-lg-center justify-content-between gap-2.5 mb-3 w-100">
         <div className="d-flex flex-wrap gap-2" role="group">
           <button
             type="button"
@@ -636,13 +638,43 @@ export default function BigShotRadar({
           </button>
         </div>
 
-        <div className="small text-muted fw-semibold">
-          Showing <strong>{displayedSetups.length}</strong> setups
+        {/* View Switcher: Mobile Cards vs Table */}
+        <div className="d-flex align-items-center gap-2 flex-wrap">
+          <div className="btn-group btn-group-sm shadow-sm rounded-pill overflow-hidden border">
+            <button
+              type="button"
+              className={`btn fw-bold px-2.5 py-1 ${viewMode === 'CARDS' ? 'btn-dark text-white' : 'btn-light text-dark'}`}
+              onClick={() => setViewMode('CARDS')}
+              title="Responsive Mobile Cards View"
+            >
+              📱 Cards
+            </button>
+            <button
+              type="button"
+              className={`btn fw-bold px-2.5 py-1 ${viewMode === 'AUTO' ? 'btn-primary text-white' : 'btn-light text-dark'}`}
+              onClick={() => setViewMode('AUTO')}
+              title="Automatic Layout"
+            >
+              ⚡ Auto
+            </button>
+            <button
+              type="button"
+              className={`btn fw-bold px-2.5 py-1 ${viewMode === 'TABLE' ? 'btn-dark text-white' : 'btn-light text-dark'}`}
+              onClick={() => setViewMode('TABLE')}
+              title="Desktop Table View"
+            >
+              📊 Table
+            </button>
+          </div>
+
+          <div className="small text-muted fw-semibold">
+            <strong>{displayedSetups.length}</strong> setups
+          </div>
         </div>
       </div>
 
-      {/* ── 3A. DESKTOP RESULTS TABLE (Large Screens) ── */}
-      <div className="d-none d-lg-block card border-0 shadow-sm rounded-4 overflow-hidden mb-4 w-100">
+      {/* ── 3A. DESKTOP RESULTS TABLE ── */}
+      <div className={`${viewMode === 'CARDS' ? 'd-none' : viewMode === 'TABLE' ? 'd-block' : 'd-none d-xl-block'} card border-0 shadow-sm rounded-4 overflow-hidden mb-4 w-100`}>
         <div className="table-responsive w-100 st-responsive-table-container" style={{ maxWidth: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
           <table className="table table-hover align-middle table-striped table-sm small mb-0 text-nowrap w-100">
             <thead className="table-dark">
@@ -817,8 +849,8 @@ export default function BigShotRadar({
         </div>
       </div>
 
-      {/* ── 3B. MOBILE & TABLET RESPONSIVE CARDS (Small Screens) ── */}
-      <div className="d-lg-none mb-4">
+      {/* ── 3B. MOBILE & TABLET RESPONSIVE CARDS ── */}
+      <div className={`${viewMode === 'TABLE' ? 'd-none' : viewMode === 'CARDS' ? 'd-block' : 'd-xl-none'} mb-4 w-100`}>
         {displayedSetups.length === 0 ? (
           <div className="card p-4 text-center text-muted rounded-4 shadow-sm">
             <h5>No stocks match the selected filter</h5>

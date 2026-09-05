@@ -34,6 +34,7 @@ export default function BlockDealsWatch({
   });
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('ALL'); // 'ALL' | 'MEGA' | 'LARGE' | 'STRONG_BUY' | 'SELLING' | 'WATCHLIST'
+  const [viewMode, setViewMode] = useState('AUTO'); // 'AUTO' | 'CARDS' | 'TABLE'
   const [pinnedSymbols, setPinnedSymbols] = useState(new Set());
   const [selectedStockForChart, setSelectedStockForChart] = useState(null);
   const [feedbackMsg, setFeedbackMsg] = useState(null);
@@ -952,20 +953,49 @@ export default function BlockDealsWatch({
           </button>
         </div>
 
-        {/* Search Bar */}
-        <div className="d-flex align-items-center gap-2 w-100 w-md-auto" style={{ maxWidth: 280 }}>
-          <input
-            type="text"
-            className="form-control form-control-sm bg-light border-secondary rounded-pill px-3"
-            placeholder="Search symbol (e.g. MEESHO)..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+        {/* View Switcher & Search Bar */}
+        <div className="d-flex align-items-center gap-2 flex-wrap w-100 w-lg-auto">
+          <div className="btn-group btn-group-sm shadow-sm rounded-pill overflow-hidden border">
+            <button
+              type="button"
+              className={`btn fw-bold px-2.5 py-1 ${viewMode === 'CARDS' ? 'btn-dark text-white' : 'btn-light text-dark'}`}
+              onClick={() => setViewMode('CARDS')}
+              title="Responsive Mobile Cards View"
+            >
+              📱 Cards
+            </button>
+            <button
+              type="button"
+              className={`btn fw-bold px-2.5 py-1 ${viewMode === 'AUTO' ? 'btn-primary text-white' : 'btn-light text-dark'}`}
+              onClick={() => setViewMode('AUTO')}
+              title="Automatic Layout"
+            >
+              ⚡ Auto
+            </button>
+            <button
+              type="button"
+              className={`btn fw-bold px-2.5 py-1 ${viewMode === 'TABLE' ? 'btn-dark text-white' : 'btn-light text-dark'}`}
+              onClick={() => setViewMode('TABLE')}
+              title="Desktop Table View"
+            >
+              📊 Table
+            </button>
+          </div>
+
+          <div style={{ minWidth: 180, maxWidth: 260 }} className="flex-grow-1">
+            <input
+              type="text"
+              className="form-control form-control-sm bg-light border-secondary rounded-pill px-3"
+              placeholder="Search symbol (e.g. MEESHO)..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
         </div>
       </div>
 
-      {/* ── 3A. DESKTOP RESULTS TABLE (Large Screens) ── */}
-      <div className="d-none d-lg-block card border-0 shadow-sm rounded-4 overflow-hidden mb-4 w-100">
+      {/* ── 3A. DESKTOP RESULTS TABLE ── */}
+      <div className={`${viewMode === 'CARDS' ? 'd-none' : viewMode === 'TABLE' ? 'd-block' : 'd-none d-xl-block'} card border-0 shadow-sm rounded-4 overflow-hidden mb-4 w-100`}>
         <div className="table-responsive w-100 st-responsive-table-container" style={{ maxWidth: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
           <table className="table table-hover align-middle table-striped table-sm small mb-0 text-nowrap w-100">
             <thead className="table-dark">
@@ -1147,8 +1177,8 @@ export default function BlockDealsWatch({
         </div>
       </div>
 
-      {/* ── 3B. MOBILE & TABLET RESPONSIVE CARDS (Small Screens) ── */}
-      <div className="d-lg-none mb-4">
+      {/* ── 3B. MOBILE & TABLET RESPONSIVE CARDS ── */}
+      <div className={`${viewMode === 'TABLE' ? 'd-none' : viewMode === 'CARDS' ? 'd-block' : 'd-xl-none'} mb-4 w-100`}>
         {displayedSetups.length === 0 ? (
           <div className="card p-4 text-center text-muted rounded-4 shadow-sm">
             <h5>No block deals match the selected filter</h5>
