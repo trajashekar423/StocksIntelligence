@@ -15,6 +15,11 @@ import {
   updatePositionMarketData,
   parseStockUrlOrSymbol,
 } from './positionTracker.ts';
+import {
+  detectFailedBreakout,
+  detectVolumeClimax,
+  detectEMASlopeFlattening,
+} from './indicatorEngine.ts';
 import type { OpenRiskPosition } from '../../types/risk.ts';
 
 const createMockPosition = (overrides: Partial<OpenRiskPosition> = {}): OpenRiskPosition => ({
@@ -200,3 +205,48 @@ test('parseStockUrlOrSymbol: accurately extracts symbol and company from NSE and
   const plainResult = parseStockUrlOrSymbol('GENCON');
   assert.equal(plainResult.symbol, 'GENCON');
 });
+
+test('detectFailedBreakout: accurately triggers bull trap when price pierces resistance and fails', () => {
+  const recentCandles = [
+    { close: 279, high: 281 },
+    { close: 283, high: 285 }, // pierced 284 resistance
+  ];
+
+  // Price failed to sustain and fell to 281
+  const failed = detectFailedBreakout(281, 284, 285, recentCandles);
+  assert.equal(failed.isFailed, true);
+  assert.equal(failed.score, 35);
+  assert.ok(failed.message.includes('BULL TRAP'));
+
+  // Sustained breakout holding above 284.5
+  const sustained = detectFailedBreakout(285, 284, 285, recentCandles);
+  assert.equal(sustained.isFailed, false);
+  assert.equal(sustained.score, 0);
+});
+
+test('detectVolumeClimax: detects smart money offloading on high volume with small body / upper wick', () => {
+  // Volume 3x normal, small body (open 100, close 100.5, high 104, low 99.8)
+  const climax = detectVolumeClimax(300000, 100000, 104, 99.8, 100, 100.5);
+  assert.equal(climax.isClimax, true);
+  assert.equal(climax.score, 25);
+  assert.ok(climax.message.includes('VOLUME CLIMAX'));
+
+  // Normal bullish volume expansion with full body
+  const normal = detectVolumeClimax(120000, 100000, 105, 100, 100, 104.8);
+  assert.equal(normal.isClimax, false);
+  assert.equal(normal.score, 0);
+});
+
+test('detectEMASlopeFlattening: flags trend momentum stalling flat', () => {
+  // Current EMA 150.02, 3 bars ago 150.00 (slope = +0.013% < 0.05%)
+  const flat = detectEMASlopeFlattening(150.02, 150.0);
+  assert.equal(flat.isFlattening, true);
+  assert.equal(flat.score, 15);
+  assert.ok(flat.message.includes('stalled flat'));
+
+  // Strong upward slope (153.0 vs 150.0 = +2.0%)
+  const strong = detectEMASlopeFlattening(153.0, 150.0);
+  assert.equal(strong.isFlattening, false);
+  assert.equal(strong.score, 0);
+});
+

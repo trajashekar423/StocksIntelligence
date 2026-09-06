@@ -235,3 +235,90 @@ export function detectMarketRisk(
     icon: isFailed ? '🔴' : '🟢',
   };
 }
+
+/**
+ * 7. Failed Breakout / Bull Trap Detector
+ * Triggers CRITICAL EXIT when price pierces resistance but fails within 1-2 candles
+ */
+export function detectFailedBreakout(
+  currentPrice: number,
+  resistanceLevel: number,
+  prevCandleHigh: number,
+  recentCandles: { close: number; high: number }[]
+): { isFailed: boolean; message: string; score: number } {
+  if (!resistanceLevel || !Array.isArray(recentCandles) || recentCandles.length < 2) {
+    return { isFailed: false, message: 'Breakout check stable', score: 0 };
+  }
+
+  const piercedResistance =
+    prevCandleHigh >= resistanceLevel ||
+    (recentCandles[recentCandles.length - 2]?.high !== undefined &&
+      recentCandles[recentCandles.length - 2].high >= resistanceLevel);
+  const closedBackInside = currentPrice < resistanceLevel * 0.998; // 0.2% buffer
+
+  if (piercedResistance && closedBackInside) {
+    return {
+      isFailed: true,
+      message: `🚨 BULL TRAP: Pierced ₹${resistanceLevel} but failed to sustain. Re-entered range.`,
+      score: 35, // Massive risk score boost -> Triggers CRITICAL EXIT
+    };
+  }
+
+  return { isFailed: false, message: 'Breakout structure holding', score: 0 };
+}
+
+/**
+ * 8. Volume Climax / Absorption Detector
+ * Detects massive volume bar with tiny candle body (Smart Money offloading)
+ */
+export function detectVolumeClimax(
+  currentVolume: number,
+  avgVolume: number,
+  candleHigh: number,
+  candleLow: number,
+  candleOpen: number,
+  candleClose: number
+): { isClimax: boolean; message: string; score: number } {
+  const volRatio = currentVolume / Math.max(avgVolume, 1);
+  const totalRange = candleHigh - candleLow || 1;
+  const body = Math.abs(candleClose - candleOpen);
+  const upperWick = candleHigh - Math.max(candleOpen, candleClose);
+
+  // Volume > 2.5x normal, but body is < 35% of total range OR upper wick is > 50%
+  const isAbsorption = volRatio >= 2.5 && (body / totalRange < 0.35 || upperWick / totalRange > 0.5);
+
+  if (isAbsorption) {
+    return {
+      isClimax: true,
+      message: `📊 VOLUME CLIMAX: ${volRatio.toFixed(1)}x Volume with heavy upper wick. Institutional absorption detected.`,
+      score: 25,
+    };
+  }
+
+  return { isClimax: false, message: 'Volume expansion normal', score: 0 };
+}
+
+/**
+ * 9. Moving Average Slope Flattening Detector
+ * Measures rate of change of EMA 9 over 3 periods
+ */
+export function detectEMASlopeFlattening(
+  ema9Current: number,
+  ema9ThreeBarsAgo: number
+): { isFlattening: boolean; message: string; score: number } {
+  if (!ema9Current || !ema9ThreeBarsAgo) return { isFlattening: false, message: '', score: 0 };
+
+  const slopePct = ((ema9Current - ema9ThreeBarsAgo) / ema9ThreeBarsAgo) * 100;
+
+  // Slope near zero (< 0.05% change over 3 candles) after an uptrend
+  if (Math.abs(slopePct) < 0.05) {
+    return {
+      isFlattening: true,
+      message: '🗒 EMA 9 momentum has stalled flat (0° slope). Trend entering consolidation.',
+      score: 15,
+    };
+  }
+
+  return { isFlattening: false, message: 'EMA 9 angle healthy', score: 0 };
+}
+
